@@ -1,0 +1,16 @@
+airfield KCL_MRO {
+  aircraft A320 {
+    wingspan 35.8m
+    length   37.6m
+    height   11.8m
+  }
+
+  hangar NorthBay {
+    bays     10
+    bayWidth 4.0m
+    bayDepth 30.0m
+    height   15.0m
+  }
+
+  induct A320 into NorthBay bays 2..5;
+}

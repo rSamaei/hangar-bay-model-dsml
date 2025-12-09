@@ -1,28 +1,13 @@
-import type { Model } from 'airfield-language';
-import { createAirfieldServices, AirfieldLanguageMetaData } from 'airfield-language';
-import chalk from 'chalk';
 import { Command } from 'commander';
-import { extractAstNode } from './util.js';
-import { generateJavaScript } from './generator.js';
-import { NodeFileSystem } from 'langium/node';
+import { AirfieldLanguageMetaData } from '../../language/out/generated/module.js';
+import { generateAction } from './generator.js';
 import * as url from 'node:url';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 const packagePath = path.resolve(__dirname, '..', 'package.json');
 const packageContent = await fs.readFile(packagePath, 'utf-8');
-
-export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
-    const services = createAirfieldServices(NodeFileSystem).Airfield;
-    const model = await extractAstNode<Model>(fileName, services);
-    const generatedFilePath = generateJavaScript(model, fileName, opts.destination);
-    console.log(chalk.green(`JavaScript code generated successfully: ${generatedFilePath}`));
-};
-
-export type GenerateOptions = {
-    destination?: string;
-}
 
 export default function(): void {
     const program = new Command();
@@ -34,7 +19,7 @@ export default function(): void {
         .command('generate')
         .argument('<file>', `source file (possible file extensions: ${fileExtensions})`)
         .option('-d, --destination <dir>', 'destination directory of generating')
-        .description('generates JavaScript code that prints "Hello, {name}!" for each greeting in a source file')
+        .description('generates JSON output from an Airfield model')
         .action(generateAction);
 
     program.parse(process.argv);
