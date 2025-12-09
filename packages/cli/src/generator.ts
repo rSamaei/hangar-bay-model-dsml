@@ -1,5 +1,6 @@
 import type { Model } from '../../language/out/generated/ast.js';
 import { createAirfieldServices } from '../../language/out/airfield-module.js';
+import { simulate } from '../../simulator/out/engine.js';
 import { extractAstNode } from './util.js';
 import { NodeFileSystem } from 'langium/node';
 import * as fs from 'node:fs';
@@ -31,11 +32,34 @@ export async function generateAction(fileName: string, opts: { destination?: str
         process.exit(1);
     }
 
-    const generatedFilePath = generateJson(model, fileName, opts.destination);
-    console.log(chalk.green(`JSON generated successfully: ${generatedFilePath}`));
+    // Run simulation
+    console.log(chalk.blue('\nRunning simulation...'));
+    const simResult = simulate(model);
+    
+    if (simResult.conflicts.length > 0) {
+        console.error(chalk.red(`\nFound ${simResult.conflicts.length} conflict(s):`));
+        for (const conflict of simResult.conflicts) {
+            const aircraft = conflict.induction.aircraft?.ref?.name ?? 'unknown';
+            console.error(chalk.red(
+                `  Time ${conflict.time}: ${aircraft} in ${conflict.hangarName} ` +
+                `bays ${conflict.fromBay}..${conflict.toBay} - Bay already occupied`
+            ));
+        }
+    } else {
+        console.log(chalk.green('\n✓ No conflicts detected'));
+    }
+
+    // Print occupancy stats
+    console.log(chalk.blue('\nMax bay occupancy per hangar:'));
+    for (const [hangarName, maxOccupancy] of simResult.maxOccupancyPerHangar.entries()) {
+        console.log(chalk.cyan(`  ${hangarName}: ${maxOccupancy} bays`));
+    }
+
+    const generatedFilePath = generateJson(model, simResult, fileName, opts.destination);
+    console.log(chalk.green(`\nJSON generated successfully: ${generatedFilePath}`));
 }
 
-function generateJson(model: Model, filePath: string, destination: string | undefined): string {
+function generateJson(model: Model, simResult: any, filePath: string, destination: string | undefined): string {
     const data = extractDestinationAndName(filePath, destination);
     const generatedFilePath = `${path.join(data.destination, data.name)}.json`;
 
@@ -59,9 +83,24 @@ function generateJson(model: Model, filePath: string, destination: string | unde
             hangarName: ind.hangar?.ref?.name ?? 'unknown',
             fromBay: ind.fromBay,
             toBay: ind.toBay,
+            start: ind.start,
+            duration: ind.duration,
             bayCount: ind.toBay - ind.fromBay + 1,
             totalWidth: (ind.toBay - ind.fromBay + 1) * (ind.hangar?.ref?.bayWidth ?? 0)
-        }))
+        })),
+        simulation: {
+            valid: simResult.conflicts.length === 0,
+            conflictCount: simResult.conflicts.length,
+            conflicts: simResult.conflicts.map((c: any) => ({
+                time: c.time,
+                hangarName: c.hangarName,
+                fromBay: c.fromBay,
+                toBay: c.toBay,
+                aircraft: c.induction.aircraft?.ref?.name ?? 'unknown'
+            })),
+            maxOccupancy: Object.fromEntries(simResult.maxOccupancyPerHangar),
+            timeline: simResult.timeline
+        }
     };
 
     if (!fs.existsSync(data.destination)) {

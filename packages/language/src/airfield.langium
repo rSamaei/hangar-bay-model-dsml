@@ -26,10 +26,14 @@ Induction:
     'induct' aircraft=[AircraftType:ID]
       'into' hangar=[Hangar:ID]
       'bays' fromBay=INT '..' toBay=INT
+      'at' start=INT          // time slot
+      'for' duration=INT      // number of slots
       ';';
 
 // tokens
 hidden terminal WS: /\s+/;
+hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;
+hidden terminal SL_COMMENT: /\/\/[^\n\r]*/;
 terminal FLOAT returns number: /[0-9]+\.[0-9]+/;
 terminal INT returns number: /[0-9]+/;
 terminal ID: /[_a-zA-Z][\w_]*/;

@@ -1,0 +1,13 @@
+{
+  "name": "airfield-simulator",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "out/engine.js",
+  "scripts": {
+    "build": "tsc -b tsconfig.json",
+    "clean": "shx rm -fr out *.tsbuildinfo"
+  },
+  "devDependencies": {
+    "typescript": "~5.7.2"
+  }
+}

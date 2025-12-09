@@ -1,0 +1,159 @@
+{
+  "airfieldName": "KCL_MRO",
+  "aircraftTypes": [
+    {
+      "name": "A320",
+      "wingspan": 35.8,
+      "length": 37.6,
+      "height": 11.8
+    },
+    {
+      "name": "B737",
+      "wingspan": 34.3,
+      "length": 39.5,
+      "height": 12.5
+    },
+    {
+      "name": "Cessna172",
+      "wingspan": 11,
+      "length": 8.3,
+      "height": 2.7
+    }
+  ],
+  "hangars": [
+    {
+      "name": "NorthBay",
+      "bays": 10,
+      "bayWidth": 4,
+      "bayDepth": 30,
+      "height": 15
+    }
+  ],
+  "inductions": [
+    {
+      "aircraftName": "A320",
+      "hangarName": "NorthBay",
+      "fromBay": 1,
+      "toBay": 10,
+      "start": 0,
+      "duration": 5,
+      "bayCount": 10,
+      "totalWidth": 40
+    },
+    {
+      "aircraftName": "B737",
+      "hangarName": "NorthBay",
+      "fromBay": 1,
+      "toBay": 9,
+      "start": 6,
+      "duration": 3,
+      "bayCount": 9,
+      "totalWidth": 36
+    },
+    {
+      "aircraftName": "Cessna172",
+      "hangarName": "NorthBay",
+      "fromBay": 8,
+      "toBay": 10,
+      "start": 10,
+      "duration": 2,
+      "bayCount": 3,
+      "totalWidth": 12
+    }
+  ],
+  "simulation": {
+    "valid": true,
+    "conflictCount": 0,
+    "conflicts": [],
+    "maxOccupancy": {
+      "NorthBay": 10
+    },
+    "timeline": [
+      {
+        "time": 5,
+        "occupied": {
+          "NorthBay": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        }
+      },
+      {
+        "time": 6,
+        "occupied": {
+          "NorthBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      },
+      {
+        "time": 9,
+        "occupied": {
+          "NorthBay": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false
+          ]
+        }
+      },
+      {
+        "time": 10,
+        "occupied": {
+          "NorthBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      },
+      {
+        "time": 12,
+        "occupied": {
+          "NorthBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            true,
+            true
+          ]
+        }
+      }
+    ]
+  }
+}

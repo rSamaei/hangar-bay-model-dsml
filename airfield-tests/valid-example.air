@@ -1,0 +1,40 @@
+airfield KCL_MRO {
+  // Aircraft definitions
+  aircraft A320 {
+    wingspan 35.8m
+    length   37.6m
+    height   11.8m
+  }
+
+  aircraft B737 {
+    wingspan 34.3m
+    length   39.5m
+    height   12.5m
+  }
+
+  aircraft Cessna172 {
+    wingspan 11.0m
+    length   8.3m
+    height   2.7m
+  }
+
+  // Hangar with 10 bays, each 4m wide
+  hangar NorthBay {
+    bays     10
+    bayWidth 4.0m
+    bayDepth 30.0m
+    height   15.0m
+  }
+
+  // A320 needs 35.8m wingspan
+  // Using 10 bays = 10 * 4.0m = 40.0m ✓ (fits!)
+  induct A320 into NorthBay bays 1..10 at 0 for 5;
+
+  // B737 needs 34.3m wingspan
+  // Using 9 bays = 9 * 4.0m = 36.0m ✓ (fits!)
+  induct B737 into NorthBay bays 1..9 at 6 for 3;
+
+  // Cessna172 needs 11.0m wingspan
+  // Using 3 bays = 3 * 4.0m = 12.0m ✓ (fits!)
+  induct Cessna172 into NorthBay bays 8..10 at 10 for 2;
+}

@@ -12,5 +12,7 @@ airfield KCL_MRO {
     height   15.0m
   }
 
-  induct A320 into NorthBay bays 2..5;
+  induct A320 into NorthBay bays 2..5 at 0 for 5;
+
+  induct A320 into NorthBay bays 6..9 at 3 for 4;
 }
