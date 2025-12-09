@@ -1,0 +1,16 @@
+{
+    "projectName": "Airfield",
+    "languages": [
+        {
+            "id": "airfield",
+            "grammar": "src/airfield.langium",
+            "fileExtensions": [
+                "air"
+            ],
+            "textMate": {
+                "out": "syntaxes/airfield.tmLanguage.json"
+            }
+        }
+    ],
+    "out": "src/generated"
+}
