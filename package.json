@@ -27,6 +27,7 @@
         "packages/language",
         "packages/cli",
         "packages/extension",
-        "packages/simulator"
+        "packages/simulator",
+        "packages/web"
     ]
 }
