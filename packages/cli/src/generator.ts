@@ -1,6 +1,7 @@
 import type { Model } from '../../language/out/generated/ast.js';
 import { createAirfieldServices } from '../../language/out/airfield-module.js';
 import { simulate } from '../../simulator/out/engine.js';
+import { AutoScheduler } from '../../simulator/out/scheduler.js';
 import { extractAstNode } from './util.js';
 import { NodeFileSystem } from 'langium/node';
 import * as fs from 'node:fs';
@@ -32,6 +33,38 @@ export async function generateAction(fileName: string, opts: { destination?: str
         process.exit(1);
     }
 
+    let scheduleResult = null;
+    
+    // Run auto-scheduler
+    if (model.autoInductions.length > 0) {
+        console.log(chalk.blue('\nRunning auto-scheduler...'));
+        const scheduler = new AutoScheduler();
+        scheduleResult = scheduler.schedule(model);
+        
+        if (scheduleResult.scheduled.length > 0) {
+            console.log(chalk.green(`\n✓ Successfully scheduled ${scheduleResult.scheduled.length} aircraft:`));
+            for (const sched of scheduleResult.scheduled) {
+                console.log(chalk.cyan(
+                    `  ${sched.aircraft.name} → ${sched.hangar.name} ` +
+                    `bays ${sched.fromBay}..${sched.toBay} at t=${sched.start} for ${sched.duration}`
+                ));
+            }
+        }
+        
+        if (scheduleResult.unscheduled.length > 0) {
+            console.log(chalk.yellow(`\n⚠ Could not schedule ${scheduleResult.unscheduled.length} aircraft:`));
+            for (const unsched of scheduleResult.unscheduled) {
+                const aircraft = unsched.aircraft?.ref;
+                const aircraftName = aircraft?.name ?? 'unknown';
+                const wingspan = aircraft?.wingspan ?? 0;
+                console.log(chalk.yellow(
+                    `  ${aircraftName} (wingspan: ${wingspan}m, duration: ${unsched.duration}) - ` +
+                    `No suitable hangar/time slot found`
+                ));
+            }
+        }
+    }
+
     // Run simulation
     console.log(chalk.blue('\nRunning simulation...'));
     const simResult = simulate(model);
@@ -55,11 +88,11 @@ export async function generateAction(fileName: string, opts: { destination?: str
         console.log(chalk.cyan(`  ${hangarName}: ${maxOccupancy} bays`));
     }
 
-    const generatedFilePath = generateJson(model, simResult, fileName, opts.destination);
+    const generatedFilePath = generateJson(model, simResult, scheduleResult, fileName, opts.destination);
     console.log(chalk.green(`\nJSON generated successfully: ${generatedFilePath}`));
 }
 
-function generateJson(model: Model, simResult: any, filePath: string, destination: string | undefined): string {
+function generateJson(model: Model, simResult: any, scheduleResult: any, filePath: string, destination: string | undefined): string {
     const data = extractDestinationAndName(filePath, destination);
     const generatedFilePath = `${path.join(data.destination, data.name)}.json`;
 
@@ -78,7 +111,7 @@ function generateJson(model: Model, simResult: any, filePath: string, destinatio
             bayDepth: h.bayDepth,
             height: h.height
         })),
-        inductions: model.inductions.map(ind => ({
+        manualInductions: model.inductions.map(ind => ({
             aircraftName: ind.aircraft?.ref?.name ?? 'unknown',
             hangarName: ind.hangar?.ref?.name ?? 'unknown',
             fromBay: ind.fromBay,
@@ -88,6 +121,22 @@ function generateJson(model: Model, simResult: any, filePath: string, destinatio
             bayCount: ind.toBay - ind.fromBay + 1,
             totalWidth: (ind.toBay - ind.fromBay + 1) * (ind.hangar?.ref?.bayWidth ?? 0)
         })),
+        autoScheduling: scheduleResult ? {
+            requested: model.autoInductions.length,
+            scheduled: scheduleResult.scheduled.map((s: any) => ({
+                aircraftName: s.aircraft.name,
+                hangarName: s.hangar.name,
+                fromBay: s.fromBay,
+                toBay: s.toBay,
+                start: s.start,
+                duration: s.duration
+            })),
+            unscheduled: scheduleResult.unscheduled.map((u: any) => ({
+                aircraftName: u.aircraft?.ref?.name ?? 'unknown',
+                duration: u.duration,
+                wingspan: u.aircraft?.ref?.wingspan
+            }))
+        } : null,
         simulation: {
             valid: simResult.conflicts.length === 0,
             conflictCount: simResult.conflicts.length,

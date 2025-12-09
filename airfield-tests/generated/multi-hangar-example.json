@@ -1,0 +1,690 @@
+{
+  "airfieldName": "KCL_MRO",
+  "aircraftTypes": [
+    {
+      "name": "A380",
+      "wingspan": 79.8,
+      "length": 72.7,
+      "height": 24.1
+    },
+    {
+      "name": "B777",
+      "wingspan": 64.8,
+      "length": 73.9,
+      "height": 18.5
+    },
+    {
+      "name": "A350",
+      "wingspan": 64.8,
+      "length": 66.8,
+      "height": 17.1
+    },
+    {
+      "name": "A320",
+      "wingspan": 35.8,
+      "length": 37.6,
+      "height": 11.8
+    },
+    {
+      "name": "B737",
+      "wingspan": 34.3,
+      "length": 39.5,
+      "height": 12.5
+    },
+    {
+      "name": "A220",
+      "wingspan": 35.1,
+      "length": 38.7,
+      "height": 11.5
+    },
+    {
+      "name": "ATR72",
+      "wingspan": 27,
+      "length": 27.2,
+      "height": 7.6
+    },
+    {
+      "name": "Embraer190",
+      "wingspan": 28.7,
+      "length": 36.2,
+      "height": 10.6
+    },
+    {
+      "name": "Cessna172",
+      "wingspan": 11,
+      "length": 8.3,
+      "height": 2.7
+    },
+    {
+      "name": "Citation",
+      "wingspan": 16.3,
+      "length": 14.4,
+      "height": 4.6
+    }
+  ],
+  "hangars": [
+    {
+      "name": "WidebodyBay",
+      "bays": 20,
+      "bayWidth": 5,
+      "bayDepth": 80,
+      "height": 30
+    },
+    {
+      "name": "NarrowbodyBay",
+      "bays": 15,
+      "bayWidth": 4,
+      "bayDepth": 50,
+      "height": 15
+    },
+    {
+      "name": "RegionalBay",
+      "bays": 12,
+      "bayWidth": 3,
+      "bayDepth": 40,
+      "height": 12
+    },
+    {
+      "name": "GeneralAviationBay",
+      "bays": 8,
+      "bayWidth": 2.5,
+      "bayDepth": 15,
+      "height": 8
+    }
+  ],
+  "manualInductions": [
+    {
+      "aircraftName": "A380",
+      "hangarName": "WidebodyBay",
+      "fromBay": 1,
+      "toBay": 16,
+      "start": 0,
+      "duration": 10,
+      "bayCount": 16,
+      "totalWidth": 80
+    },
+    {
+      "aircraftName": "B777",
+      "hangarName": "WidebodyBay",
+      "fromBay": 1,
+      "toBay": 13,
+      "start": 15,
+      "duration": 8,
+      "bayCount": 13,
+      "totalWidth": 65
+    },
+    {
+      "aircraftName": "A320",
+      "hangarName": "NarrowbodyBay",
+      "fromBay": 1,
+      "toBay": 9,
+      "start": 0,
+      "duration": 6,
+      "bayCount": 9,
+      "totalWidth": 36
+    },
+    {
+      "aircraftName": "B737",
+      "hangarName": "NarrowbodyBay",
+      "fromBay": 1,
+      "toBay": 9,
+      "start": 7,
+      "duration": 7,
+      "bayCount": 9,
+      "totalWidth": 36
+    }
+  ],
+  "autoScheduling": {
+    "requested": 16,
+    "scheduled": [
+      {
+        "aircraftName": "A350",
+        "hangarName": "WidebodyBay",
+        "fromBay": 1,
+        "toBay": 13,
+        "start": 23,
+        "duration": 12
+      },
+      {
+        "aircraftName": "B777",
+        "hangarName": "WidebodyBay",
+        "fromBay": 1,
+        "toBay": 13,
+        "start": 35,
+        "duration": 8
+      },
+      {
+        "aircraftName": "A320",
+        "hangarName": "WidebodyBay",
+        "fromBay": 1,
+        "toBay": 8,
+        "start": 10,
+        "duration": 5
+      },
+      {
+        "aircraftName": "A220",
+        "hangarName": "WidebodyBay",
+        "fromBay": 1,
+        "toBay": 8,
+        "start": 43,
+        "duration": 6
+      },
+      {
+        "aircraftName": "B737",
+        "hangarName": "WidebodyBay",
+        "fromBay": 9,
+        "toBay": 15,
+        "start": 10,
+        "duration": 4
+      },
+      {
+        "aircraftName": "A320",
+        "hangarName": "WidebodyBay",
+        "fromBay": 9,
+        "toBay": 16,
+        "start": 43,
+        "duration": 7
+      },
+      {
+        "aircraftName": "B737",
+        "hangarName": "WidebodyBay",
+        "fromBay": 14,
+        "toBay": 20,
+        "start": 14,
+        "duration": 5
+      },
+      {
+        "aircraftName": "ATR72",
+        "hangarName": "RegionalBay",
+        "fromBay": 1,
+        "toBay": 9,
+        "start": 0,
+        "duration": 3
+      },
+      {
+        "aircraftName": "Embraer190",
+        "hangarName": "RegionalBay",
+        "fromBay": 1,
+        "toBay": 10,
+        "start": 3,
+        "duration": 4
+      },
+      {
+        "aircraftName": "ATR72",
+        "hangarName": "WidebodyBay",
+        "fromBay": 14,
+        "toBay": 19,
+        "start": 19,
+        "duration": 5
+      },
+      {
+        "aircraftName": "Cessna172",
+        "hangarName": "GeneralAviationBay",
+        "fromBay": 1,
+        "toBay": 5,
+        "start": 0,
+        "duration": 2
+      },
+      {
+        "aircraftName": "Citation",
+        "hangarName": "GeneralAviationBay",
+        "fromBay": 1,
+        "toBay": 7,
+        "start": 2,
+        "duration": 3
+      },
+      {
+        "aircraftName": "Cessna172",
+        "hangarName": "WidebodyBay",
+        "fromBay": 17,
+        "toBay": 19,
+        "start": 0,
+        "duration": 2
+      },
+      {
+        "aircraftName": "Citation",
+        "hangarName": "WidebodyBay",
+        "fromBay": 17,
+        "toBay": 20,
+        "start": 2,
+        "duration": 4
+      },
+      {
+        "aircraftName": "A380",
+        "hangarName": "WidebodyBay",
+        "fromBay": 1,
+        "toBay": 16,
+        "start": 50,
+        "duration": 15
+      },
+      {
+        "aircraftName": "A350",
+        "hangarName": "WidebodyBay",
+        "fromBay": 1,
+        "toBay": 13,
+        "start": 65,
+        "duration": 20
+      }
+    ],
+    "unscheduled": []
+  },
+  "simulation": {
+    "valid": true,
+    "conflictCount": 0,
+    "conflicts": [],
+    "maxOccupancy": {
+      "WidebodyBay": 16,
+      "NarrowbodyBay": 9
+    },
+    "timeline": [
+      {
+        "time": 6,
+        "occupied": {
+          "WidebodyBay": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false
+          ],
+          "NarrowbodyBay": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "RegionalBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "GeneralAviationBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      },
+      {
+        "time": 7,
+        "occupied": {
+          "WidebodyBay": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false
+          ],
+          "NarrowbodyBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "RegionalBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "GeneralAviationBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      },
+      {
+        "time": 10,
+        "occupied": {
+          "WidebodyBay": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false
+          ],
+          "NarrowbodyBay": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "RegionalBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "GeneralAviationBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      },
+      {
+        "time": 14,
+        "occupied": {
+          "WidebodyBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "NarrowbodyBay": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "RegionalBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "GeneralAviationBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      },
+      {
+        "time": 15,
+        "occupied": {
+          "WidebodyBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "NarrowbodyBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "RegionalBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "GeneralAviationBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      },
+      {
+        "time": 23,
+        "occupied": {
+          "WidebodyBay": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "NarrowbodyBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "RegionalBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "GeneralAviationBay": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      }
+    ]
+  }
+}

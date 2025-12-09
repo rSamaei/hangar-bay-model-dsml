@@ -1,0 +1,45 @@
+airfield KCL_MRO {
+  // Large commercial aircraft
+  aircraft A380 {
+    wingspan 79.8m
+    length   72.7m
+    height   24.1m
+  }
+
+  aircraft A320 {
+    wingspan 35.8m
+    length   37.6m
+    height   11.8m
+  }
+
+  aircraft B737 {
+    wingspan 34.3m
+    length   39.5m
+    height   12.5m
+  }
+
+  aircraft Cessna172 {
+    wingspan 11.0m
+    length   8.3m
+    height   2.7m
+  }
+
+  // Small hangar - only 10 bays of 4m each = 40m total width
+  hangar NorthBay {
+    bays     10
+    bayWidth 4.0m
+    bayDepth 80.0m
+    height   25.0m
+  }
+
+  // Manual induction - A320 uses all 10 bays for 8 time slots
+  induct A320 into NorthBay bays 1..10 at 0 for 8;
+
+  // Try to auto-schedule these - some should succeed, some fail
+  auto-induct B737 for 5;        // Should succeed after t=8
+  auto-induct Cessna172 for 3;   // Should succeed (small plane)
+  auto-induct A380 for 6;        // Should FAIL - too wide (needs 20 bays, only 10 available)
+  auto-induct A320 for 10;       // Might succeed if space found
+  auto-induct B737 for 4;        // Might succeed
+  auto-induct A380 for 3;        // Should FAIL - too wide
+}

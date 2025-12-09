@@ -4,7 +4,8 @@ entry Model:
     'airfield' name=ID '{'
         (aircraftTypes+=AircraftType
         | hangars+=Hangar
-        | inductions+=Induction)*
+        | inductions+=Induction
+        | autoInductions+=AutoInduction)*
     '}';
 
 AircraftType:
@@ -28,6 +29,12 @@ Induction:
       'bays' fromBay=INT '..' toBay=INT
       'at' start=INT          // time slot
       'for' duration=INT      // number of slots
+      ';';
+
+AutoInduction:
+    'auto-induct' aircraft=[AircraftType:ID]
+      'for' duration=INT
+      ('prefer' preferredHangar=[Hangar:ID])?
       ';';
 
 // tokens

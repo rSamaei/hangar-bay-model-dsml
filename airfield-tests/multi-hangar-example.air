@@ -1,0 +1,143 @@
+airfield KCL_MRO {
+  // === Aircraft Fleet ===
+  
+  // Wide-body aircraft
+  aircraft A380 {
+    wingspan 79.8m
+    length   72.7m
+    height   24.1m
+  }
+
+  aircraft B777 {
+    wingspan 64.8m
+    length   73.9m
+    height   18.5m
+  }
+
+  aircraft A350 {
+    wingspan 64.8m
+    length   66.8m
+    height   17.1m
+  }
+
+  // Narrow-body aircraft
+  aircraft A320 {
+    wingspan 35.8m
+    length   37.6m
+    height   11.8m
+  }
+
+  aircraft B737 {
+    wingspan 34.3m
+    length   39.5m
+    height   12.5m
+  }
+
+  aircraft A220 {
+    wingspan 35.1m
+    length   38.7m
+    height   11.5m
+  }
+
+  // Regional aircraft
+  aircraft ATR72 {
+    wingspan 27.0m
+    length   27.2m
+    height   7.6m
+  }
+
+  aircraft Embraer190 {
+    wingspan 28.7m
+    length   36.2m
+    height   10.6m
+  }
+
+  // General aviation
+  aircraft Cessna172 {
+    wingspan 11.0m
+    length   8.3m
+    height   2.7m
+  }
+
+  aircraft Citation {
+    wingspan 16.3m
+    length   14.4m
+    height   4.6m
+  }
+
+  // === Hangar Facilities ===
+  
+  // Large hangar for wide-body aircraft
+  hangar WidebodyBay {
+    bays     20
+    bayWidth 5.0m
+    bayDepth 80.0m
+    height   30.0m
+  }
+
+  // Medium hangar for narrow-body
+  hangar NarrowbodyBay {
+    bays     15
+    bayWidth 4.0m
+    bayDepth 50.0m
+    height   15.0m
+  }
+
+  // Small hangar for regional/GA
+  hangar RegionalBay {
+    bays     12
+    bayWidth 3.0m
+    bayDepth 40.0m
+    height   12.0m
+  }
+
+  // Compact hangar for general aviation
+  hangar GeneralAviationBay {
+    bays     8
+    bayWidth 2.5m
+    bayDepth 15.0m
+    height   8.0m
+  }
+
+  // === Manual Inductions (High Priority) ===
+  
+  // A380: 79.8m wingspan / 5.0m per bay = 16 bays needed
+  induct A380 into WidebodyBay bays 1..16 at 0 for 10;
+  
+  // B777: 64.8m wingspan / 5.0m per bay = 13 bays needed
+  induct B777 into WidebodyBay bays 1..13 at 15 for 8;
+  
+  // A320: 35.8m wingspan / 4.0m per bay = 9 bays needed
+  induct A320 into NarrowbodyBay bays 1..9 at 0 for 6;
+  
+  // B737: 34.3m wingspan / 4.0m per bay = 9 bays needed
+  induct B737 into NarrowbodyBay bays 1..9 at 7 for 7;
+
+  // === Auto-Scheduled Inductions ===
+  
+  // More wide-body requests
+  auto-induct A350 for 12 prefer WidebodyBay;
+  auto-induct B777 for 8 prefer WidebodyBay;
+  
+  // Narrow-body queue
+  auto-induct A320 for 5;
+  auto-induct A220 for 6;
+  auto-induct B737 for 4;
+  auto-induct A320 for 7;
+  auto-induct B737 for 5;
+  
+  // Regional aircraft
+  auto-induct ATR72 for 3 prefer RegionalBay;
+  auto-induct Embraer190 for 4 prefer RegionalBay;
+  auto-induct ATR72 for 5;
+  
+  // General aviation
+  auto-induct Cessna172 for 2 prefer GeneralAviationBay;
+  auto-induct Citation for 3 prefer GeneralAviationBay;
+  auto-induct Cessna172 for 2;
+  auto-induct Citation for 4;
+  
+  // Edge cases - these might not fit
+  auto-induct A380 for 15;  // Needs 16 bays - might conflict with existing
+  auto-induct A350 for 20;  // Very long duration
+}

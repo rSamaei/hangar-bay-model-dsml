@@ -1,0 +1,126 @@
+{
+  "airfieldName": "KCL_MRO",
+  "aircraftTypes": [
+    {
+      "name": "A380",
+      "wingspan": 79.8,
+      "length": 72.7,
+      "height": 24.1
+    },
+    {
+      "name": "A320",
+      "wingspan": 35.8,
+      "length": 37.6,
+      "height": 11.8
+    },
+    {
+      "name": "B737",
+      "wingspan": 34.3,
+      "length": 39.5,
+      "height": 12.5
+    },
+    {
+      "name": "Cessna172",
+      "wingspan": 11,
+      "length": 8.3,
+      "height": 2.7
+    }
+  ],
+  "hangars": [
+    {
+      "name": "NorthBay",
+      "bays": 10,
+      "bayWidth": 4,
+      "bayDepth": 80,
+      "height": 25
+    }
+  ],
+  "manualInductions": [
+    {
+      "aircraftName": "A320",
+      "hangarName": "NorthBay",
+      "fromBay": 1,
+      "toBay": 10,
+      "start": 0,
+      "duration": 8,
+      "bayCount": 10,
+      "totalWidth": 40
+    }
+  ],
+  "autoScheduling": {
+    "requested": 6,
+    "scheduled": [
+      {
+        "aircraftName": "B737",
+        "hangarName": "NorthBay",
+        "fromBay": 1,
+        "toBay": 9,
+        "start": 8,
+        "duration": 5
+      },
+      {
+        "aircraftName": "Cessna172",
+        "hangarName": "NorthBay",
+        "fromBay": 1,
+        "toBay": 3,
+        "start": 13,
+        "duration": 3
+      },
+      {
+        "aircraftName": "A320",
+        "hangarName": "NorthBay",
+        "fromBay": 1,
+        "toBay": 9,
+        "start": 16,
+        "duration": 10
+      },
+      {
+        "aircraftName": "B737",
+        "hangarName": "NorthBay",
+        "fromBay": 1,
+        "toBay": 9,
+        "start": 26,
+        "duration": 4
+      }
+    ],
+    "unscheduled": [
+      {
+        "aircraftName": "A380",
+        "duration": 6,
+        "wingspan": 79.8
+      },
+      {
+        "aircraftName": "A380",
+        "duration": 3,
+        "wingspan": 79.8
+      }
+    ]
+  },
+  "simulation": {
+    "valid": true,
+    "conflictCount": 0,
+    "conflicts": [],
+    "maxOccupancy": {
+      "NorthBay": 10
+    },
+    "timeline": [
+      {
+        "time": 8,
+        "occupied": {
+          "NorthBay": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        }
+      }
+    ]
+  }
+}

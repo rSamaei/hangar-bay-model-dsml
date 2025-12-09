@@ -1,0 +1,24 @@
+airfield KCL_MRO {
+  aircraft A320 {
+    wingspan 35.8m
+    length   37.6m
+    height   11.8m
+  }
+
+  aircraft B737 {
+    wingspan 34.3m
+    length   39.5m
+    height   12.5m
+  }
+
+  hangar NorthBay {
+    bays     10
+    bayWidth 4.0m
+    bayDepth 30.0m
+    height   15.0m
+  }
+
+  // Just specify what and for how long - system figures out where & when!
+  auto-induct A320 for 5;
+  auto-induct B737 for 3 prefer NorthBay;
+}
