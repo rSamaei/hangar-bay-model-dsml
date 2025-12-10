@@ -1,4 +1,4 @@
-import './style.css';
+import '../frontend/style.css';
 
 const app = document.getElementById('app');
 
