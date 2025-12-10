@@ -1,0 +1,3 @@
+{
+  "defaultModel": "airfield KCL_MRO {\n  aircraft A320 {\n    wingspan 35.8m\n    length   37.6m\n    height   11.8m\n  }\n\n  hangar NorthBay {\n    bays     10\n    bayWidth 4.0m\n    bayDepth 30.0m\n    height   15.0m\n  }\n\n  auto-induct A320 for 5;\n}"
+}
