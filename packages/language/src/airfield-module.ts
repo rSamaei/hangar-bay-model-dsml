@@ -1,7 +1,21 @@
 import { type Module, inject } from 'langium';
-import { createDefaultModule, createDefaultSharedModule, type DefaultSharedModuleContext, type LangiumServices, type LangiumSharedServices, type PartialLangiumServices } from 'langium/lsp';
+import { 
+    createDefaultModule, 
+    createDefaultSharedModule, 
+    type DefaultSharedModuleContext, 
+    type LangiumServices, 
+    type LangiumSharedServices, 
+    type PartialLangiumServices
+} from 'langium/lsp';
+import { 
+    ReferenceInfo, 
+    Scope,
+    DefaultScopeProvider,
+    AstUtils
+} from 'langium';
 import { AirfieldGeneratedModule, AirfieldGeneratedSharedModule } from './generated/module.js';
 import { AirfieldValidator, registerValidationChecks } from './airfield-validator.js';
+import { isModel, isAccessPath, isInduction } from './generated/ast.js';
 
 /**
  * Declaration of custom services - add your own service classes here.
@@ -26,6 +40,9 @@ export type AirfieldServices = LangiumServices & AirfieldAddedServices
 export const AirfieldModule: Module<AirfieldServices, PartialLangiumServices & AirfieldAddedServices> = {
     validation: {
         AirfieldValidator: () => new AirfieldValidator()
+    },
+    references: {
+        ScopeProvider: (services) => new AirfieldScopeProvider(services)
     }
 };
 
@@ -65,4 +82,90 @@ export function createAirfieldServices(context: DefaultSharedModuleContext): {
         shared.workspace.ConfigurationProvider.initialized({});
     }
     return { shared, Airfield };
+}
+
+class AirfieldScopeProvider extends DefaultScopeProvider {
+    override getScope(context: ReferenceInfo): Scope {
+        const model = AstUtils.getContainerOfType(context.container, isModel);
+        if (!model) {
+            return super.getScope(context);
+        }
+
+        // Scoping for HangarBay references in Induction.bays
+        // Provide all bays from the referenced hangar (if available), otherwise all bays
+        if (context.property === 'bays') {
+            const induction = context.container;
+            if (isInduction(induction) && induction.hangar?.ref) {
+                const hangar = induction.hangar.ref;
+                const baysInHangar = hangar.grid.bays;
+                const descriptions = baysInHangar.map(bay => 
+                    this.descriptions.createDescription(bay, bay.name)
+                );
+                return this.createScope(descriptions);
+            }
+            
+            // Fallback: all bays from all hangars
+            const allBays = model.hangars.flatMap(h => h.grid.bays);
+            const descriptions = allBays.map(bay => 
+                this.descriptions.createDescription(bay, bay.name)
+            );
+            return this.createScope(descriptions);
+        }
+
+        // Scoping for HangarDoor references in Induction.door
+        // Provide only doors from the referenced hangar
+        if (context.property === 'door') {
+            const induction = context.container;
+            if (isInduction(induction) && induction.hangar?.ref) {
+                const hangar = induction.hangar.ref;
+                const descriptions = hangar.doors.map(door => 
+                    this.descriptions.createDescription(door, door.name)
+                );
+                return this.createScope(descriptions);
+            }
+            
+            // Fallback: all doors from all hangars
+            const allDoors = model.hangars.flatMap(h => h.doors);
+            const descriptions = allDoors.map(door => 
+                this.descriptions.createDescription(door, door.name)
+            );
+            return this.createScope(descriptions);
+        }
+
+        // Scoping for AccessNode references in HangarDoor.accessNode and HangarBay.accessNode
+        // Provide all access nodes from all access paths
+        if (context.property === 'accessNode') {
+            const allNodes = model.accessPaths.flatMap(ap => ap.nodes);
+            const descriptions = allNodes.map(node => 
+                this.descriptions.createDescription(node, node.name)
+            );
+            return this.createScope(descriptions);
+        }
+
+        // Scoping for AccessNode references in AccessLink (from/to)
+        // Provide nodes from the same AccessPath
+        if (context.property === 'from' || context.property === 'to') {
+            const accessPath = AstUtils.getContainerOfType(context.container, isAccessPath);
+            if (accessPath) {
+                const descriptions = accessPath.nodes.map(node => 
+                    this.descriptions.createDescription(node, node.name)
+                );
+                return this.createScope(descriptions);
+            }
+        }
+
+        // Scoping for precedingInductions in AutoInduction
+        // Allow references to both Induction and AutoInduction
+        if (context.property === 'precedingInductions') {
+            const allInductions = [...model.inductions, ...model.autoInductions];
+            const descriptions = allInductions
+                .filter(ind => ind.id) // Only allow references to inductions with explicit IDs
+                .map(ind =>
+                    this.descriptions.createDescription(ind, ind.id!)
+                );
+            return this.createScope(descriptions);
+        }
+
+        return super.getScope(context);
+    }
 }
