@@ -1,13 +1,17 @@
 {
-  "name": "airfield-simulator",
-  "version": "0.0.1",
+  "name": "@airfield/simulator",
+  "version": "1.0.0",
   "type": "module",
-  "main": "out/engine.js",
-  "scripts": {
-    "build": "tsc -b tsconfig.json",
-    "clean": "shx rm -fr out *.tsbuildinfo"
+  "main": "./out/index.js",
+  "types": "./out/index.d.ts",
+  "exports": {
+    ".": "./out/index.js",
+    "./analysis": "./out/analysis.js",
+    "./scheduler": "./out/scheduler.js",
+    "./builders/*": "./out/builders/*.js",
+    "./types/*": "./out/types/*.js"
   },
-  "devDependencies": {
-    "typescript": "~5.7.2"
+  "scripts": {
+    "build": "tsc"
   }
 }

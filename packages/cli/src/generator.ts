@@ -1,22 +1,20 @@
 import type { Model } from '../../language/out/generated/ast.js';
 import { createAirfieldServices } from '../../language/out/airfield-module.js';
-import { simulate } from '../../simulator/out/engine.js';
+import { analyzeAndSchedule } from '../../simulator/out/engine.js';
 import { AutoScheduler } from '../../simulator/out/scheduler.js';
 import { extractAstNode } from './util.js';
 import { NodeFileSystem } from 'langium/node';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import chalk from 'chalk';
-import { URI } from 'langium';
 
 export async function generateAction(fileName: string, opts: { destination?: string }): Promise<void> {
     const services = createAirfieldServices(NodeFileSystem).Airfield;
     
     const model = await extractAstNode<Model>(fileName, services);
     
-    // Get document for validation errors
-    const uri = URI.file(path.resolve(fileName));
-    const document = services.shared.workspace.LangiumDocuments.getDocument(uri);
+    // Get document from the model's $document property
+    const document = model.$document;
     
     if (!document) {
         console.error(chalk.red(`Could not load document: ${fileName}`));
@@ -44,9 +42,11 @@ export async function generateAction(fileName: string, opts: { destination?: str
         if (scheduleResult.scheduled.length > 0) {
             console.log(chalk.green(`\n✓ Successfully scheduled ${scheduleResult.scheduled.length} aircraft:`));
             for (const sched of scheduleResult.scheduled) {
+                const schedAny = sched as any;
+                const bayNames = schedAny.bays?.map((b: any) => b.name).join(', ') || 'N/A';
                 console.log(chalk.cyan(
-                    `  ${sched.aircraft.name} → ${sched.hangar.name} ` +
-                    `bays ${sched.fromBay}..${sched.toBay} at t=${sched.start} for ${sched.duration}`
+                    `  ${schedAny.aircraft.name} → ${schedAny.hangar.name} ` +
+                    `bays [${bayNames}] from ${schedAny.start} to ${schedAny.end || schedAny.endTime}`
                 ));
             }
         }
@@ -65,34 +65,32 @@ export async function generateAction(fileName: string, opts: { destination?: str
         }
     }
 
-    // Run simulation
-    console.log(chalk.blue('\nRunning simulation...'));
-    const simResult = simulate(model);
-    
-    if (simResult.conflicts.length > 0) {
-        console.error(chalk.red(`\nFound ${simResult.conflicts.length} conflict(s):`));
-        for (const conflict of simResult.conflicts) {
-            const aircraft = conflict.induction.aircraft?.ref?.name ?? 'unknown';
+    // Run analysis (validation + export model generation)
+    console.log(chalk.blue('\nRunning analysis...'));
+    const analysisResult = analyzeAndSchedule(model);
+
+    if (analysisResult.report.summary.totalViolations > 0) {
+        console.error(chalk.red(`\nFound ${analysisResult.report.summary.totalViolations} violation(s):`));
+        for (const violation of analysisResult.report.violations) {
             console.error(chalk.red(
-                `  Time ${conflict.time}: ${aircraft} in ${conflict.hangarName} ` +
-                `bays ${conflict.fromBay}..${conflict.toBay} - Bay already occupied`
+                `  [${violation.ruleId}] ${violation.message}`
             ));
         }
     } else {
-        console.log(chalk.green('\n✓ No conflicts detected'));
+        console.log(chalk.green('\n✓ No violations detected'));
     }
 
-    // Print occupancy stats
-    console.log(chalk.blue('\nMax bay occupancy per hangar:'));
-    for (const [hangarName, maxOccupancy] of simResult.maxOccupancyPerHangar.entries()) {
-        console.log(chalk.cyan(`  ${hangarName}: ${maxOccupancy} bays`));
+    // Print conflict summary
+    const conflicts = analysisResult.exportModel.inductions.filter(i => i.conflicts.length > 0);
+    if (conflicts.length > 0) {
+        console.log(chalk.yellow(`\n⚠ ${conflicts.length} induction(s) have conflicts`));
     }
 
-    const generatedFilePath = generateJson(model, simResult, scheduleResult, fileName, opts.destination);
+    const generatedFilePath = generateJson(model, analysisResult, scheduleResult, fileName, opts.destination);
     console.log(chalk.green(`\nJSON generated successfully: ${generatedFilePath}`));
 }
 
-function generateJson(model: Model, simResult: any, scheduleResult: any, filePath: string, destination: string | undefined): string {
+function generateJson(model: Model, analysisResult: any, scheduleResult: any, filePath: string, destination: string | undefined): string {
     const data = extractDestinationAndName(filePath, destination);
     const generatedFilePath = `${path.join(data.destination, data.name)}.json`;
 
@@ -102,34 +100,38 @@ function generateJson(model: Model, simResult: any, scheduleResult: any, filePat
             name: ac.name,
             wingspan: ac.wingspan,
             length: ac.length,
-            height: ac.height
+            height: ac.height,
+            tailHeight: ac.tailHeight
         })),
         hangars: model.hangars.map(h => ({
             name: h.name,
-            bays: h.bays,
-            bayWidth: h.bayWidth,
-            bayDepth: h.bayDepth,
-            height: h.height
+            doors: h.doors.map(d => ({
+                name: d.name,
+                width: d.width,
+                height: d.height
+            })),
+            bays: h.grid.bays.map(bay => ({
+                name: bay.name,
+                width: bay.width,
+                depth: bay.depth,
+                height: bay.height,
+                adjacent: bay.adjacent.map(a => a.ref?.name ?? 'unknown')
+            }))
         })),
         manualInductions: model.inductions.map(ind => ({
             aircraftName: ind.aircraft?.ref?.name ?? 'unknown',
-            hangarName: ind.hangar?.ref?.name ?? 'unknown',
-            fromBay: ind.fromBay,
-            toBay: ind.toBay,
+            bays: ind.bays.map(b => b.ref?.name ?? 'unknown'),
             start: ind.start,
-            duration: ind.duration,
-            bayCount: ind.toBay - ind.fromBay + 1,
-            totalWidth: (ind.toBay - ind.fromBay + 1) * (ind.hangar?.ref?.bayWidth ?? 0)
+            end: ind.end
         })),
         autoScheduling: scheduleResult ? {
             requested: model.autoInductions.length,
             scheduled: scheduleResult.scheduled.map((s: any) => ({
-                aircraftName: s.aircraft.name,
-                hangarName: s.hangar.name,
-                fromBay: s.fromBay,
-                toBay: s.toBay,
+                aircraftName: s.aircraft,
+                hangarName: s.hangar,
+                bays: s.bays || [],
                 start: s.start,
-                duration: s.duration
+                end: s.end
             })),
             unscheduled: scheduleResult.unscheduled.map((u: any) => ({
                 aircraftName: u.aircraft?.ref?.name ?? 'unknown',
@@ -137,18 +139,11 @@ function generateJson(model: Model, simResult: any, scheduleResult: any, filePat
                 wingspan: u.aircraft?.ref?.wingspan
             }))
         } : null,
-        simulation: {
-            valid: simResult.conflicts.length === 0,
-            conflictCount: simResult.conflicts.length,
-            conflicts: simResult.conflicts.map((c: any) => ({
-                time: c.time,
-                hangarName: c.hangarName,
-                fromBay: c.fromBay,
-                toBay: c.toBay,
-                aircraft: c.induction.aircraft?.ref?.name ?? 'unknown'
-            })),
-            maxOccupancy: Object.fromEntries(simResult.maxOccupancyPerHangar),
-            timeline: simResult.timeline
+        analysis: {
+            valid: analysisResult.report.summary.totalViolations === 0,
+            violationCount: analysisResult.report.summary.totalViolations,
+            violations: analysisResult.report.violations,
+            exportModel: analysisResult.exportModel
         }
     };
 

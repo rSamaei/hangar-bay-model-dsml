@@ -42,6 +42,6 @@ describe('Linking tests', () => {
 
         expect(document.parseResult.value.inductions).toHaveLength(1);
         expect(document.parseResult.value.inductions[0].aircraft.ref?.name).toBe('Cessna172');
-        expect(document.parseResult.value.inductions[0].hangar.ref?.name).toBe('MainHangar');
+        expect(document.parseResult.value.inductions[0].bays[0].ref?.name).toBe('B1');
     });
 });
