@@ -1,22 +1,28 @@
 import { Router } from 'express';
-import { readFileSync } from 'fs';
+import * as fs from 'fs';
+import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const router = Router();
 
-router.get('/example-model', (_req, res) => {
-  try {
-    const data = readFileSync(resolve(__dirname, '../data/examples.json'), 'utf-8');
-    const parsed = JSON.parse(data);
-    return res.json({ code: parsed.defaultModel ?? '' });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Unable to load example model' });
-  }
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+router.get('/example', (req, res) => {
+    try {
+        const examplesPath = path.join(__dirname, '../data/examples.json');
+        const examplesData = fs.readFileSync(examplesPath, 'utf-8');
+        const examples = JSON.parse(examplesData);
+        
+        if (examples.examples && examples.examples.length > 0) {
+            res.json(examples.examples[0]);
+        } else {
+            res.status(404).json({ error: 'No examples found' });
+        }
+    } catch (error) {
+        console.error('Error loading example:', error);
+        res.status(500).json({ error: 'Failed to load example model' });
+    }
 });
 
 export default router;

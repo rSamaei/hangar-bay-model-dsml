@@ -1,36 +1,38 @@
 import { Router } from 'express';
-import { parseCode } from '../services/document-parser.js';
-import { serializeModel } from '../serializers/model-serializer.js';
+import { parseDocument } from '../services/document-parser.js';
+import { transformToDomainModel } from '../services/model-transformer.js';
 
-export const parseRouter = Router();
+const router = Router();
 
-interface ParseRequestBody {
-  code: string;
-}
-
-parseRouter.post('/parse', async (req: any, res: any) => {
+router.post('/parse', async (req, res) => {
   try {
-    const { code } = req.body as ParseRequestBody;
+    const { dslCode } = req.body;
     
-    const { model, document } = await parseCode(code);
-    
-    const diagnostics = (document.diagnostics || []).map(d => ({
-      severity: d.severity,
-      message: d.message,
-      line: d.range.start.line + 1
-    }));
-    
+    if (!dslCode) {
+      return res.status(400).json({ error: 'Missing dslCode' });
+    }
+
+    const parseResult = await parseDocument(dslCode);
+
+    if (!parseResult.model || parseResult.hasParseErrors) {
+      return res.status(400).json({
+        error: 'Failed to parse DSL',
+        parseErrors: parseResult.parseErrors
+      });
+    }
+
     res.json({
-      success: true,
-      model: serializeModel(model),
-      diagnostics
+      model: transformToDomainModel(parseResult.model),
+      errors: parseResult.parseErrors,
+      validationDiagnostics: parseResult.validationDiagnostics
     });
-    
   } catch (error) {
     console.error('Parse error:', error);
     res.status(500).json({ 
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
     });
   }
 });
+
+export default router;

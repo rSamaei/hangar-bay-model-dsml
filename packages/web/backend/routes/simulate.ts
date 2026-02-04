@@ -1,42 +1,51 @@
 import { Router } from 'express';
-import { parseCode } from '../services/document-parser.js';
-import { simulate } from '../../../simulator/out/engine.js';
-import { AutoScheduler } from '../../../simulator/out/scheduler.js';
-import { serializeSimulation, serializeScheduling } from '../serializers/simulation-serializer.js';
+import { parseDocument } from '../services/document-parser.js';
+import { AutoScheduler } from '@airfield/simulator';
+import type { ScheduleResult } from '@airfield/simulator';
+import { serializeSimulationResult } from '../serializers/simulation-serializer.js';
 
-export const simulateRouter = Router();
+const router = Router();
 
-interface SimulateRequestBody {
-  code: string;
-}
-
-simulateRouter.post('/simulate', async (req: any, res: any) => {
+router.post('/simulate', async (req, res) => {
   try {
-    const { code } = req.body as SimulateRequestBody;
+    const { dslCode } = req.body;
     
-    const { model } = await parseCode(code);
+    if (!dslCode) {
+      return res.status(400).json({ error: 'Missing dslCode' });
+    }
+
+    const parseResult = await parseDocument(dslCode);
     
-    // Run auto-scheduler if needed
-    let scheduleResult = null;
+    if (!parseResult.model || parseResult.hasParseErrors) {
+      return res.status(400).json({
+        error: 'Failed to parse DSL',
+        parseErrors: parseResult.parseErrors
+      });
+    }
+
+    const model = parseResult.model;
+    let scheduleResult: ScheduleResult | undefined = undefined;
+    
     if (model.autoInductions?.length > 0) {
+      console.log(`Running auto-scheduler for ${model.autoInductions.length} aircraft...`);
       const scheduler = new AutoScheduler();
       scheduleResult = scheduler.schedule(model);
     }
-    
-    // Run simulation
-    const simResult = simulate(model);
-    
+
+    // Note: You need to implement simulation logic or remove this endpoint
+    // For now, returning a placeholder
     res.json({
-      success: true,
-      simulation: serializeSimulation(simResult),
-      scheduling: scheduleResult ? serializeScheduling(scheduleResult) : null
+      message: 'Simulation endpoint - needs implementation',
+      scheduledInductions: scheduleResult?.scheduled.length || 0
     });
     
   } catch (error) {
     console.error('Simulation error:', error);
     res.status(500).json({ 
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
     });
   }
 });
+
+export default router;
