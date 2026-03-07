@@ -5,7 +5,7 @@ entry Model:
         (aircraftTypes+=AircraftType
         | clearanceEnvelopes+=ClearanceEnvelope
         | hangars+=Hangar
-        | accessPaths+=AccessPath              // NEW: access connectivity
+        | accessPaths+=AccessPath
         | inductions+=Induction
         | autoInductions+=AutoInduction)*
     '}';
@@ -48,13 +48,13 @@ HangarDoor:
     'door' name=ID '{'
         'width'  width=FLOAT 'm'
         'height' height=FLOAT 'm'
-        // NEW: optional access node hook for path connectivity
         ('accessNode' accessNode=[AccessNode:ID])?
     '}';
 
 BayGrid:
     'baygrid' '{'
         ('rows' rows=INT 'cols' cols=INT)?
+        ('adjacency' adjacency=INT)?              // 4-connected (default) or 8-connected
         bays+=HangarBay+
     '}';
 
@@ -65,13 +65,12 @@ HangarBay:
         'depth'  depth=FLOAT 'm'
         'height' height=FLOAT 'm'
         ('adjacent' '{' adjacent+=[HangarBay:ID]+ '}')?
-        
-        // NEW: optional access node for path connectivity
+        (traversable?='traversable')?
         ('accessNode' accessNode=[AccessNode:ID])?
     '}';
 
 // ---------------------------------------------------------------------------
-// NEW: Access connectivity and reachability modeling
+// Access connectivity and reachability modeling
 // ---------------------------------------------------------------------------
 
 AccessPath:
@@ -100,21 +99,26 @@ AccessLinkType returns string:
 // ---------------------------------------------------------------------------
 
 Induction:
-    'induct' 
-        ('id' id=STRING)?                   // NEW: explicit identity for reporting
+    'induct'
+        ('id' id=STRING)?
         aircraft=[AircraftType:ID]
         'into' hangar=[Hangar:ID]
         'bays' bays+=[HangarBay:ID]+
         ('via' door=[HangarDoor:ID])?
         ('clearance' clearance=[ClearanceEnvelope:ID])?
+        ('span' span=SpanDirection)?        // optional span axis (lateral | longitudinal)
+        ('requires' requires=INT 'bays')?   // optional declared minimum bay count
         'from' start=DATETIME
         'to'   end=DATETIME
-        
-        // NEW: optional metadata for reporting and traceability
+
         (metadata=InductionMetadata)?
     ';';
 
-// NEW: Metadata block for validation reporting and export
+// 2.1: Span direction for multi-bay inductions
+SpanDirection returns string:
+    'lateral' | 'longitudinal';
+
+// Metadata block for validation reporting and export
 InductionMetadata:
     'meta' '{'
         (tags+=Tag)*                         // extensible key-value pairs
@@ -124,18 +128,18 @@ Tag:
     key=ID ':' value=STRING;
 
 AutoInduction:
-    'auto-induct' 
-        ('id' id=STRING)?                   // NEW: explicit identity
+    'auto-induct'
+        ('id' id=STRING)?
         aircraft=[AircraftType:ID]
         'duration' duration=INT 'minutes'
         ('prefer' preferredHangar=[Hangar:ID])?
         ('clearance' clearance=[ClearanceEnvelope:ID])?
-        
-        // NEW: forward-compatible scheduling hooks (OPTIONAL, future-facing)
+        ('requires' requires=INT 'bays')?   // optional declared minimum bay count
+
         ('after' precedingInductions+=[Induction:ID]+)?    // simple precedence
         ('notBefore' notBefore=DATETIME)?                  // time window constraint
         ('notAfter' notAfter=DATETIME)?
-        
+
         (metadata=InductionMetadata)?
     ';';
 
