@@ -1,4 +1,4 @@
-import type { Model, HangarBay } from '../../../language/out/generated/ast.js';
+import type { Model, Induction, HangarBay, Hangar, AircraftType, ClearanceEnvelope, AutoInduction } from '../../../language/out/generated/ast.js';
 import type {
     ExportModel,
     ExportedInduction,
@@ -7,212 +7,234 @@ import type {
 } from '../types/export.js';
 import type { ScheduleResult } from '../scheduler.js';
 import type { InductionInfo } from '../types/conflict.js';
+import type { ScheduledInduction } from '../types/simulation.js';
 import { calculateEffectiveDimensions } from '../geometry/dimensions.js';
 import { calculateBaysRequired } from '../geometry/bays-required.js';
 import { buildAdjacencyGraph } from '../geometry/adjacency.js';
 import { checkContiguity } from '../rules/contiguity.js';
 import { detectConflicts } from '../rules/time-overlap.js';
 
-/**
- * Build deterministic export model from parsed model and optional schedule result
- */
-export function buildExportModel(
-    model: Model,
-    scheduleResult?: ScheduleResult
-): ExportModel {
-    // Determine adjacency mode for each hangar
-    const adjacencyModeByHangar: Record<string, 'explicit' | 'derived'> = {};
+// ---------------------------------------------------------------------------
+// Public entry point
+// ---------------------------------------------------------------------------
+
+export function buildExportModel(model: Model, scheduleResult?: ScheduleResult): ExportModel {
+    const adjacencyModeByHangar = buildAdjacencyModeMap(model);
+
+    const inductionInfos: InductionInfo[] = [];
+    const manualInductions = exportManualInductions(model, inductionInfos);
+    const autoSchedule = scheduleResult
+        ? exportAutoSchedule(scheduleResult, model, inductionInfos)
+        : undefined;
+
+    const allInductions = [...manualInductions, ...(autoSchedule?.scheduled ?? [])];
+    annotateConflicts(allInductions, inductionInfos);
+    sortExportModel(allInductions, autoSchedule);
+
+    return {
+        airfieldName: model.name,
+        inductions: allInductions,
+        autoSchedule,
+        derived: { adjacencyModeByHangar }
+    };
+}
+
+// ---------------------------------------------------------------------------
+// Adjacency mode map
+// ---------------------------------------------------------------------------
+
+function buildAdjacencyModeMap(model: Model): Record<string, 'explicit' | 'derived'> {
+    const map: Record<string, 'explicit' | 'derived'> = {};
     for (const hangar of model.hangars) {
         const { metadata } = buildAdjacencyGraph(hangar);
-        adjacencyModeByHangar[hangar.name] = metadata.gridDerived ? 'derived' : 'explicit';
+        map[hangar.name] = metadata.gridDerived ? 'derived' : 'explicit';
     }
-    
-    // Convert manual inductions
-    const manualInductions: ExportedInduction[] = [];
-    const inductionInfos: InductionInfo[] = [];
-    
+    return map;
+}
+
+// ---------------------------------------------------------------------------
+// Manual inductions
+// ---------------------------------------------------------------------------
+
+function exportManualInductions(model: Model, inductionInfos: InductionInfo[]): ExportedInduction[] {
+    const exported: ExportedInduction[] = [];
     for (const induction of model.inductions) {
         const aircraft = induction.aircraft.ref;
         const hangar = induction.hangar.ref;
-        const bays = induction.bays.map(b => b.ref).filter((b): b is HangarBay => b !== undefined);
-        const clearance = induction.clearance?.ref;
-        
         if (!aircraft || !hangar) continue;
-        
-        const effectiveDims = calculateEffectiveDimensions(aircraft, clearance);
-        const baysRequiredInfo = calculateBaysRequired(effectiveDims, hangar);
-        const { adjacency } = buildAdjacencyGraph(hangar);
-        const contiguityCheck = checkContiguity(bays.map(b => b.name), adjacency);
-        
-        const derived: DerivedInductionProperties = {
-            wingspanEff: effectiveDims.wingspan,
-            lengthEff: effectiveDims.length,
-            tailEff: effectiveDims.tailHeight,
-            baysRequired: baysRequiredInfo.baysRequired,
-            connected: contiguityCheck.ok
-        };
-        
-        const exported: ExportedInduction = {
-            id: induction.id ?? `${aircraft.name}_${induction.start}`,
-            kind: 'manual',
-            aircraft: aircraft.name,
-            hangar: hangar.name,
-            door: induction.door?.ref?.name,
-            bays: bays.map(b => b.name),
-            start: induction.start,
-            end: induction.end,
-            derived,
-            conflicts: []
-        };
-        
-        manualInductions.push(exported);
-        inductionInfos.push({
-            id: exported.id,
-            aircraft: aircraft.name,
-            hangar: hangar.name,
-            bays: bays.map(b => b.name),
-            start: new Date(induction.start),
-            end: new Date(induction.end)
-        });
+
+        const bays = induction.bays.map(b => b.ref).filter((b): b is HangarBay => b !== undefined);
+        const result = exportInduction(induction, aircraft, hangar, bays, induction.clearance?.ref);
+        exported.push(result.exported);
+        inductionInfos.push(result.info);
     }
-    
-    // Process auto-schedule if provided
-    let autoSchedule: ExportModel['autoSchedule'] | undefined;
-    
-    if (scheduleResult) {
-        const scheduledAutos: ExportedInduction[] = [];
-        
-        for (const scheduled of scheduleResult.scheduled) {
-            const autoInd = model.autoInductions.find(a => a.id === scheduled.id);
-            if (!autoInd) continue;
-            
-            const aircraft = autoInd.aircraft.ref;
-            const hangar = model.hangars.find(h => h.name === scheduled.hangar);
-            const clearance = autoInd.clearance?.ref;
-            
-            if (!aircraft || !hangar) continue;
-            
-            const effectiveDims = calculateEffectiveDimensions(aircraft, clearance);
-            const baysRequiredInfo = calculateBaysRequired(effectiveDims, hangar);
-            const { adjacency } = buildAdjacencyGraph(hangar);
-            const contiguityCheck = checkContiguity(scheduled.bays, adjacency);
-            
-            const derived: DerivedInductionProperties = {
-                wingspanEff: effectiveDims.wingspan,
-                lengthEff: effectiveDims.length,
-                tailEff: effectiveDims.tailHeight,
-                baysRequired: baysRequiredInfo.baysRequired,
-                connected: contiguityCheck.ok
-            };
-            
-            const exported: ExportedInduction = {
-                id: scheduled.id ?? `${scheduled.aircraft}_${scheduled.start}`,
-                kind: 'auto',
-                aircraft: scheduled.aircraft,
-                hangar: scheduled.hangar,
-                door: scheduled.door,
-                bays: scheduled.bays,
-                start: scheduled.start,
-                end: scheduled.end,
-                derived,
-                conflicts: []
-            };
-            
-            scheduledAutos.push(exported);
-            inductionInfos.push({
-                id: exported.id,
-                aircraft: scheduled.aircraft,
-                hangar: scheduled.hangar,
-                bays: scheduled.bays,
-                start: new Date(scheduled.start),
-                end: new Date(scheduled.end)
-            });
-        }
-        
-        // Process unscheduled autos
-        const unscheduledAutos: ExportedUnscheduledAuto[] = scheduleResult.unscheduled.map(autoInd => {
-            const rejections = scheduleResult.rejectionReasons.get(autoInd.id ?? 'unknown') ?? [];
-            
-            // Find the most specific rejection reason
-            let reasonRuleId = 'SCHEDULING_FAILED';
-            let evidence: Record<string, any> = { message: 'No suitable hangar/bay/time slot found' };
-            
-            // Look for specific rule violations
-            for (const rejection of rejections) {
-                if (rejection.ruleId) {
-                    reasonRuleId = rejection.ruleId;
-                    evidence = rejection.evidence ?? rejection;
-                    break;
-                }
-            }
-            
-            return {
-                id: autoInd.id ?? `auto_${autoInd.aircraft.ref?.name ?? 'unknown'}`,
-                aircraft: autoInd.aircraft.ref?.name ?? 'unknown',
-                preferredHangar: autoInd.preferredHangar?.ref?.name,
-                reasonRuleId,
-                evidence
-            };
-        });
-        
-        autoSchedule = {
-            scheduled: scheduledAutos,
-            unscheduled: unscheduledAutos
-        };
+    return exported;
+}
+
+function exportInduction(
+    induction: Induction,
+    aircraft: AircraftType,
+    hangar: Hangar,
+    bays: HangarBay[],
+    clearance: ClearanceEnvelope | undefined
+): { exported: ExportedInduction; info: InductionInfo } {
+    const id = induction.id ?? `${aircraft.name}_${induction.start}`;
+    const exported: ExportedInduction = {
+        id,
+        kind: 'manual',
+        aircraft: aircraft.name,
+        hangar: hangar.name,
+        door: induction.door?.ref?.name,
+        bays: bays.map(b => b.name),
+        start: induction.start,
+        end: induction.end,
+        derived: computeDerived(aircraft, hangar, clearance, bays.map(b => b.name)),
+        conflicts: []
+    };
+    const info: InductionInfo = {
+        id,
+        aircraft: aircraft.name,
+        hangar: hangar.name,
+        bays: bays.map(b => b.name),
+        start: new Date(induction.start),
+        end: new Date(induction.end)
+    };
+    return { exported, info };
+}
+
+// ---------------------------------------------------------------------------
+// Auto schedule
+// ---------------------------------------------------------------------------
+
+function exportAutoSchedule(
+    scheduleResult: ScheduleResult,
+    model: Model,
+    inductionInfos: InductionInfo[]
+): ExportModel['autoSchedule'] {
+    const scheduled: ExportedInduction[] = [];
+
+    for (const s of scheduleResult.scheduled) {
+        const autoInd = model.autoInductions.find(a => a.id === s.id);
+        const hangar = model.hangars.find(h => h.name === s.hangar);
+        if (!autoInd || !hangar || !autoInd.aircraft.ref) continue;
+
+        const result = exportScheduledAuto(s, autoInd, hangar);
+        scheduled.push(result.exported);
+        inductionInfos.push(result.info);
     }
-    
-    // Combine all inductions for conflict detection
-    const allExportedInductions = [
-        ...manualInductions,
-        ...(autoSchedule?.scheduled ?? [])
-    ];
-    
-    // Detect conflicts and populate conflict lists (SFR16)
-    const conflicts = detectConflicts(inductionInfos);
+
+    const unscheduled = scheduleResult.unscheduled.map(auto =>
+        exportUnscheduledAuto(auto, scheduleResult)
+    );
+
+    return { scheduled, unscheduled };
+}
+
+function exportScheduledAuto(
+    s: ScheduledInduction,
+    autoInd: AutoInduction,
+    hangar: Hangar
+): { exported: ExportedInduction; info: InductionInfo } {
+    const id = s.id ?? `${s.aircraft}_${s.start}`;
+    const exported: ExportedInduction = {
+        id,
+        kind: 'auto',
+        aircraft: s.aircraft,
+        hangar: s.hangar,
+        door: s.door,
+        bays: s.bays,
+        start: s.start,
+        end: s.end,
+        derived: computeDerived(autoInd.aircraft.ref!, hangar, autoInd.clearance?.ref, s.bays),
+        conflicts: []
+    };
+    const info: InductionInfo = {
+        id,
+        aircraft: s.aircraft,
+        hangar: s.hangar,
+        bays: s.bays,
+        start: new Date(s.start),
+        end: new Date(s.end)
+    };
+    return { exported, info };
+}
+
+function exportUnscheduledAuto(auto: AutoInduction, scheduleResult: ScheduleResult): ExportedUnscheduledAuto {
+    const autoId = auto.id ?? `auto_${auto.aircraft.ref?.name ?? 'unknown'}`;
+    const rejections = scheduleResult.rejectionReasons.get(autoId) ?? [];
+    const first = rejections[0];
+    return {
+        id: autoId,
+        aircraft: auto.aircraft.ref?.name ?? 'unknown',
+        preferredHangar: auto.preferredHangar?.ref?.name,
+        reasonRuleId: first?.ruleId ?? 'SCHEDULING_FAILED',
+        evidence: first?.evidence ?? { message: 'No suitable hangar/bay/time slot found' }
+    };
+}
+
+// ---------------------------------------------------------------------------
+// Derived properties (shared by manual & auto)
+// ---------------------------------------------------------------------------
+
+function computeDerived(
+    aircraft: AircraftType,
+    hangar: Hangar,
+    clearance: ClearanceEnvelope | undefined,
+    bayNames: string[]
+): DerivedInductionProperties {
+    const effectiveDims = calculateEffectiveDimensions(aircraft, clearance);
+    const baysRequiredInfo = calculateBaysRequired(effectiveDims, hangar);
+    const { adjacency } = buildAdjacencyGraph(hangar);
+    const contiguityCheck = checkContiguity(bayNames, adjacency);
+    return {
+        wingspanEff: effectiveDims.wingspan,
+        lengthEff: effectiveDims.length,
+        tailEff: effectiveDims.tailHeight,
+        baysRequired: baysRequiredInfo.baysRequired,
+        connected: contiguityCheck.ok
+    };
+}
+
+// ---------------------------------------------------------------------------
+// Conflict annotation
+// ---------------------------------------------------------------------------
+
+function annotateConflicts(inductions: ExportedInduction[], infos: InductionInfo[]): void {
     const conflictMap = new Map<string, string[]>();
-    
-    for (const conflict of conflicts) {
-        const id1 = conflict.induction1.id ?? conflict.induction1.aircraft;
-        const id2 = conflict.induction2.id ?? conflict.induction2.aircraft;
-        
-        if (!conflictMap.has(id1)) conflictMap.set(id1, []);
-        if (!conflictMap.has(id2)) conflictMap.set(id2, []);
-        
-        if (!conflictMap.get(id1)!.includes(id2)) {
-            conflictMap.get(id1)!.push(id2);
-        }
-        if (!conflictMap.get(id2)!.includes(id1)) {
-            conflictMap.get(id2)!.push(id1);
-        }
+
+    for (const c of detectConflicts(infos)) {
+        const id1 = c.induction1.id ?? c.induction1.aircraft;
+        const id2 = c.induction2.id ?? c.induction2.aircraft;
+        addToMap(conflictMap, id1, id2);
+        addToMap(conflictMap, id2, id1);
     }
-    
-    // Assign conflicts to exported inductions
-    for (const induction of allExportedInductions) {
-        induction.conflicts = conflictMap.get(induction.id) ?? [];
-        // Sort conflicts deterministically
-        induction.conflicts.sort();
+
+    for (const ind of inductions) {
+        ind.conflicts = (conflictMap.get(ind.id) ?? []).sort();
     }
-    
-    // Sort all inductions deterministically (by start time, then id)
-    allExportedInductions.sort((a, b) => {
-        if (a.start !== b.start) return a.start.localeCompare(b.start);
-        return a.id.localeCompare(b.id);
-    });
-    
+}
+
+function addToMap(map: Map<string, string[]>, key: string, value: string): void {
+    const list = map.get(key) ?? [];
+    if (!list.includes(value)) list.push(value);
+    map.set(key, list);
+}
+
+// ---------------------------------------------------------------------------
+// Deterministic sorting
+// ---------------------------------------------------------------------------
+
+function sortExportModel(
+    allInductions: ExportedInduction[],
+    autoSchedule: ExportModel['autoSchedule'] | undefined
+): void {
+    const byTime = (a: { start: string; id: string }, b: { start: string; id: string }) =>
+        a.start.localeCompare(b.start) || a.id.localeCompare(b.id);
+
+    allInductions.sort(byTime);
+
     if (autoSchedule) {
-        autoSchedule.scheduled.sort((a, b) => {
-            if (a.start !== b.start) return a.start.localeCompare(b.start);
-            return a.id.localeCompare(b.id);
-        });
+        autoSchedule.scheduled.sort(byTime);
         autoSchedule.unscheduled.sort((a, b) => a.id.localeCompare(b.id));
     }
-    
-    return {
-        airfieldName: model.name,
-        inductions: allExportedInductions,
-        autoSchedule,
-        derived: {
-            adjacencyModeByHangar
-        }
-    };
 }

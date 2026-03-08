@@ -1,18 +1,19 @@
 /**
- * Analysis Contract - Validation Report
- * 
- * This is the canonical machine-readable output for model validation.
- * All violations are deterministically ordered and include structured evidence.
+ * Validation report types — the canonical machine-readable output of model validation.
+ *
+ * All violations are deterministically ordered and carry structured evidence so that
+ * consumers (CLI, web UI, tests) can render or assert specific fields without parsing
+ * message strings.
  */
 
 export type ViolationSeverity = 'error' | 'warning';
 
-export type SubjectType = 
-    | 'Induction' 
-    | 'AutoInduction' 
-    | 'Aircraft' 
-    | 'Hangar' 
-    | 'Bay' 
+export type SubjectType =
+    | 'Induction'
+    | 'AutoInduction'
+    | 'Aircraft'
+    | 'Hangar'
+    | 'Bay'
     | 'Door';
 
 export interface ViolationSubject {
@@ -21,64 +22,38 @@ export interface ViolationSubject {
     id?: string;
 }
 
-/**
- * Base violation structure
- */
 export interface ValidationViolation {
     ruleId: string;
     severity: ViolationSeverity;
     message: string;
     subject: ViolationSubject;
-    evidence: Record<string, any>;
+    evidence: Record<string, unknown>;
 }
 
-/**
- * SFR11: Door fit violation
- */
+/** SFR11: Aircraft cannot pass through a hangar door. */
 export interface DoorFitViolation extends ValidationViolation {
     ruleId: 'SFR11_DOOR_FIT';
     evidence: {
         aircraftName: string;
         doorName: string;
-        rawDimensions: {
-            wingspan: number;
-            tailHeight: number;
-        };
-        effectiveDimensions: {
-            wingspan: number;
-            tailHeight: number;
-        };
-        doorDimensions: {
-            width: number;
-            height: number;
-        };
+        rawDimensions: { wingspan: number; tailHeight: number };
+        effectiveDimensions: { wingspan: number; tailHeight: number };
+        doorDimensions: { width: number; height: number };
         clearanceName?: string;
-        clearanceMargins?: {
-            lateral: number;
-            vertical: number;
-        };
-        violations: {
-            wingspanFits: boolean;
-            heightFits: boolean;
-        };
+        clearanceMargins?: { lateral: number; vertical: number };
+        violations: { wingspanFits: boolean; heightFits: boolean };
         failedConstraints: string[];
     };
 }
 
-/**
- * SFR12: Bay set fit violation
- */
+/** SFR12: Aircraft cannot fit in the assigned bay set. */
 export interface BaySetFitViolation extends ValidationViolation {
     ruleId: 'SFR12_BAY_FIT';
     evidence: {
         aircraftName: string;
         bayNames: string[];
         bayCount: number;
-        effectiveDimensions: {
-            wingspan: number;
-            length: number;
-            tailHeight: number;
-        };
+        effectiveDimensions: { wingspan: number; length: number; tailHeight: number };
         bayMeasurements: {
             sumWidth: number;
             minDepth: number;
@@ -87,18 +62,12 @@ export interface BaySetFitViolation extends ValidationViolation {
             limitingHeightBay: string;
         };
         clearanceName?: string;
-        violations: {
-            widthFits: boolean;
-            depthFits: boolean;
-            heightFits: boolean;
-        };
+        violations: { widthFits: boolean; depthFits: boolean; heightFits: boolean };
         failedConstraints: string[];
     };
 }
 
-/**
- * SFR13: Contiguity violation
- */
+/** SFR13: Assigned bay set is not contiguous (contains disconnected islands). */
 export interface ContiguityViolation extends ValidationViolation {
     ruleId: 'SFR13_CONTIGUITY';
     evidence: {
@@ -113,47 +82,28 @@ export interface ContiguityViolation extends ValidationViolation {
             explicitEdgesUsed: number;
             gridEdgesUsed: number;
         };
-        components?: string[][]; // disconnected components
+        components?: string[][];
     };
 }
 
-/**
- * SFR16: Time overlap violation
- */
+/** SFR16: Two inductions share a bay at overlapping times. */
 export interface TimeOverlapViolation extends ValidationViolation {
     ruleId: 'SFR16_TIME_OVERLAP';
     evidence: {
         induction1: {
-            id?: string;
-            aircraft: string;
-            hangar: string;
-            bays: string[];
-            timeWindow: {
-                start: string;
-                end: string;
-            };
+            id?: string; aircraft: string; hangar: string; bays: string[];
+            timeWindow: { start: string; end: string };
         };
         induction2: {
-            id?: string;
-            aircraft: string;
-            hangar: string;
-            bays: string[];
-            timeWindow: {
-                start: string;
-                end: string;
-            };
+            id?: string; aircraft: string; hangar: string; bays: string[];
+            timeWindow: { start: string; end: string };
         };
-        overlapInterval: {
-            start: string;
-            end: string;
-        };
+        overlapInterval: { start: string; end: string };
         intersectingBays: string[];
     };
 }
 
-/**
- * SCHED_FAILED: Auto-induction could not be scheduled
- */
+/** SCHED_FAILED: An auto-induction could not be placed within the search window. */
 export interface SchedulingFailedViolation extends ValidationViolation {
     ruleId: 'SCHED_FAILED';
     evidence: {
@@ -161,10 +111,7 @@ export interface SchedulingFailedViolation extends ValidationViolation {
         aircraft: string;
         preferredHangar?: string;
         duration: number;
-        timeConstraints?: {
-            notBefore?: string;
-            notAfter?: string;
-        };
+        timeConstraints?: { notBefore?: string; notAfter?: string };
         rejectionReasons: Array<{
             ruleId: string;
             message: string;
@@ -174,66 +121,58 @@ export interface SchedulingFailedViolation extends ValidationViolation {
     };
 }
 
-/**
- * Union type of all specific violations
- */
+/** SFR_DYNAMIC_REACHABILITY: A bay is blocked by a concurrent induction occupying the access path. */
+export interface DynamicReachabilityViolation extends ValidationViolation {
+    ruleId: 'SFR_DYNAMIC_REACHABILITY';
+    evidence: {
+        inductionId?: string;
+        hangarName: string;
+        unreachableBays: string[];
+        blockingBays: Array<{
+            bayName: string;
+            occupiedByInductionId?: string;
+            occupiedByAircraft: string;
+            overlapStart: string;
+            overlapEnd: string;
+        }>;
+        checkedFromDoors: string[];
+    };
+}
+
 export type TypedViolation =
     | DoorFitViolation
     | BaySetFitViolation
     | ContiguityViolation
     | TimeOverlapViolation
     | SchedulingFailedViolation
-    | ValidationViolation; // fallback for other rules
+    | DynamicReachabilityViolation
+    | ValidationViolation; // fallback for rules without a specific type
 
-/**
- * Complete validation report
- */
+/** Complete validation report. */
 export interface ValidationReport {
     violations: TypedViolation[];
     timestamp: string;
     summary: {
         totalViolations: number;
         byRuleId: Record<string, number>;
-        bySeverity: {
-            errors: number;
-            warnings: number;
-        };
+        bySeverity: { errors: number; warnings: number };
     };
 }
 
 /**
- * Deterministic ordering for violations
- * Primary: ruleId (alphabetical)
- * Secondary: subject.type (alphabetical)
- * Tertiary: subject.name (alphabetical)
- * Quaternary: subject.id (alphabetical, if present)
+ * Returns a stable-ordered copy of `violations`.
+ *
+ * Order: ruleId → subject.type → subject.name → subject.id (all ascending).
+ * Violations without an id sort before those with one at the same key prefix.
  */
 export function sortViolations(violations: TypedViolation[]): TypedViolation[] {
     return [...violations].sort((a, b) => {
-        // Primary: ruleId
-        if (a.ruleId !== b.ruleId) {
-            return a.ruleId.localeCompare(b.ruleId);
-        }
-        
-        // Secondary: subject.type
-        if (a.subject.type !== b.subject.type) {
-            return a.subject.type.localeCompare(b.subject.type);
-        }
-        
-        // Tertiary: subject.name
-        if (a.subject.name !== b.subject.name) {
-            return a.subject.name.localeCompare(b.subject.name);
-        }
-        
-        // Quaternary: subject.id (if both present)
-        if (a.subject.id && b.subject.id) {
-            return a.subject.id.localeCompare(b.subject.id);
-        }
-        
-        // If only one has id, prefer that one first
-        if (a.subject.id && !b.subject.id) return -1;
-        if (!a.subject.id && b.subject.id) return 1;
-        
+        if (a.ruleId !== b.ruleId) return a.ruleId.localeCompare(b.ruleId);
+        if (a.subject.type !== b.subject.type) return a.subject.type.localeCompare(b.subject.type);
+        if (a.subject.name !== b.subject.name) return a.subject.name.localeCompare(b.subject.name);
+        if (a.subject.id && b.subject.id) return a.subject.id.localeCompare(b.subject.id);
+        if (a.subject.id) return -1;
+        if (b.subject.id) return 1;
         return 0;
     });
 }

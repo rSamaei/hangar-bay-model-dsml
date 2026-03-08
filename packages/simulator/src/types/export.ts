@@ -1,9 +1,4 @@
-/**
- * Analysis Contract - Export Model
- * 
- * Complete analysis-ready export of the model with all derived properties
- * and conflict information computed.
- */
+/** Output types for the analysis export model (used by the web UI and CLI). */
 
 export interface DerivedInductionProperties {
     wingspanEff: number;
@@ -20,9 +15,12 @@ export interface ExportedInduction {
     hangar: string;
     door?: string;
     bays: string[];
+    /** ISO-8601 start datetime. */
     start: string;
+    /** ISO-8601 end datetime. */
     end: string;
     derived: DerivedInductionProperties;
+    /** IDs of any inductions that conflict with this one (SFR16). */
     conflicts: string[];
 }
 
@@ -31,7 +29,7 @@ export interface ExportedUnscheduledAuto {
     aircraft: string;
     preferredHangar?: string;
     reasonRuleId: string;
-    evidence: Record<string, any>;
+    evidence: Record<string, unknown>;
 }
 
 export interface ExportModel {
@@ -42,6 +40,7 @@ export interface ExportModel {
         unscheduled: ExportedUnscheduledAuto[];
     };
     derived: {
+        /** Whether each hangar's adjacency came from grid coords (`'derived'`) or explicit refs (`'explicit'`). */
         adjacencyModeByHangar: Record<string, 'explicit' | 'derived'>;
     };
 }
