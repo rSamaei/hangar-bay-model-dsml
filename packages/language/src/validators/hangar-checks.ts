@@ -67,9 +67,10 @@ export function checkAdjacencyConsistency(hangar: Hangar, accept: ValidationAcce
 
         const bayRow = bay.row;
         const bayCol = bay.col;
+        const bayHasCoords = bayRow !== undefined && bayCol !== undefined;
 
         const gridNeighborNames = new Set<string>();
-        if (bayRow !== undefined && bayCol !== undefined) {
+        if (bayHasCoords) {
             for (const { dr, dc } of offsets) {
                 const nb = bayByCoord.get(`${bayRow + dr},${bayCol + dc}`);
                 if (nb) gridNeighborNames.add(nb.name);
@@ -82,10 +83,9 @@ export function checkAdjacencyConsistency(hangar: Hangar, accept: ValidationAcce
             if (!nb) continue;
             explicitNeighborNames.add(nb.name);
 
-            if (bayRow !== undefined && bayCol !== undefined &&
-                    nb.row !== undefined && nb.col !== undefined) {
-                const dr = Math.abs(bayRow - nb.row);
-                const dc = Math.abs(bayCol - nb.col);
+            if (bayHasCoords && nb.row !== undefined && nb.col !== undefined) {
+                const dr = Math.abs(bayRow! - nb.row);
+                const dc = Math.abs(bayCol! - nb.col);
                 const isValidNeighbour = is8Connected
                     ? Math.max(dr, dc) === 1
                     : (dr === 1 && dc === 0) || (dr === 0 && dc === 1);

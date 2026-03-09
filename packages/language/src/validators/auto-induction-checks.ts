@@ -2,6 +2,7 @@ import type { ValidationAcceptor } from 'langium';
 import type { AutoInduction } from '../generated/ast.js';
 import { AstUtils } from 'langium';
 import { isAutoInduction, isModel } from '../generated/ast.js';
+import { greedyBaysRequired } from './induction-checks.js';
 
 export function checkAutoPrecedenceCycles(autoInduction: AutoInduction, accept: ValidationAcceptor): void {
     if (!autoInduction.precedingInductions || autoInduction.precedingInductions.length === 0) return;
@@ -75,18 +76,11 @@ export function checkAutoInductionBayCountOverride(autoInduction: AutoInduction,
     const effectiveWingspan = aircraft.wingspan + (clearance?.lateralMargin ?? 0);
     if (effectiveWingspan <= 0) return;
 
-    const sortedWidths = hangar.grid.bays.map(b => b.width).sort((a, b) => b - a);
-    let sum = 0;
-    let count = 0;
-    for (const w of sortedWidths) {
-        sum += w;
-        count++;
-        if (sum >= effectiveWingspan) break;
-    }
-    const baysRequired = count;
+    const { count: baysRequired, used: bayWidthsUsed } = greedyBaysRequired(
+        hangar.grid.bays.map(b => b.width), effectiveWingspan
+    );
 
     if (autoInduction.requires < baysRequired) {
-        const bayWidthsUsed = sortedWidths.slice(0, baysRequired);
         accept('warning',
             `[SFR_BAY_COUNT_OVERRIDE] Aircraft '${aircraft.name}' requires at least ${baysRequired} bays` +
             ` by geometry (widths [${bayWidthsUsed.map(w => w.toFixed(2)).join(', ')}]m cover effective wingspan ${effectiveWingspan.toFixed(2)}m)` +

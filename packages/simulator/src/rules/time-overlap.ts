@@ -43,7 +43,8 @@ export function detectConflicts(inductions: InductionInfo[]): ConflictInfo[] {
 
             if (ind1.hangar !== ind2.hangar) continue;
 
-            const intersectingBays = ind1.bays.filter(b => ind2.bays.includes(b));
+            const bay2Set = new Set(ind2.bays);
+            const intersectingBays = ind1.bays.filter(b => bay2Set.has(b));
             if (intersectingBays.length === 0) continue;
 
             const { overlaps, overlapInterval } = checkTimeOverlap(

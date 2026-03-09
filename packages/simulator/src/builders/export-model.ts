@@ -8,23 +8,57 @@ import type {
 import type { ScheduleResult } from '../scheduler.js';
 import type { InductionInfo } from '../types/conflict.js';
 import type { ScheduledInduction } from '../types/simulation.js';
+import type { EffectiveDimensions } from '../types/dimensions.js';
 import { calculateEffectiveDimensions } from '../geometry/dimensions.js';
 import { calculateBaysRequired } from '../geometry/bays-required.js';
 import { buildAdjacencyGraph } from '../geometry/adjacency.js';
 import { checkContiguity } from '../rules/contiguity.js';
 import { detectConflicts } from '../rules/time-overlap.js';
 
+type AdjacencyResult = ReturnType<typeof buildAdjacencyGraph>;
+
+// ---------------------------------------------------------------------------
+// Per-call cache helpers (scoped via parameter, no module-level state)
+// ---------------------------------------------------------------------------
+
+interface ExportCaches {
+    adjacency: Map<string, AdjacencyResult>;
+    effectiveDims: Map<string, EffectiveDimensions>;
+}
+
+function getCachedAdjacency(caches: ExportCaches, hangar: Hangar): AdjacencyResult {
+    const cached = caches.adjacency.get(hangar.name);
+    if (cached) return cached;
+    const result = buildAdjacencyGraph(hangar);
+    caches.adjacency.set(hangar.name, result);
+    return result;
+}
+
+function getCachedEffectiveDims(caches: ExportCaches, aircraft: AircraftType, clearance: ClearanceEnvelope | undefined): EffectiveDimensions {
+    const key = `${aircraft.name}::${clearance?.name ?? ''}`;
+    const cached = caches.effectiveDims.get(key);
+    if (cached) return cached;
+    const result = calculateEffectiveDimensions(aircraft, clearance);
+    caches.effectiveDims.set(key, result);
+    return result;
+}
+
 // ---------------------------------------------------------------------------
 // Public entry point
 // ---------------------------------------------------------------------------
 
 export function buildExportModel(model: Model, scheduleResult?: ScheduleResult): ExportModel {
-    const adjacencyModeByHangar = buildAdjacencyModeMap(model);
+    const caches: ExportCaches = {
+        adjacency: new Map(),
+        effectiveDims: new Map()
+    };
+
+    const adjacencyModeByHangar = buildAdjacencyModeMap(model, caches);
 
     const inductionInfos: InductionInfo[] = [];
-    const manualInductions = exportManualInductions(model, inductionInfos);
+    const manualInductions = exportManualInductions(model, inductionInfos, caches);
     const autoSchedule = scheduleResult
-        ? exportAutoSchedule(scheduleResult, model, inductionInfos)
+        ? exportAutoSchedule(scheduleResult, model, inductionInfos, caches)
         : undefined;
 
     const allInductions = [...manualInductions, ...(autoSchedule?.scheduled ?? [])];
@@ -43,10 +77,10 @@ export function buildExportModel(model: Model, scheduleResult?: ScheduleResult):
 // Adjacency mode map
 // ---------------------------------------------------------------------------
 
-function buildAdjacencyModeMap(model: Model): Record<string, 'explicit' | 'derived'> {
+function buildAdjacencyModeMap(model: Model, caches: ExportCaches): Record<string, 'explicit' | 'derived'> {
     const map: Record<string, 'explicit' | 'derived'> = {};
     for (const hangar of model.hangars) {
-        const { metadata } = buildAdjacencyGraph(hangar);
+        const { metadata } = getCachedAdjacency(caches, hangar);
         map[hangar.name] = metadata.gridDerived ? 'derived' : 'explicit';
     }
     return map;
@@ -56,7 +90,7 @@ function buildAdjacencyModeMap(model: Model): Record<string, 'explicit' | 'deriv
 // Manual inductions
 // ---------------------------------------------------------------------------
 
-function exportManualInductions(model: Model, inductionInfos: InductionInfo[]): ExportedInduction[] {
+function exportManualInductions(model: Model, inductionInfos: InductionInfo[], caches: ExportCaches): ExportedInduction[] {
     const exported: ExportedInduction[] = [];
     for (const induction of model.inductions) {
         const aircraft = induction.aircraft.ref;
@@ -64,7 +98,7 @@ function exportManualInductions(model: Model, inductionInfos: InductionInfo[]): 
         if (!aircraft || !hangar) continue;
 
         const bays = induction.bays.map(b => b.ref).filter((b): b is HangarBay => b !== undefined);
-        const result = exportInduction(induction, aircraft, hangar, bays, induction.clearance?.ref);
+        const result = exportInduction(induction, aircraft, hangar, bays, induction.clearance?.ref, caches);
         exported.push(result.exported);
         inductionInfos.push(result.info);
     }
@@ -76,7 +110,8 @@ function exportInduction(
     aircraft: AircraftType,
     hangar: Hangar,
     bays: HangarBay[],
-    clearance: ClearanceEnvelope | undefined
+    clearance: ClearanceEnvelope | undefined,
+    caches: ExportCaches
 ): { exported: ExportedInduction; info: InductionInfo } {
     const id = induction.id ?? `${aircraft.name}_${induction.start}`;
     const exported: ExportedInduction = {
@@ -88,7 +123,7 @@ function exportInduction(
         bays: bays.map(b => b.name),
         start: induction.start,
         end: induction.end,
-        derived: computeDerived(aircraft, hangar, clearance, bays.map(b => b.name)),
+        derived: computeDerived(aircraft, hangar, clearance, bays.map(b => b.name), caches),
         conflicts: []
     };
     const info: InductionInfo = {
@@ -109,16 +144,20 @@ function exportInduction(
 function exportAutoSchedule(
     scheduleResult: ScheduleResult,
     model: Model,
-    inductionInfos: InductionInfo[]
+    inductionInfos: InductionInfo[],
+    caches: ExportCaches
 ): ExportModel['autoSchedule'] {
     const scheduled: ExportedInduction[] = [];
 
+    const autoById = new Map(model.autoInductions.filter(a => a.id).map(a => [a.id, a]));
+    const hangarByName = new Map(model.hangars.map(h => [h.name, h]));
+
     for (const s of scheduleResult.scheduled) {
-        const autoInd = model.autoInductions.find(a => a.id === s.id);
-        const hangar = model.hangars.find(h => h.name === s.hangar);
+        const autoInd = autoById.get(s.id);
+        const hangar = hangarByName.get(s.hangar);
         if (!autoInd || !hangar || !autoInd.aircraft.ref) continue;
 
-        const result = exportScheduledAuto(s, autoInd, hangar);
+        const result = exportScheduledAuto(s, autoInd, hangar, caches);
         scheduled.push(result.exported);
         inductionInfos.push(result.info);
     }
@@ -133,7 +172,8 @@ function exportAutoSchedule(
 function exportScheduledAuto(
     s: ScheduledInduction,
     autoInd: AutoInduction,
-    hangar: Hangar
+    hangar: Hangar,
+    caches: ExportCaches
 ): { exported: ExportedInduction; info: InductionInfo } {
     const id = s.id ?? `${s.aircraft}_${s.start}`;
     const exported: ExportedInduction = {
@@ -145,7 +185,7 @@ function exportScheduledAuto(
         bays: s.bays,
         start: s.start,
         end: s.end,
-        derived: computeDerived(autoInd.aircraft.ref!, hangar, autoInd.clearance?.ref, s.bays),
+        derived: computeDerived(autoInd.aircraft.ref!, hangar, autoInd.clearance?.ref, s.bays, caches),
         conflicts: []
     };
     const info: InductionInfo = {
@@ -180,11 +220,12 @@ function computeDerived(
     aircraft: AircraftType,
     hangar: Hangar,
     clearance: ClearanceEnvelope | undefined,
-    bayNames: string[]
+    bayNames: string[],
+    caches: ExportCaches
 ): DerivedInductionProperties {
-    const effectiveDims = calculateEffectiveDimensions(aircraft, clearance);
+    const effectiveDims = getCachedEffectiveDims(caches, aircraft, clearance);
     const baysRequiredInfo = calculateBaysRequired(effectiveDims, hangar);
-    const { adjacency } = buildAdjacencyGraph(hangar);
+    const { adjacency } = getCachedAdjacency(caches, hangar);
     const contiguityCheck = checkContiguity(bayNames, adjacency);
     return {
         wingspanEff: effectiveDims.wingspan,
@@ -200,7 +241,7 @@ function computeDerived(
 // ---------------------------------------------------------------------------
 
 function annotateConflicts(inductions: ExportedInduction[], infos: InductionInfo[]): void {
-    const conflictMap = new Map<string, string[]>();
+    const conflictMap = new Map<string, Set<string>>();
 
     for (const c of detectConflicts(infos)) {
         const id1 = c.induction1.id ?? c.induction1.aircraft;
@@ -210,14 +251,14 @@ function annotateConflicts(inductions: ExportedInduction[], infos: InductionInfo
     }
 
     for (const ind of inductions) {
-        ind.conflicts = (conflictMap.get(ind.id) ?? []).sort();
+        ind.conflicts = [...(conflictMap.get(ind.id) ?? [])].sort();
     }
 }
 
-function addToMap(map: Map<string, string[]>, key: string, value: string): void {
-    const list = map.get(key) ?? [];
-    if (!list.includes(value)) list.push(value);
-    map.set(key, list);
+function addToMap(map: Map<string, Set<string>>, key: string, value: string): void {
+    let set = map.get(key);
+    if (!set) { set = new Set(); map.set(key, set); }
+    set.add(value);
 }
 
 // ---------------------------------------------------------------------------

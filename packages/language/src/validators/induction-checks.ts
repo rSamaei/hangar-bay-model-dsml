@@ -4,6 +4,26 @@ import { AstUtils } from 'langium';
 import { isModel } from '../generated/ast.js';
 import { validateInduction, checkBaySetFit, generateValidationReport as buildValidationReport } from '../feasibility-engine.js';
 
+/**
+ * Greedy estimate of the minimum number of bays needed to cover a target
+ * dimension. Sorts the supplied dimensions descending and sums until the
+ * threshold is met. Returns the count and the dimensions that were summed.
+ */
+export function greedyBaysRequired(
+    dimensions: number[],
+    threshold: number
+): { count: number; used: number[] } {
+    const sorted = dimensions.slice().sort((a, b) => b - a);
+    let sum = 0;
+    let count = 0;
+    for (const d of sorted) {
+        sum += d;
+        count++;
+        if (sum >= threshold) break;
+    }
+    return { count, used: sorted.slice(0, count) };
+}
+
 function getPropertyForRule(ruleId: string): 'aircraft' | 'bays' | 'door' {
     if (ruleId.includes('DOOR')) return 'door';
     if (ruleId.includes('BAY')) return 'bays';
@@ -91,20 +111,24 @@ export function checkBayHangarMembership(induction: Induction, accept: Validatio
 
     const model = AstUtils.getContainerOfType(induction, isModel);
 
+    const hangarBaySet = new Set(hangar.grid.bays);
+
+    // Pre-build a set of bay names from other hangars for unresolved-ref lookups
+    const otherHangarBayNames = model
+        ? new Set(model.hangars.filter(h => h !== hangar).flatMap(h => h.grid.bays.map(b => b.name)))
+        : undefined;
+
     for (const bayRef of induction.bays) {
         if (bayRef.ref) {
-            if (!hangar.grid.bays.includes(bayRef.ref)) {
+            if (!hangarBaySet.has(bayRef.ref)) {
                 accept('error',
                     `[SFR14_BAY_OWNERSHIP] Bay '${bayRef.ref.name}' does not belong to hangar '${hangar.name}'`,
                     { node: induction, property: 'bays' }
                 );
             }
-        } else if (model) {
+        } else if (otherHangarBayNames) {
             const bayName = bayRef.$refText;
-            const existsInOtherHangar = model.hangars.some(
-                h => h !== hangar && h.grid.bays.some(b => b.name === bayName)
-            );
-            if (existsInOtherHangar) {
+            if (otherHangarBayNames.has(bayName)) {
                 accept('error',
                     `[SFR14_BAY_OWNERSHIP] Bay '${bayName}' does not belong to hangar '${hangar.name}'`,
                     { node: induction, property: 'bays' }
@@ -171,16 +195,9 @@ export function checkBayCountSufficiency(induction: Induction, accept: Validatio
         const effectiveLength = aircraft.length + (clearance?.longitudinalMargin ?? 0);
         if (effectiveLength <= 0) return;
 
-        const sortedDepths = hangar.grid.bays.map(b => b.depth).sort((a, b) => b - a);
-        let sum = 0;
-        let count = 0;
-        for (const d of sortedDepths) {
-            sum += d;
-            count++;
-            if (sum >= effectiveLength) break;
-        }
-        const baysRequired = count;
-        const bayDepthsUsed = sortedDepths.slice(0, baysRequired);
+        const { count: baysRequired, used: bayDepthsUsed } = greedyBaysRequired(
+            hangar.grid.bays.map(b => b.depth), effectiveLength
+        );
 
         if (induction.requires !== undefined && induction.requires < baysRequired) {
             accept('warning',
@@ -204,16 +221,9 @@ export function checkBayCountSufficiency(induction: Induction, accept: Validatio
         const effectiveWingspan = aircraft.wingspan + (clearance?.lateralMargin ?? 0);
         if (effectiveWingspan <= 0) return;
 
-        const sortedWidths = hangar.grid.bays.map(b => b.width).sort((a, b) => b - a);
-        let sum = 0;
-        let count = 0;
-        for (const w of sortedWidths) {
-            sum += w;
-            count++;
-            if (sum >= effectiveWingspan) break;
-        }
-        const baysRequired = count;
-        const bayWidthsUsed = sortedWidths.slice(0, baysRequired);
+        const { count: baysRequired, used: bayWidthsUsed } = greedyBaysRequired(
+            hangar.grid.bays.map(b => b.width), effectiveWingspan
+        );
 
         if (induction.requires !== undefined && induction.requires < baysRequired) {
             accept('warning',
@@ -266,12 +276,12 @@ function reportIfDuplicateId(
     ];
     if (allWithSameId.length <= 1) return;
 
-    const sorted = allWithSameId.slice().sort(
+    allWithSameId.sort(
         (a, b) => (a.$cstNode?.range.start.line ?? 0) - (b.$cstNode?.range.start.line ?? 0)
     );
 
-    if (sorted[0] !== thisNode) {
-        const firstLine = (sorted[0].$cstNode?.range.start.line ?? 0) + 1;
+    if (allWithSameId[0] !== thisNode) {
+        const firstLine = (allWithSameId[0].$cstNode?.range.start.line ?? 0) + 1;
         accept('error',
             `[SFR22_DUPLICATE_ID] Duplicate induction ID '${id}' — first defined at line ${firstLine}`,
             { node: thisNode, property: 'id' }

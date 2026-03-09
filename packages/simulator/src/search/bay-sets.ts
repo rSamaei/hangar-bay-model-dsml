@@ -42,35 +42,46 @@ export function findConnectedSetsOfSize(
     const results: HangarBay[][] = [];
     const seen = new Set<string>();
 
-    for (const startBay of allBays) {
-        const queue: { current: HangarBay[]; visited: Set<string> }[] = [
-            { current: [startBay], visited: new Set([startBay.name]) }
-        ];
+    const visited = new Set<string>();
+    const current: HangarBay[] = [];
 
-        while (queue.length > 0) {
-            const { current, visited } = queue.shift()!;
-
-            if (current.length === targetSize) {
-                const signature = current.map(b => b.name).sort().join(',');
-                if (!seen.has(signature)) {
-                    seen.add(signature);
-                    results.push([...current]);
-                }
-                continue;
+    const dfs = () => {
+        if (current.length === targetSize) {
+            const signature = current.map(b => b.name).sort().join(',');
+            if (!seen.has(signature)) {
+                seen.add(signature);
+                results.push([...current]);
             }
+            return;
+        }
 
-            const lastBay = current[current.length - 1];
-            for (const neighborName of adjacency.get(lastBay.name) ?? new Set()) {
-                if (!visited.has(neighborName)) {
-                    const neighborBay = bayByName.get(neighborName);
-                    if (neighborBay) {
-                        const newVisited = new Set(visited);
-                        newVisited.add(neighborName);
-                        queue.push({ current: [...current, neighborBay], visited: newVisited });
-                    }
-                }
+        // Expand from all bays in the current set (not just last) to find all
+        // connected supersets. Using a collected neighbor set avoids duplicates.
+        const neighbors = new Set<string>();
+        for (const bay of current) {
+            for (const n of adjacency.get(bay.name) ?? []) {
+                if (!visited.has(n)) neighbors.add(n);
             }
         }
+
+        for (const neighborName of neighbors) {
+            const neighborBay = bayByName.get(neighborName);
+            if (neighborBay) {
+                visited.add(neighborName);
+                current.push(neighborBay);
+                dfs();
+                current.pop();
+                visited.delete(neighborName);
+            }
+        }
+    };
+
+    for (const startBay of allBays) {
+        visited.clear();
+        visited.add(startBay.name);
+        current.length = 0;
+        current.push(startBay);
+        dfs();
     }
 
     return results;
@@ -132,9 +143,14 @@ export function findSuitableBaySets(
         }
     }
 
+    // Pre-compute signatures to avoid re-sorting bay names on every comparator call
+    const sigMap = new Map<HangarBay[], string>();
+    for (const set of baySets) {
+        sigMap.set(set, set.map(b => b.name).sort().join(','));
+    }
     baySets.sort((a, b) => {
         if (a.length !== b.length) return a.length - b.length;
-        return a.map(b => b.name).sort().join(',').localeCompare(b.map(b => b.name).sort().join(','));
+        return sigMap.get(a)!.localeCompare(sigMap.get(b)!);
     });
 
     return {

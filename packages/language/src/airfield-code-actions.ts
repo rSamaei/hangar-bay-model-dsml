@@ -4,7 +4,8 @@ import type { CodeActionProvider } from 'langium/lsp';
 import type { LangiumDocument, MaybePromise } from 'langium';
 import { AstUtils, CstUtils } from 'langium';
 import { isInduction } from './generated/ast.js';
-import type { Induction, Hangar } from './generated/ast.js';
+import type { Induction } from './generated/ast.js';
+import { buildBayAdjacencyGraph } from './bay-adjacency.js';
 
 /**
  * Provides quick-fix code actions for two rules:
@@ -60,7 +61,7 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
             .filter((n): n is string => n !== undefined);
         if (assigned.length < 2) return [];
 
-        const adjacency = this.buildAdjacencyGraph(hangar);
+        const { adjacency } = buildBayAdjacencyGraph(hangar.grid);
         const bridgingBays = this.findBridgingBays(assigned, adjacency);
         if (bridgingBays.length === 0) return [];
 
@@ -105,7 +106,7 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
             .map(b => b.ref?.name)
             .filter((n): n is string => n !== undefined);
 
-        const adjacency = this.buildAdjacencyGraph(hangar);
+        const { adjacency } = buildBayAdjacencyGraph(hangar.grid);
         const allBayNames = hangar.grid.bays.map(b => b.name);
         const candidates = this.findAdjacentCandidateBays(assigned, adjacency, allBayNames, needed);
         if (candidates.length === 0) return [];
@@ -163,46 +164,6 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         if (bays.length === 0) return undefined;
         const lastRefNode = bays[bays.length - 1].$refNode;
         return lastRefNode?.range.end;
-    }
-
-    // -------------------------------------------------------------------------
-    // Helpers: Bay adjacency graph
-    // -------------------------------------------------------------------------
-
-    /**
-     * Build a symmetric adjacency map for the hangar's bay grid.
-     * Prefers explicit grid coordinates (row/col) when available;
-     * falls back to declarative `adjacent` references.
-     */
-    private buildAdjacencyGraph(hangar: Hangar): Map<string, Set<string>> {
-        const adj = new Map<string, Set<string>>();
-        for (const bay of hangar.grid.bays) {
-            adj.set(bay.name, new Set());
-        }
-
-        const hasGrid = hangar.grid.rows !== undefined && hangar.grid.cols !== undefined;
-        if (hasGrid) {
-            for (const bay of hangar.grid.bays) {
-                if (bay.row === undefined || bay.col === undefined) continue;
-                const r = bay.row;
-                const c = bay.col;
-                for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) {
-                    const nb = hangar.grid.bays.find(b => b.row === r + dr && b.col === c + dc);
-                    if (nb) adj.get(bay.name)!.add(nb.name);
-                }
-            }
-        }
-
-        for (const bay of hangar.grid.bays) {
-            for (const adjacentRef of (bay.adjacent ?? [])) {
-                const nbName = adjacentRef.ref?.name;
-                if (!nbName) continue;
-                adj.get(bay.name)!.add(nbName);
-                adj.get(nbName)?.add(bay.name);
-            }
-        }
-
-        return adj;
     }
 
     // -------------------------------------------------------------------------

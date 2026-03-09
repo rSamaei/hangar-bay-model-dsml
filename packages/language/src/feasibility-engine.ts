@@ -5,13 +5,14 @@
  * dependencies.  Used by both the language validators and the simulator as
  * the single source of truth for geometry and ownership checks.
  */
-import type { 
+import type {
     Hangar,
     HangarBay,
     ClearanceEnvelope,
     AircraftType,
     HangarDoor
 } from './generated/ast.js';
+import { buildBayAdjacencyGraph } from './bay-adjacency.js';
 
 export interface RuleResult {
     ok: boolean;
@@ -196,50 +197,7 @@ export function checkBayContiguity(
         };
     }
 
-    const adjacency = new Map<string, Set<string>>();
-    for (const bay of bayGrid.bays) {
-        adjacency.set(bay.name, new Set());
-    }
-
-    if (bayGrid.rows && bayGrid.cols) {
-        const is8Connected = bayGrid.adjacency === 8;
-        for (const bay of bayGrid.bays) {
-            if (bay.row !== undefined && bay.col !== undefined) {
-                const neighbors = [
-                    { row: bay.row - 1, col: bay.col },
-                    { row: bay.row + 1, col: bay.col },
-                    { row: bay.row, col: bay.col - 1 },
-                    { row: bay.row, col: bay.col + 1 },
-                    ...(is8Connected ? [
-                        { row: bay.row - 1, col: bay.col - 1 },
-                        { row: bay.row - 1, col: bay.col + 1 },
-                        { row: bay.row + 1, col: bay.col - 1 },
-                        { row: bay.row + 1, col: bay.col + 1 },
-                    ] : [])
-                ];
-                for (const neighbor of neighbors) {
-                    const adjacentBay = bayGrid.bays.find(
-                        b => b.row === neighbor.row && b.col === neighbor.col
-                    );
-                    if (adjacentBay) {
-                        adjacency.get(bay.name)?.add(adjacentBay.name);
-                    }
-                }
-            }
-        }
-    }
-
-    for (const bay of bayGrid.bays) {
-        if (bay.adjacent) {
-            for (const adj of bay.adjacent) {
-                const adjName = adj.ref?.name;
-                if (adjName) {
-                    adjacency.get(bay.name)?.add(adjName);
-                    adjacency.get(adjName)?.add(bay.name);
-                }
-            }
-        }
-    }
+    const { adjacency } = buildBayAdjacencyGraph(bayGrid);
 
     const selected = new Set(bays.map(b => b.name));
     const visited = new Set<string>();

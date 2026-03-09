@@ -81,6 +81,7 @@ function makeConflictRejection(
 export class AutoScheduler {
     schedule(model: Model): ScheduleResult {
         const scheduled: ScheduledInduction[] = [];
+        const scheduledById = new Map<string, ScheduledInduction>();
         const unscheduled: AutoInduction[] = [];
         const rejectionReasons = new Map<string, RejectionReason[]>();
 
@@ -89,10 +90,11 @@ export class AutoScheduler {
         const searchWindow = calculateSearchWindow(model);
 
         for (const autoInd of sorted) {
-            const result = this.tryScheduleAuto(autoInd, model, scheduled, searchWindow, dependencyMap);
+            const result = this.tryScheduleAuto(autoInd, model, scheduled, scheduledById, searchWindow, dependencyMap);
 
             if (result.success && result.scheduled) {
                 scheduled.push(result.scheduled);
+                if (result.scheduled.id) scheduledById.set(result.scheduled.id, result.scheduled);
             } else {
                 unscheduled.push(autoInd);
                 const autoId = autoInd.id ?? `auto_${autoInd.aircraft.ref?.name ?? 'unknown'}`;
@@ -109,6 +111,7 @@ export class AutoScheduler {
         autoInd: AutoInduction,
         model: Model,
         existing: ScheduledInduction[],
+        scheduledById: Map<string, ScheduledInduction>,
         searchWindow: { start: Date; end: Date },
         dependencyMap: Map<string, string[]>
     ): { success: boolean; scheduled?: ScheduledInduction; rejections: RejectionReason[] } {
@@ -128,7 +131,7 @@ export class AutoScheduler {
             const placement = this.findSpatialPlacement(aircraft, hangar, clearance, autoInd.requires, rejections);
             if (!placement) continue;
 
-            const timing = this.findTiming(autoInd, hangar.name, placement.bayNames, existing, searchWindow, dependencyMap, rejections);
+            const timing = this.findTiming(autoInd, hangar.name, placement.bayNames, existing, scheduledById, searchWindow, dependencyMap, rejections);
             if (!timing) continue;
 
             return {
@@ -183,11 +186,12 @@ export class AutoScheduler {
         hangarName: string,
         bayNames: string[],
         existing: ScheduledInduction[],
+        scheduledById: Map<string, ScheduledInduction>,
         searchWindow: { start: Date; end: Date },
         dependencyMap: Map<string, string[]>,
         rejections: RejectionReason[]
     ): { start: Date; end: Date } | null {
-        const start = this.calculateStartTime(autoInd, existing, dependencyMap, searchWindow);
+        const start = this.calculateStartTime(autoInd, scheduledById, dependencyMap, searchWindow);
         const end = new Date(start.getTime() + autoInd.duration * 60000);
 
         const conflicting = this.conflictingIds(hangarName, bayNames, start, end, existing);
@@ -208,8 +212,9 @@ export class AutoScheduler {
         end: Date,
         existing: ScheduledInduction[]
     ): string[] {
+        const baySet = new Set(bays);
         return existing
-            .filter(s => s.hangar === hangar && bays.some(b => s.bays.includes(b)))
+            .filter(s => s.hangar === hangar && s.bays.some(b => baySet.has(b)))
             .filter(s => checkTimeOverlap(start, end, new Date(s.start), new Date(s.end)).overlaps)
             .map(s => s.id ?? s.aircraft);
     }
@@ -218,7 +223,7 @@ export class AutoScheduler {
 
     private calculateStartTime(
         autoInd: AutoInduction,
-        scheduled: ScheduledInduction[],
+        scheduledById: Map<string, ScheduledInduction>,
         dependencyMap: Map<string, string[]>,
         searchWindow: { start: Date; end: Date }
     ): Date {
@@ -231,7 +236,7 @@ export class AutoScheduler {
 
         if (autoInd.id && dependencyMap.has(autoInd.id)) {
             for (const depId of dependencyMap.get(autoInd.id)!) {
-                const dep = scheduled.find(s => s.id === depId);
+                const dep = scheduledById.get(depId);
                 if (dep) {
                     const depEnd = new Date(dep.end);
                     if (depEnd > startTime) startTime = depEnd;
@@ -271,6 +276,7 @@ export class AutoScheduler {
         autos: AutoInduction[],
         dependencyMap: Map<string, string[]>
     ): AutoInduction[] {
+        const autoById = new Map(autos.filter(a => a.id).map(a => [a.id, a]));
         const sorted: AutoInduction[] = [];
         const visited = new Set<string>();
 
@@ -278,7 +284,7 @@ export class AutoScheduler {
             if (!auto.id || visited.has(auto.id)) return;
             visited.add(auto.id);
             for (const depId of dependencyMap.get(auto.id) ?? []) {
-                const dep = autos.find(a => a.id === depId);
+                const dep = autoById.get(depId);
                 if (dep) visit(dep);
             }
             sorted.push(auto);
