@@ -21,8 +21,8 @@ export async function generateAction(fileName: string, opts: { destination?: str
         process.exit(1);
     }
     
-    // Run validations
-    const validationErrors = document.diagnostics ?? [];
+    // Run validations — only exit on errors (severity 1); warnings and hints are non-blocking
+    const validationErrors = (document.diagnostics ?? []).filter(e => e.severity === 1);
     if (validationErrors.length > 0) {
         console.error(chalk.red('Validation errors:'));
         for (const error of validationErrors) {

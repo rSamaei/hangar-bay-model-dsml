@@ -1,0 +1,367 @@
+// =============================================================================
+// RAF Valley — full-featured base scenario
+//
+// Demonstrates: clearance envelopes, aircraft geometry, access paths,
+// hangar grid with adjacency mode, traversable bays, manual inductions
+// with span direction + requires clause, auto-inductions with scheduling
+// constraints, metadata tags, and a range of validator checks.
+//
+// Each WRONG line is immediately followed by the correct version commented out.
+// Fix each one to resolve the diagnostic.
+// =============================================================================
+
+airfield RAF_Valley {
+
+    // =========================================================================
+    // Clearance envelopes
+    // =========================================================================
+
+    clearance CombatMargins {
+        lateralMargin      1.5 m
+        longitudinalMargin 2.0 m
+        verticalMargin     1.0 m
+    }
+
+    clearance TransportMargins {
+        lateralMargin      3.0 m
+        longitudinalMargin 4.0 m
+        verticalMargin     2.0 m
+    }
+
+    // =========================================================================
+    // Aircraft
+    // =========================================================================
+
+    aircraft Typhoon {
+        wingspan  10.95 m
+        length    15.96 m
+        height     5.28 m
+        tailHeight  5.28 m
+        clearance CombatMargins
+        // effective wingspan = 10.95 + 1.5 = 12.45 m
+        // effective length   = 15.96 + 2.0 = 17.96 m
+    }
+
+    aircraft C130 {
+        wingspan  40.41 m
+        length    29.79 m
+        height     11.9 m
+        tailHeight 11.9 m
+        clearance TransportMargins
+        // effective wingspan = 40.41 + 3.0 = 43.41 m  → spans multiple 15 m bays
+        // effective length   = 29.79 + 4.0 = 33.79 m
+    }
+
+    // =========================================================================
+    // Access path — tow routes through the main apron and into HQ Hangar.
+    //
+    // Layout:
+    //   MainApron (open, bidirectional)
+    //     ↕
+    //   HangarEntry (door threshold, 14 m wide)
+    //     → LeftWing  (leads to Bay1, Bay2 — bidirectional once inside)
+    //     → RightWing (leads to Bay3, Bay4, Bay5 — Bay3 is a traversable through-aisle)
+    // =========================================================================
+
+    accessPath ValleyPath {
+        nodes {
+            node MainApron   width 60.0 m   clearanceHeight 15.0 m
+            node HangarEntry width 14.0 m   clearanceHeight  7.0 m
+            node LeftWing    width 13.5 m   clearanceHeight  6.5 m
+            node RightWing   width 13.5 m   clearanceHeight  6.5 m
+            node Bay1Access  width 13.0 m   clearanceHeight  6.0 m
+            node Bay2Access  width 13.0 m   clearanceHeight  6.0 m
+            node Bay3Access  width 13.0 m   clearanceHeight  6.0 m
+            node Bay4Access  width 13.0 m   clearanceHeight  6.0 m
+            node Bay5Access  width 13.0 m   clearanceHeight  6.0 m
+        }
+        links {
+            link MainApron  to HangarEntry  bidirectional true  type taxi
+            link HangarEntry to LeftWing                        type tow
+            link HangarEntry to RightWing                       type tow
+            link LeftWing    to Bay1Access  bidirectional true  type tow
+            link LeftWing    to Bay2Access  bidirectional true  type tow
+            link RightWing   to Bay3Access  bidirectional true  type tow
+            link Bay3Access  to Bay4Access  bidirectional true  type tow
+            link Bay3Access  to Bay5Access  bidirectional true  type tow
+        }
+    }
+
+    // =========================================================================
+    // HQ Hangar — 2-row × 3-col grid, 8-connected adjacency.
+    //
+    // Grid layout (row, col):
+    //   [Bay1(0,0)] [Bay2(0,1)] [Bay3(0,2)]   ← left wing + right-wing entry
+    //   [Bay4(1,0)] [Bay5(1,1)] [Bay6(1,2)]
+    //
+    // Bay3 is a through-aisle: aircraft park there but tow vehicles can still
+    // pass to reach Bay4, Bay5, Bay6.  It must be marked `traversable`.
+    //
+    // 8-connected adjacency means diagonal pairs (e.g. Bay1 ↔ Bay5) are
+    // treated as adjacent for contiguity checks.
+    // =========================================================================
+
+    hangar HQHangar {
+        doors {
+            door MainDoor {
+                width  14.5 m
+                height  7.0 m
+                accessNode HangarEntry
+            }
+        }
+        grid baygrid {
+            rows 2 cols 3
+            adjacency 8                     // 8-connected: diagonals count as adjacent
+
+            bay Bay1 {
+                at row 0 col 0
+                width  13.5 m
+                depth  20.0 m
+                height  6.5 m
+                accessNode Bay1Access
+            }
+            bay Bay2 {
+                at row 0 col 1
+                width  13.5 m
+                depth  20.0 m
+                height  6.5 m
+                accessNode Bay2Access
+            }
+            bay Bay3 {
+                at row 0 col 2
+                width  13.5 m
+                depth  20.0 m
+                height  6.5 m
+                traversable                 // through-aisle: stays passable when occupied
+                accessNode Bay3Access
+            }
+            bay Bay4 {
+                at row 1 col 0
+                width  13.5 m
+                depth  20.0 m
+                height  6.5 m
+                accessNode Bay4Access
+            }
+            bay Bay5 {
+                at row 1 col 1
+                width  13.5 m
+                depth  20.0 m
+                height  6.5 m
+            }
+            bay Bay6 {
+                at row 1 col 2
+                width  13.5 m
+                depth  20.0 m
+                height  6.5 m
+            }
+        }
+    }
+
+    // =========================================================================
+    // Transport Hangar — single wide bay for C130 class aircraft.
+    // No access path modelled (reachability check skipped automatically).
+    // =========================================================================
+
+    hangar TransportHangar {
+        doors {
+            door WideDoor {
+                width  46.0 m
+                height 15.0 m
+            }
+        }
+        grid baygrid {
+            rows 1 cols 4
+            adjacency 4                     // orthogonal only — no diagonal use needed here
+
+            bay T1 { at row 0 col 0   width 15.0 m   depth 40.0 m   height 15.0 m }
+            bay T2 { at row 0 col 1   width 15.0 m   depth 40.0 m   height 15.0 m }
+            bay T3 { at row 0 col 2   width 15.0 m   depth 40.0 m   height 15.0 m }
+            bay T4 { at row 0 col 3   width 15.0 m   depth 40.0 m   height 15.0 m }
+        }
+    }
+
+    // =========================================================================
+    // MANUAL INDUCTIONS
+    // =========================================================================
+
+    // -------------------------------------------------------------------------
+    // TYP_OK — Typhoon in Bay1, standard day shift.  All checks pass.
+    // -------------------------------------------------------------------------
+    induct id "TYP_OK"
+        Typhoon into HQHangar bays Bay1 via MainDoor
+        clearance CombatMargins
+        from 2025-09-01T08:00
+        to   2025-09-01T16:00
+        meta {
+            squadron:    "4 Squadron"
+            maintenance: "Minor_Service"
+            priority:    "high"
+        };
+
+    // -------------------------------------------------------------------------
+    // TYP_DOOR — Typhoon wingspan check: effective 12.45 m must fit MainDoor (14.5 m). OK.
+    // But if we accidentally use a door that is too narrow:
+    //
+    //   width 12.0 m   ← WRONG: 12.0 m < 12.45 m effectiveWingspan → SFR11_DOOR_FIT error
+    //   width 14.5 m   ← CORRECT: door wide enough for Typhoon with CombatMargins
+    //
+    // (Error is declared on the hangar door itself, shown here as context.)
+    // -------------------------------------------------------------------------
+    induct id "TYP_DOOR"
+        Typhoon into HQHangar bays Bay2 via MainDoor
+        from 2025-09-02T08:00
+        to   2025-09-02T16:00;
+
+    // -------------------------------------------------------------------------
+    // C130_LATERAL — C130 spans 3 bays laterally (43.41 m effective wingspan).
+    //
+    //   ceil(43.41 / 15) = 3 bays minimum.
+    //
+    // WRONG: only 2 bays assigned — combined width 30 m < 43.41 m effectiveWingspan.
+    //   SFR12_COMBINED error fires.
+    //   SFR25_BAY_COUNT warning fires (2 assigned < 3 required).
+    // -------------------------------------------------------------------------
+    induct id "C130_LATERAL"
+        C130 into TransportHangar bays T1 T2 via WideDoor
+    //  C130 into TransportHangar bays T1 T2 T3 via WideDoor   // ← CORRECT: 3 bays gives 45 m combined width
+        span lateral
+        from 2025-09-03T08:00
+        to   2025-09-03T20:00
+        meta {
+            squadron:    "47 Squadron"
+            maintenance: "Full_C-Check"
+        };
+
+    // -------------------------------------------------------------------------
+    // C130_LONGIT — C130 spans 2 bays longitudinally (combined depth 80 m ≥ 33.79 m OK).
+    //   minWidth must be ≥ 43.41 m effectiveWingspan — each bay is only 15 m wide.
+    //
+    // WRONG: `span longitudinal` — minWidth 15 m < 43.41 m → SFR12_COMBINED fails.
+    // CORRECT: C130 cannot fit longitudinally in 15 m wide bays; use lateral instead.
+    // -------------------------------------------------------------------------
+    induct id "C130_LONGIT"
+        C130 into TransportHangar bays T1 T2 T3 via WideDoor
+        span longitudinal                // ← WRONG: minWidth 15 m < effectiveWingspan 43.41 m
+        // span lateral                 // ← CORRECT: lateral span, 3 × 15 m = 45 m ≥ 43.41 m
+        from 2025-09-04T08:00
+        to   2025-09-04T20:00;
+
+    // -------------------------------------------------------------------------
+    // C130_REQUIRES — declares `requires 2 bays` but geometric minimum is 3.
+    //
+    // WRONG: `requires 2 bays` < geometric min 3 → SFR_BAY_COUNT_OVERRIDE warning.
+    // CORRECT: `requires 3 bays` matches geometry — no warning.
+    // -------------------------------------------------------------------------
+    induct id "C130_REQUIRES"
+        C130 into TransportHangar bays T1 T2 T3 via WideDoor
+        span lateral
+        requires 2 bays                  // ← WRONG: 2 < geometric minimum 3 → SFR_BAY_COUNT_OVERRIDE
+        // requires 3 bays              // ← CORRECT
+        from 2025-09-05T08:00
+        to   2025-09-05T20:00;
+
+    // -------------------------------------------------------------------------
+    // NONCONT — non-contiguous bay assignment for Typhoon.
+    //   Bay1 (row 0, col 0) and Bay3 (row 0, col 2) are NOT adjacent under
+    //   any mode — Bay2 (col 1) lies between them and is not assigned.
+    //   Under 8-connected mode, diagonal Bay4 (row 1, col 0) IS adjacent to
+    //   Bay1 but Bay3 is still 2 columns away (Chebyshev distance 2).
+    //
+    // WRONG: Bay1 + Bay3 are not contiguous → SFR13_CONTIGUITY error.
+    // CORRECT: assign Bay1 + Bay2, or Bay1 + Bay4 (diagonal — adjacent in 8-mode).
+    // -------------------------------------------------------------------------
+    induct id "NONCONT"
+        Typhoon into HQHangar bays Bay1 Bay3 via MainDoor
+    //  Typhoon into HQHangar bays Bay1 Bay4 via MainDoor   // ← CORRECT: diagonal pair, adjacent under adjacency 8
+        from 2025-09-06T08:00
+        to   2025-09-06T16:00;
+
+    // -------------------------------------------------------------------------
+    // TYP_AISLE — Typhoon parks in Bay3 (the traversable through-aisle).
+    // -------------------------------------------------------------------------
+    induct id "TYP_AISLE"
+        Typhoon into HQHangar bays Bay3 via MainDoor
+        from 2025-09-07T08:00
+        to   2025-09-07T20:00;
+
+    // -------------------------------------------------------------------------
+    // TYP_BLOCKED — Typhoon wants Bay4, which is only reachable through Bay3.
+    //   TYP_AISLE occupies Bay3 during 08:00–20:00.
+    //   Overlap window with TYP_BLOCKED (10:00–18:00): 10:00–18:00.
+    //
+    //   Because Bay3 is `traversable`, BFS passes through it even when occupied.
+    //   → SFR_DYNAMIC_REACHABILITY does NOT fire.
+    //
+    //   If Bay3 were NOT traversable:
+    //   → SFR_DYNAMIC_REACHABILITY would fire: Bay4 unreachable because Bay3 occupied.
+    // -------------------------------------------------------------------------
+    induct id "TYP_BLOCKED"
+        Typhoon into HQHangar bays Bay4 via MainDoor
+        from 2025-09-07T10:00
+        to   2025-09-07T18:00;
+
+    // -------------------------------------------------------------------------
+    // BAD_TIMES — reversed time window.
+    //
+    // WRONG: start is after end → SFR21_TIME_WINDOW error.
+    // CORRECT: swap start and end.
+    // -------------------------------------------------------------------------
+    induct id "BAD_TIMES"
+        Typhoon into HQHangar bays Bay2 via MainDoor
+        from 2025-09-08T16:00                        // ← WRONG: start is after end
+        to   2025-09-08T08:00;                       // ← WRONG: should be the later time
+        // from 2025-09-08T08:00                     // ← CORRECT
+        // to   2025-09-08T16:00;                    // ← CORRECT
+
+    // =========================================================================
+    // AUTO-INDUCTIONS — scheduler places these automatically
+    // =========================================================================
+
+    // -------------------------------------------------------------------------
+    // AUTO_TYP — single Typhoon, no constraints.  Scheduler picks any free bay.
+    // -------------------------------------------------------------------------
+    auto-induct id "AUTO_TYP"
+        Typhoon
+        duration 240 minutes
+        prefer HQHangar
+        clearance CombatMargins;
+
+    // -------------------------------------------------------------------------
+    // AUTO_C130 — C130 with `requires 3 bays` matching the geometric minimum.
+    //
+    // WRONG: `requires 1 bays` — far below the geometric minimum of 3.
+    //   → SFR_BAY_COUNT_OVERRIDE warning (scheduler will still use 3, but mismatch flagged).
+    // CORRECT: `requires 3 bays`.
+    // -------------------------------------------------------------------------
+    auto-induct id "AUTO_C130"
+        C130
+        duration 480 minutes
+        prefer TransportHangar
+        requires 1 bays;                 // ← WRONG: 1 < geometric minimum 3
+        // requires 3 bays;             // ← CORRECT
+
+    // -------------------------------------------------------------------------
+    // AUTO_SEQ_A — first in a maintenance sequence.
+    // -------------------------------------------------------------------------
+    auto-induct id "AUTO_SEQ_A"
+        Typhoon
+        duration 120 minutes
+        prefer HQHangar;
+
+    // -------------------------------------------------------------------------
+    // AUTO_SEQ_B — must run after AUTO_SEQ_A, within an afternoon window.
+    //
+    // WRONG: notBefore is later than notAfter — reversed scheduling window.
+    //   → SFR21_TIME_WINDOW error.
+    // CORRECT: swap the two timestamps.
+    // -------------------------------------------------------------------------
+    auto-induct id "AUTO_SEQ_B"
+        Typhoon
+        duration 90 minutes
+        prefer HQHangar
+        after AUTO_SEQ_A
+        notBefore 2025-09-10T20:00      // ← WRONG: notBefore after notAfter → SFR21_TIME_WINDOW
+        notAfter  2025-09-10T14:00;     // ← WRONG: should be the later bound
+        // notBefore 2025-09-10T14:00  // ← CORRECT: afternoon start
+        // notAfter  2025-09-10T20:00; // ← CORRECT: end-of-day deadline
+}

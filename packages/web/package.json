@@ -3,26 +3,50 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "npm run copy-examples && concurrently --names server,client --prefix-colors cyan,yellow \"tsx watch backend/server.ts\" \"vite\"",
+    "dev:server": "tsx watch backend/server.ts",
+    "dev:client": "npm run copy-examples && vite",
+    "build": "npm run copy-examples && npm run build:client && npm run build:server && npm run copy-examples-dist",
+    "build:server": "tsc -p tsconfig.server.json && shx cp -r backend/data dist/data && shx mkdir -p dist/db && shx cp backend/db/schema.sql dist/db/",
+    "build:client": "vite build",
+    "copy-examples": "shx mkdir -p frontend/public/examples && shx cp -r ../../airfield-tests/examples/*.air frontend/public/examples/",
+    "copy-examples-dist": "shx mkdir -p dist/client/examples && shx cp -r ../../airfield-tests/examples/*.air dist/client/examples/",
     "preview": "vite preview",
-    "server": "tsx watch backend/server.ts",
-    "server:build": "tsc -p tsconfig.server.json"
+    "start": "npm run build && node dist/server.js",
+    "test": "vitest run"
   },
   "dependencies": {
-    "express": "^4.18.2",
+    "@airfield/simulator": "1.0.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "better-sqlite3": "^11.0.0",
     "cors": "^2.8.5",
-    "langium": "~3.3.0"
+    "express": "^4.18.2",
+    "monaco-editor": "^0.55.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
+    "@types/better-sqlite3": "^7.6.8",
     "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
     "@types/node": "^20.10.0",
-    "vite": "^5.0.0",
-    "tailwindcss": "^3.4.0",
-    "postcss": "^8.4.32",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/supertest": "^6.0.2",
+    "@types/uuid": "^9.0.7",
+    "supertest": "^7.0.0",
+    "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.4.16",
-    "typescript": "~5.7.2",
-    "tsx": "^4.7.0"
+    "postcss": "^8.4.32",
+    "shx": "^0.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.0",
+    "vitest": "~3.1.3",
+    "concurrently": "^9.1.2",
+    "tsx": "^4.19.2"
   }
 }

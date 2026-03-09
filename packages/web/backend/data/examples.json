@@ -1,3 +1,10 @@
 {
-  "defaultModel": "airfield KCL_MRO {\n  aircraft A320 {\n    wingspan 35.8m\n    length   37.6m\n    height   11.8m\n  }\n\n  hangar NorthBay {\n    bays     10\n    bayWidth 4.0m\n    bayDepth 30.0m\n    height   15.0m\n  }\n\n  auto-induct A320 for 5;\n}"
+  "examples": [
+    {
+      "id": "raf-maintenance",
+      "name": "RAF Maintenance Base",
+      "description": "Comprehensive example with multiple hangars, aircraft types, and scheduled maintenance operations",
+      "code": "airfield RAF_Maintenance_Base {\n  aircraft F35_Lightning {\n    wingspan 10.7m\n    length 15.6m\n    height 4.4m\n    tailHeight 4.4m\n  }\n\n  aircraft Hawk_T2 {\n    wingspan 9.9m\n    length 12.4m\n    height 4.0m\n    tailHeight 4.0m\n  }\n\n  hangar FighterMaintenanceHangar {\n    doorWidth 25.0m\n    doorHeight 8.0m\n    grid baygrid {\n      bay FM_Bay1 {\n        width 20.0m\n        depth 25.0m\n        height 8.0m\n        adjacent { FM_Bay2 }\n      }\n      bay FM_Bay2 {\n        width 20.0m\n        depth 25.0m\n        height 8.0m\n        adjacent { FM_Bay1 }\n      }\n    }\n  }\n\n  induct F35_Lightning into FM_Bay1 from 2025-12-11T07:00 to 2025-12-11T15:00;\n\n  auto-induct Hawk_T2 duration 180 minutes prefer FighterMaintenanceHangar;\n}"
+    }
+  ]
 }

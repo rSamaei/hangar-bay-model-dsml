@@ -5,6 +5,7 @@ import {
   createScheduleEntry,
   createScheduleEntries,
   deleteScheduleEntry,
+  updateScheduleEntry,
   clearAllScheduleEntries,
   getAircraftByUser,
   getHangarsByUser,
@@ -12,7 +13,8 @@ import {
   type ScheduleEntryWithDetails
 } from '../db/database.js';
 import { parseDocument } from '../services/document-parser.js';
-import { analyzeAndSchedule } from '@airfield/simulator';
+import { analyseAndSchedule, type ExportModel } from '@airfield/simulator';
+import { generateDSLCode } from '../services/dsl-helpers.js';
 
 const router = Router();
 
@@ -28,11 +30,43 @@ interface ScheduledPlacement {
   failureReason?: string;
 }
 
+interface SchedulerDiagnosticItem {
+  severity: number;
+  message: string;
+  startLine: number;
+  startColumn: number;
+  endLine: number;
+  endColumn: number;
+  source: 'scheduler';
+}
+
 interface ScheduleResult {
   entries: ScheduleEntryWithDetails[];
   placements: ScheduledPlacement[];
   validationErrors: string[];
   dslCode?: string;
+  schedulerDiagnostics?: SchedulerDiagnosticItem[];
+}
+
+function findAutoInductLine(dslCode: string, entryId: number): number {
+  const lines = dslCode.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes(`auto-induct id "entry_${entryId}"`)) return i + 1;
+  }
+  return 1;
+}
+
+function formatSchedulerReason(aircraftName: string, reasonRuleId: string): string {
+  switch (reasonRuleId) {
+    case 'NO_SUITABLE_BAY_SET':
+      return `SCHED_NO_BAY: Cannot schedule ${aircraftName} — no bay combination fits the aircraft dimensions`;
+    case 'SFR11_DOOR_FIT':
+      return `SCHED_DOOR_FIT: Cannot schedule ${aircraftName} — aircraft does not fit through any hangar door`;
+    case 'SFR16_TIME_OVERLAP':
+      return `SCHED_TIME_OVERLAP: Cannot schedule ${aircraftName} — time slot conflicts with an existing induction`;
+    default:
+      return `SCHED_FAILURE: Cannot schedule ${aircraftName} — ${reasonRuleId}`;
+  }
 }
 
 // GET /api/schedule - Get all schedule entries with computed placements
@@ -188,6 +222,60 @@ router.post('/schedule/entries', requireAuth, async (req: AuthenticatedRequest, 
   }
 });
 
+// PUT /api/schedule/entry/:id - Update start/end time for a schedule entry
+router.put('/schedule/entry/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const id = parseInt(req.params.id, 10);
+  const userId = req.user!.id;
+  const { startTime, endTime } = req.body;
+
+  if (isNaN(id)) {
+    res.status(400).json({ error: 'Invalid entry ID' });
+    return;
+  }
+
+  if (!startTime || typeof startTime !== 'string') {
+    res.status(400).json({ error: 'Start time is required' });
+    return;
+  }
+
+  if (!endTime || typeof endTime !== 'string') {
+    res.status(400).json({ error: 'End time is required' });
+    return;
+  }
+
+  const start = new Date(startTime);
+  const end   = new Date(endTime);
+
+  if (isNaN(start.getTime())) {
+    res.status(400).json({ error: 'Invalid start time format' });
+    return;
+  }
+
+  if (isNaN(end.getTime())) {
+    res.status(400).json({ error: 'Invalid end time format' });
+    return;
+  }
+
+  if (end <= start) {
+    res.status(400).json({ error: 'End time must be after start time' });
+    return;
+  }
+
+  const updated = updateScheduleEntry(id, userId, { start_time: startTime, end_time: endTime });
+  if (!updated) {
+    res.status(404).json({ error: 'Entry not found' });
+    return;
+  }
+
+  try {
+    const result = await computeSchedule(userId);
+    res.json(result);
+  } catch (error: any) {
+    console.error('Schedule computation error:', error);
+    res.status(500).json({ error: error.message || 'Failed to compute schedule' });
+  }
+});
+
 // DELETE /api/schedule/entry/:id - Delete a schedule entry
 router.delete('/schedule/entry/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const id = parseInt(req.params.id, 10);
@@ -224,15 +312,13 @@ router.delete('/schedule/clear', requireAuth, (req: AuthenticatedRequest, res: R
 // Core function: compute placements for all schedule entries
 async function computeSchedule(userId: number): Promise<ScheduleResult> {
   const entries = getScheduleEntriesByUser(userId);
-  const aircraft = getAircraftByUser(userId);
-  const hangars = getHangarsByUser(userId);
 
-  // If no entries, return empty result
   if (entries.length === 0) {
     return { entries: [], placements: [], validationErrors: [] };
   }
 
-  // If no hangars, all entries fail
+  const hangars = getHangarsByUser(userId);
+
   if (hangars.length === 0) {
     return {
       entries,
@@ -250,11 +336,10 @@ async function computeSchedule(userId: number): Promise<ScheduleResult> {
     };
   }
 
-  // Generate DSL and run scheduler
+  const aircraft = getAircraftByUser(userId);
   const dslCode = generateDSLCode(userId, aircraft, hangars, entries);
 
   try {
-    // Parse the DSL
     const parseResult = await parseDocument(dslCode);
 
     if (parseResult.hasParseErrors) {
@@ -275,32 +360,39 @@ async function computeSchedule(userId: number): Promise<ScheduleResult> {
       };
     }
 
-    if (!parseResult.model) {
-      return {
-        entries,
-        placements: entries.map(e => ({
-          entryId: e.id,
-          aircraftName: e.aircraft_name,
-          hangar: null,
-          bays: [],
-          start: e.start_time,
-          end: e.end_time,
-          status: 'failed' as const,
-          failureReason: 'No model parsed'
-        })),
-        validationErrors: ['Failed to parse model'],
-        dslCode
-      };
-    }
-
     // Run the scheduler
-    const analysisResult = analyzeAndSchedule(parseResult.model);
+    // model is non-null: hasParseErrors = (parseErrors.length > 0 || !model), so !hasParseErrors implies model is set
+    const analysisResult = analyseAndSchedule(parseResult.model!);
 
     // Extract placements from the result
     const placements = extractPlacements(entries, analysisResult.exportModel);
-    const validationErrors = analysisResult.report?.violations?.map(v => v.message) || [];
+    const validationErrors = analysisResult.report.violations.map(v => v.message);
 
-    return { entries, placements, validationErrors, dslCode };
+    // Build scheduler diagnostics for failed entries (pointing at their DSL lines)
+    const failedPlacements = placements.filter(p => p.status === 'failed');
+    const failedEntryIds = new Set(failedPlacements.map(p => p.entryId));
+    const schedulerDiagnostics: SchedulerDiagnosticItem[] = failedPlacements.map(p => ({
+      severity: 2,
+      message: formatSchedulerReason(p.aircraftName, p.failureReason ?? 'SCHEDULING_FAILED'),
+      startLine: findAutoInductLine(dslCode, p.entryId),
+      startColumn: 0,
+      endLine: findAutoInductLine(dslCode, p.entryId),
+      endColumn: 0,
+      source: 'scheduler' as const,
+    }));
+
+    // Auto-remove infeasible entries so they don't persist across sessions
+    for (const id of failedEntryIds) {
+      deleteScheduleEntry(id, userId);
+    }
+
+    return {
+      entries: entries.filter(e => !failedEntryIds.has(e.id)),
+      placements: placements.filter(p => p.status === 'scheduled'),
+      validationErrors,
+      dslCode,  // full DSL including deleted entries so Langium diagnostics still fire
+      schedulerDiagnostics,
+    };
   } catch (error: any) {
     console.error('Schedule computation error:', error);
     return {
@@ -322,168 +414,38 @@ async function computeSchedule(userId: number): Promise<ScheduleResult> {
 }
 
 // Extract placements from the scheduler result
-function extractPlacements(entries: ScheduleEntryWithDetails[], exportModel: any): ScheduledPlacement[] {
-  if (!exportModel) {
-    return entries.map(e => ({
-      entryId: e.id,
-      aircraftName: e.aircraft_name,
-      hangar: null,
-      bays: [],
-      start: e.start_time,
-      end: e.end_time,
-      status: 'failed' as const,
-      failureReason: 'No result from scheduler'
-    }));
-  }
+function extractPlacements(entries: ScheduleEntryWithDetails[], exportModel: ExportModel): ScheduledPlacement[] {
+  const scheduled = exportModel.autoSchedule?.scheduled ?? [];
+  const unscheduled = exportModel.autoSchedule?.unscheduled ?? [];
 
-  const placements: ScheduledPlacement[] = [];
-
-  // Check scheduled auto-inductions
-  const scheduled = exportModel.autoSchedule?.scheduled || [];
-  const unscheduled = exportModel.autoSchedule?.unscheduled || [];
-
-  for (const entry of entries) {
-    // Find matching scheduled induction by ID pattern
+  return entries.map(entry => {
     const entryIdPattern = `entry_${entry.id}`;
-    const scheduledMatch = scheduled.find((s: any) => s.id === entryIdPattern);
+    const scheduledMatch = scheduled.find(s => s.id === entryIdPattern);
 
     if (scheduledMatch) {
-      placements.push({
+      return {
         entryId: entry.id,
         aircraftName: entry.aircraft_name,
         hangar: scheduledMatch.hangar,
-        bays: scheduledMatch.bays || [],
-        start: scheduledMatch.start || entry.start_time,
-        end: scheduledMatch.end || entry.end_time,
-        status: 'scheduled'
-      });
-    } else {
-      // Check if in unscheduled
-      const unscheduledMatch = unscheduled.find((u: any) => u.id === entryIdPattern);
-
-      placements.push({
-        entryId: entry.id,
-        aircraftName: entry.aircraft_name,
-        hangar: null,
-        bays: [],
-        start: entry.start_time,
-        end: entry.end_time,
-        status: 'failed',
-        failureReason: unscheduledMatch?.reason || 'Could not find suitable placement'
-      });
-    }
-  }
-
-  return placements;
-}
-
-// Generate DSL code from database data
-function generateDSLCode(
-  userId: number,
-  aircraft: any[],
-  hangars: any[],
-  entries: ScheduleEntryWithDetails[]
-): string {
-  const lines: string[] = [];
-
-  lines.push(`airfield User${userId}_Airfield {`);
-  lines.push('');
-
-  // Aircraft definitions
-  for (const a of aircraft) {
-    lines.push(`  aircraft ${sanitizeName(a.name)} {`);
-    lines.push(`    wingspan ${toFloat(a.wingspan)} m`);
-    lines.push(`    length ${toFloat(a.length)} m`);
-    lines.push(`    height ${toFloat(a.height)} m`);
-    lines.push(`    tailHeight ${toFloat(a.tail_height)} m`);
-    lines.push('  }');
-    lines.push('');
-  }
-
-  // Hangar definitions - must have doors and grid structure
-  for (const h of hangars) {
-    const hangarName = sanitizeName(h.name);
-    lines.push(`  hangar ${hangarName} {`);
-
-    // Generate a default door for the hangar
-    // Use max bay dimensions for the door
-    let maxWidth = 20.0;
-    let maxHeight = 10.0;
-    for (const bay of h.bays) {
-      if (bay.width > maxWidth) maxWidth = bay.width;
-      if (bay.height > maxHeight) maxHeight = bay.height;
+        bays: scheduledMatch.bays,
+        start: scheduledMatch.start,
+        end: scheduledMatch.end,
+        status: 'scheduled' as const
+      };
     }
 
-    lines.push('    doors {');
-    lines.push(`      door ${hangarName}Door {`);
-    lines.push(`        width ${toFloat(maxWidth)} m`);
-    lines.push(`        height ${toFloat(maxHeight)} m`);
-    lines.push('      }');
-    lines.push('    }');
-
-    // Generate grid with bays
-    lines.push('    grid baygrid {');
-    for (let i = 0; i < h.bays.length; i++) {
-      const bay = h.bays[i];
-      lines.push(`      bay ${sanitizeName(bay.name)} {`);
-      lines.push(`        width ${toFloat(bay.width)} m`);
-      lines.push(`        depth ${toFloat(bay.depth)} m`);
-      lines.push(`        height ${toFloat(bay.height)} m`);
-      lines.push('      }');
-    }
-    lines.push('    }');
-    lines.push('  }');
-    lines.push('');
-  }
-
-  // Schedule entries as auto-inductions (system decides where)
-  for (const entry of entries) {
-    const durationMs = new Date(entry.end_time).getTime() - new Date(entry.start_time).getTime();
-    const durationMinutes = Math.max(1, Math.round(durationMs / 60000));
-
-    const aircraftName = sanitizeName(entry.aircraft_name);
-    const notBefore = formatDateTime(entry.start_time);
-    const notAfter = formatDateTime(entry.end_time);
-
-    // Use first available hangar as preferred if any
-    const preferClause = hangars.length > 0 ? `prefer ${sanitizeName(hangars[0].name)}` : '';
-
-    lines.push(`  auto-induct id "entry_${entry.id}" ${aircraftName} duration ${durationMinutes} minutes`);
-    if (preferClause) {
-      lines.push(`    ${preferClause}`);
-    }
-    lines.push(`    notBefore ${notBefore}`);
-    lines.push(`    notAfter ${notAfter};`);
-    lines.push('');
-  }
-
-  lines.push('}');
-
-  return lines.join('\n');
-}
-
-// Ensure a number is formatted as a FLOAT (with decimal point)
-function toFloat(value: number): string {
-  const num = Number(value);
-  if (Number.isInteger(num)) {
-    return num.toFixed(1); // e.g., 32 -> "32.0"
-  }
-  return num.toString();
-}
-
-// Format datetime to YYYY-MM-DDTHH:mm format (required by grammar)
-function formatDateTime(isoString: string): string {
-  const date = new Date(isoString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
-function sanitizeName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[0-9]/, '_$&');
+    const unscheduledMatch = unscheduled.find(u => u.id === entryIdPattern);
+    return {
+      entryId: entry.id,
+      aircraftName: entry.aircraft_name,
+      hangar: null,
+      bays: [],
+      start: entry.start_time,
+      end: entry.end_time,
+      status: 'failed' as const,
+      failureReason: unscheduledMatch?.reasonRuleId ?? 'SCHEDULING_FAILED'
+    };
+  });
 }
 
 export default router;

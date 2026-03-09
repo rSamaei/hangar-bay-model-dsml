@@ -5,7 +5,8 @@ import {
   getAircraftById,
   createAircraft,
   updateAircraft,
-  deleteAircraft
+  deleteAircraft,
+  type Aircraft
 } from '../db/database.js';
 
 const router = Router();
@@ -92,7 +93,7 @@ router.put('/aircraft/:id', requireAuth, (req: AuthenticatedRequest, res: Respon
 
   const { name, wingspan, length, height, tailHeight } = req.body;
 
-  const updates: any = {};
+  const updates: Partial<Omit<Aircraft, 'id' | 'user_id' | 'created_at'>> = {};
 
   if (name !== undefined) {
     if (typeof name !== 'string' || name.trim().length === 0) {

@@ -1,0 +1,190 @@
+// =============================================================================
+// multi-bay-large-aircraft.air
+//
+// Demonstrates multi-bay allocation for large aircraft (A400M class).
+//
+// Background
+// ----------
+// Large transport aircraft have wingspans that exceed individual bay widths.
+// When a bay is only 15 m wide, an A400M (42.4 m wingspan + 3 m clearance =
+// 45.4 m effective) physically spans multiple bays side-by-side.
+//
+// The DSML captures this with two validators:
+//
+//   SFR25_BAY_COUNT  — warns when too few bays are assigned for the aircraft's
+//                      wingspan.  Formula: ceil(effectiveWingspan / minBayWidth)
+//                      bays required.
+//
+//   SFR13_CONTIGUITY — errors when the assigned bays are not all connected in
+//                      the hangar grid (i.e. the aircraft cannot span them).
+//
+// Note on SFR12 (individual bay fit)
+// -----------------------------------
+// SFR12 checks whether the aircraft fits in EACH bay individually.  For a
+// multi-bay aircraft whose wingspan exceeds a single bay width, SFR12 will
+// fire on every bay as expected — the aircraft spans across several bays and
+// does not "fit" in any one alone.  This is normal and intentional behaviour;
+// SFR25 is the primary guard for multi-bay sizing.
+//
+// Hangar layout  (1 × 5 grid, bays run left to right)
+// -------------------------------------------------------
+//   [Bay1][Bay2][Bay3][Bay4][Bay5]
+//   col 0  col 1  col 2  col 3  col 4
+//
+// Inductions
+// ----------
+//   VALID_4BAY   →  Bay1+Bay2+Bay3+Bay4  (4 bays, contiguous)
+//                   SFR25: ceil(45.4 / 15) = 4 required → 4 assigned ✓
+//                   SFR13: contiguous (sequential grid columns) ✓
+//                   NOTE: SFR12 width fires per bay (45.4 m > 15 m each) — expected.
+//
+//   INSUF_3BAY   →  Bay1+Bay2+Bay3  (only 3 bays)
+//                   SFR25: 3 < 4 required → WARNING fires ✗
+//
+//   NONCONT_4BAY →  Bay1+Bay3+Bay4+Bay5  (4 bays but Bay1 is isolated)
+//                   SFR13: Bay1 has no assigned neighbour (Bay2 is skipped) → ERROR ✗
+//                   SFR25: 4 assigned ≥ 4 required ✓
+// =============================================================================
+
+airfield MultiBayDemo {
+
+    // -------------------------------------------------------------------------
+    // Clearance envelope — generous military transport margins
+    // -------------------------------------------------------------------------
+    clearance WideSafety {
+        lateralMargin      3.0 m
+        longitudinalMargin 4.0 m
+        verticalMargin     2.0 m
+    }
+
+    // -------------------------------------------------------------------------
+    // Aircraft: A400M military transport
+    //   effectiveWingspan = 42.4 + 3.0 = 45.4 m
+    //   effectiveLength   = 45.1 + 4.0 = 49.1 m
+    //   effectiveHeight   = 14.7 + 2.0 = 16.7 m
+    //
+    //   SFR25 bay count: ceil(45.4 / 15) = ceil(3.03) = 4 bays minimum
+    // -------------------------------------------------------------------------
+    aircraft A400M {
+        wingspan  42.4 m
+        length    45.1 m
+        height    14.7 m
+        tailHeight 14.7 m
+        clearance WideSafety
+    }
+
+    // -------------------------------------------------------------------------
+    // Hangar: LargeBayHangar
+    //   Door:  WideGate  50 m × 18 m — fits A400M effective (45.4 m × 16.7 m) ✓
+    //   Grid:  1 row × 5 cols, each bay 15 m wide, 55 m deep, 18 m tall
+    //
+    //   Per-bay dimensions:
+    //     width  15 m  (< 45.4 m effectiveWingspan → SFR12 width fires per bay, expected)
+    //     depth  55 m  (≥ 49.1 m effectiveLength ✓)
+    //     height 18 m  (≥ 16.7 m effectiveHeight ✓)
+    // -------------------------------------------------------------------------
+    hangar LargeBayHangar {
+        doors {
+            door WideGate {
+                width  50.0 m
+                height 18.0 m
+            }
+        }
+        grid baygrid {
+            rows 1 cols 5
+            bay Bay1 {
+                at row 0 col 0
+                width  15.0 m
+                depth  55.0 m
+                height 18.0 m
+            }
+            bay Bay2 {
+                at row 0 col 1
+                width  15.0 m
+                depth  55.0 m
+                height 18.0 m
+            }
+            bay Bay3 {
+                at row 0 col 2
+                width  15.0 m
+                depth  55.0 m
+                height 18.0 m
+            }
+            bay Bay4 {
+                at row 0 col 3
+                width  15.0 m
+                depth  55.0 m
+                height 18.0 m
+            }
+            bay Bay5 {
+                at row 0 col 4
+                width  15.0 m
+                depth  55.0 m
+                height 18.0 m
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // VALID_4BAY — correct 4-bay allocation for the A400M.
+    //
+    // SFR25: ceil(45.4 / 15) = 4 bays required, 4 assigned → no warning ✓
+    // SFR13: Bay1→Bay2→Bay3→Bay4 are consecutive grid columns → contiguous ✓
+    // SFR11: WideGate 50 m ≥ 45.4 m effective wingspan ✓
+    //
+    // NOTE: SFR12 will warn on each bay's individual width check (45.4 m > 15 m).
+    // This is expected — the aircraft spans the four bays laterally.
+    // -------------------------------------------------------------------------
+    induct id "VALID_4BAY" A400M into LargeBayHangar bays Bay1 Bay2 Bay3 Bay4 via WideGate
+        from 2024-08-01T08:00
+        to   2024-08-01T20:00
+        meta {
+            squadron:    "70 Squadron"
+            maintenance: "Full_C-Check"
+            note:        "Valid_4-bay_allocation_meets_SFR25_requirement"
+        };
+
+    // -------------------------------------------------------------------------
+    // INSUF_3BAY — intentionally too few bays (only 3 assigned).
+    //
+    // Expected VIOLATION:
+    //   [SFR25_BAY_COUNT] Aircraft 'A400M' requires at least 4 bays
+    //   (effective wingspan 45.40 m) but only 3 are assigned.
+    //
+    // The three assigned bays ARE contiguous (no SFR13 error), but SFR25
+    // catches that the wingspan cannot be accommodated across only 3 × 15 m.
+    // -------------------------------------------------------------------------
+    induct id "INSUF_3BAY" A400M into LargeBayHangar bays Bay1 Bay2 Bay3 via WideGate
+        from 2024-08-02T08:00
+        to   2024-08-02T20:00
+        meta {
+            squadron:    "70 Squadron"
+            maintenance: "Minor_A-Check"
+            note:        "VIOLATION — only_3_bays_assigned_but_4_required_by_SFR25"
+        };
+
+    // -------------------------------------------------------------------------
+    // NONCONT_4BAY — four bays assigned, but they are NOT all connected.
+    //
+    // Layout of assigned bays:
+    //   [Bay1]  gap  [Bay3][Bay4][Bay5]
+    //   col 0        col 2  col 3  col 4
+    //
+    // Bay1 (col 0) is only grid-adjacent to Bay2 (col 1), which is NOT assigned.
+    // Bay1 is therefore isolated from the {Bay3, Bay4, Bay5} component.
+    //
+    // Expected VIOLATION:
+    //   [SFR13_CONTIGUITY] Bays Bay1, Bay3, Bay4, Bay5 are not contiguous
+    //   (1/4 reachable from Bay1 within the assigned set).
+    //
+    // SFR25: 4 assigned ≥ 4 required → no bay-count warning ✓
+    // -------------------------------------------------------------------------
+    induct id "NONCONT_4BAY" A400M into LargeBayHangar bays Bay1 Bay3 Bay4 Bay5 via WideGate
+        from 2024-08-03T08:00
+        to   2024-08-03T20:00
+        meta {
+            squadron:    "47 Squadron"
+            maintenance: "Avionics_Upgrade"
+            note:        "VIOLATION — Bay1_is_not_adjacent_to_Bay3_contiguity_fails_SFR13"
+        };
+}

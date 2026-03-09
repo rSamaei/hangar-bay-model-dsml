@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { createAirfieldServices } from '../language/out/airfield-module.js';
-import { simulate } from '../simulator/out/engine.js';
+import { analyzeAndSchedule } from '../simulator/out/engine.js';
 import { AutoScheduler } from '../simulator/out/scheduler.js';
 import { NodeFileSystem } from 'langium/node';
 import { URI } from 'langium';
@@ -132,44 +132,29 @@ app.post('/api/simulate', async (req, res) => {
       scheduleResult = scheduler.schedule(model);
     }
     
-    // Run simulation
-    console.log('Running simulation...');
-    const simResult = simulate(model);
+    // Run analysis
+    console.log('Running analysis...');
+    const { report, exportModel } = analyzeAndSchedule(model);
     
     const response = {
       success: true,
-      simulation: {
-        conflicts: (simResult.conflicts || []).map(c => ({
-          time: c.time,
-          hangarName: c.hangarName,
-          fromBay: c.fromBay,
-          toBay: c.toBay,
-          aircraft: c.induction?.aircraft?.ref?.name || 'unknown'
-        })),
-        maxOccupancy: Object.fromEntries(simResult.maxOccupancyPerHangar || new Map()),
-        timeline: (simResult.timeline || []).map(t => ({
-          time: t.time,
-          occupied: Object.fromEntries(
-            Object.entries(t.occupied || {}).map(([hangar, bays]) => [
-              hangar,
-              bays.map((occupied, idx) => ({ bay: idx + 1, occupied }))
-            ])
-          )
-        }))
+      analysis: {
+        violations: report.violations,
+        totalViolations: report.totalViolations
       },
+      exportModel,
       scheduling: scheduleResult ? {
         scheduled: (scheduleResult.scheduled || []).map(s => ({
-          aircraft: s.aircraft?.name || 'unknown',
-          hangar: s.hangar?.name || 'unknown',
-          fromBay: s.fromBay,
-          toBay: s.toBay,
+          id: s.id,
+          aircraft: s.aircraft,
+          hangar: s.hangar,
+          bays: s.bays,
           start: s.start,
-          duration: s.duration
+          end: s.end
         })),
         unscheduled: (scheduleResult.unscheduled || []).map(u => ({
           aircraft: u.aircraft?.ref?.name || 'unknown',
-          duration: u.duration,
-          wingspan: u.aircraft?.ref?.wingspan
+          duration: u.duration
         }))
       } : null
     };

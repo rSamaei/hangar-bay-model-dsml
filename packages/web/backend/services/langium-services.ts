@@ -1,12 +1,13 @@
-import { createAirfieldServices } from '../../../language/out/airfield-module.js';
 import { NodeFileSystem } from 'langium/node';
+import { createAirfieldServices } from '../../../language/out/airfield-module.js';
 import type { AirfieldServices } from '../../../language/out/airfield-module.js';
 
 let servicesInstance: AirfieldServices | null = null;
 
-export function getServices(): AirfieldServices {
+export function getLangiumServices(): AirfieldServices {
   if (!servicesInstance) {
-    servicesInstance = createAirfieldServices(NodeFileSystem).Airfield;
+    const services = createAirfieldServices(NodeFileSystem);
+    servicesInstance = services.Airfield;
   }
   return servicesInstance;
 }

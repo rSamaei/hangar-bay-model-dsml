@@ -5,11 +5,26 @@
   "main": "./out/index.js",
   "types": "./out/index.d.ts",
   "exports": {
-    ".": "./out/index.js",
-    "./analysis": "./out/analysis.js",
-    "./scheduler": "./out/scheduler.js",
-    "./builders/*": "./out/builders/*.js",
-    "./types/*": "./out/types/*.js"
+    ".": {
+      "types": "./out/index.d.ts",
+      "import": "./out/index.js"
+    },
+    "./analysis": {
+      "types": "./out/analysis.d.ts",
+      "import": "./out/analysis.js"
+    },
+    "./scheduler": {
+      "types": "./out/scheduler.d.ts",
+      "import": "./out/scheduler.js"
+    },
+    "./builders/*": {
+      "types": "./out/builders/*.d.ts",
+      "import": "./out/builders/*.js"
+    },
+    "./types/*": {
+      "types": "./out/types/*.d.ts",
+      "import": "./out/types/*.js"
+    }
   },
   "scripts": {
     "build": "tsc",

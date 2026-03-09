@@ -1,0 +1,60 @@
+airfield TestBase_Violations {
+    clearance Standard {
+        lateralMargin 2.0 m
+        longitudinalMargin 3.0 m
+        verticalMargin 1.5 m
+    }
+
+    aircraft SmallFighter {
+        wingspan 10.0 m
+        length 15.0 m
+        height 5.0 m
+        tailHeight 5.0 m
+        clearance Standard
+    }
+
+    aircraft LargeFighter {
+        wingspan 15.0 m
+        length 20.0 m
+        height 6.0 m
+        tailHeight 6.0 m
+        clearance Standard
+    }
+
+    hangar SmallHangar {
+        doors {
+            door NarrowDoor {
+                width 12.0 m
+                height 5.5 m
+            }
+        }
+        grid baygrid {
+            bay TinyBay {
+                width 12.0 m
+                depth 18.0 m
+                height 5.5 m
+            }
+        }
+    }
+
+    // VIOLATION: Aircraft too wide for door (15m + 4m clearance > 12m)
+    induct id "VIOL001" LargeFighter into SmallHangar bays TinyBay via NarrowDoor
+        from 2024-04-01T08:00 to 2024-04-01T16:00
+        meta {
+            expected: "SFR11_DOOR_WIDTH_VIOLATION"
+        };
+
+    // VIOLATION: Aircraft too tall for bay (6m + 1.5m clearance > 5.5m)
+    induct id "VIOL002" LargeFighter into SmallHangar bays TinyBay
+        from 2024-04-01T10:00 to 2024-04-01T18:00
+        meta {
+            expected: "SFR13_BAY_HEIGHT_VIOLATION"
+        };
+
+    // VIOLATION: Time overlap with VIOL002
+    induct id "VIOL003" SmallFighter into SmallHangar bays TinyBay
+        from 2024-04-01T14:00 to 2024-04-01T20:00
+        meta {
+            expected: "SFR16_TIME_OVERLAP"
+        };
+}

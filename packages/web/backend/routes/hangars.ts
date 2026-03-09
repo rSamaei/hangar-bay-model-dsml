@@ -10,6 +10,49 @@ import {
 
 const router = Router();
 
+type ValidatedBay = { name: string; width: number; depth: number; height: number };
+
+/**
+ * Validates and normalises the `bays` array from a request body.
+ * Returns parsed bays on success, or an `{ error: string }` object on failure.
+ */
+function parseBays(bays: unknown): ValidatedBay[] | { error: string } {
+  if (!Array.isArray(bays) || bays.length === 0) {
+    return { error: 'At least one bay is required' };
+  }
+
+  const validated: ValidatedBay[] = [];
+  const seen = new Set<string>();
+
+  for (let i = 0; i < bays.length; i++) {
+    const bay = bays[i];
+
+    if (!bay.name || typeof bay.name !== 'string' || bay.name.trim().length === 0) {
+      return { error: `Bay ${i + 1}: name is required` };
+    }
+
+    const bayName = bay.name.trim();
+    if (seen.has(bayName)) {
+      return { error: `Duplicate bay name: ${bayName}` };
+    }
+    seen.add(bayName);
+
+    if (typeof bay.width !== 'number' || bay.width <= 0) {
+      return { error: `Bay ${bayName}: width must be a positive number` };
+    }
+    if (typeof bay.depth !== 'number' || bay.depth <= 0) {
+      return { error: `Bay ${bayName}: depth must be a positive number` };
+    }
+    if (typeof bay.height !== 'number' || bay.height <= 0) {
+      return { error: `Bay ${bayName}: height must be a positive number` };
+    }
+
+    validated.push({ name: bayName, width: bay.width, depth: bay.depth, height: bay.height });
+  }
+
+  return validated;
+}
+
 // GET /api/hangars - List all hangars for current user
 router.get('/hangars', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const hangars = getHangarsByUser(req.user!.id);
@@ -37,61 +80,19 @@ router.get('/hangars/:id', requireAuth, (req: AuthenticatedRequest, res: Respons
 router.post('/hangars', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const { name, bays } = req.body;
 
-  // Validation
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
     res.status(400).json({ error: 'Hangar name is required' });
     return;
   }
 
-  if (!Array.isArray(bays) || bays.length === 0) {
-    res.status(400).json({ error: 'At least one bay is required' });
+  const parsedBays = parseBays(bays);
+  if ('error' in parsedBays) {
+    res.status(400).json({ error: parsedBays.error });
     return;
   }
 
-  // Validate each bay
-  const validatedBays: Array<{ name: string; width: number; depth: number; height: number }> = [];
-  const bayNames = new Set<string>();
-
-  for (let i = 0; i < bays.length; i++) {
-    const bay = bays[i];
-
-    if (!bay.name || typeof bay.name !== 'string' || bay.name.trim().length === 0) {
-      res.status(400).json({ error: `Bay ${i + 1}: name is required` });
-      return;
-    }
-
-    const bayName = bay.name.trim();
-    if (bayNames.has(bayName)) {
-      res.status(400).json({ error: `Duplicate bay name: ${bayName}` });
-      return;
-    }
-    bayNames.add(bayName);
-
-    if (typeof bay.width !== 'number' || bay.width <= 0) {
-      res.status(400).json({ error: `Bay ${bayName}: width must be a positive number` });
-      return;
-    }
-
-    if (typeof bay.depth !== 'number' || bay.depth <= 0) {
-      res.status(400).json({ error: `Bay ${bayName}: depth must be a positive number` });
-      return;
-    }
-
-    if (typeof bay.height !== 'number' || bay.height <= 0) {
-      res.status(400).json({ error: `Bay ${bayName}: height must be a positive number` });
-      return;
-    }
-
-    validatedBays.push({
-      name: bayName,
-      width: bay.width,
-      depth: bay.depth,
-      height: bay.height
-    });
-  }
-
   try {
-    const hangar = createHangar(req.user!.id, name.trim(), validatedBays);
+    const hangar = createHangar(req.user!.id, name.trim(), parsedBays);
     res.status(201).json({ hangar });
   } catch (error: any) {
     if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -117,60 +118,18 @@ router.put('/hangars/:id', requireAuth, (req: AuthenticatedRequest, res: Respons
     return;
   }
 
-  if (!Array.isArray(bays) || bays.length === 0) {
-    res.status(400).json({ error: 'At least one bay is required' });
+  const parsedBays = parseBays(bays);
+  if ('error' in parsedBays) {
+    res.status(400).json({ error: parsedBays.error });
     return;
   }
 
-  // Validate each bay
-  const validatedBays2: Array<{ name: string; width: number; depth: number; height: number }> = [];
-  const bayNames2 = new Set<string>();
-
-  for (let i = 0; i < bays.length; i++) {
-    const bay = bays[i];
-
-    if (!bay.name || typeof bay.name !== 'string' || bay.name.trim().length === 0) {
-      res.status(400).json({ error: `Bay ${i + 1}: name is required` });
-      return;
-    }
-
-    const bayName = bay.name.trim();
-    if (bayNames2.has(bayName)) {
-      res.status(400).json({ error: `Duplicate bay name: ${bayName}` });
-      return;
-    }
-    bayNames2.add(bayName);
-
-    if (typeof bay.width !== 'number' || bay.width <= 0) {
-      res.status(400).json({ error: `Bay ${bayName}: width must be a positive number` });
-      return;
-    }
-
-    if (typeof bay.depth !== 'number' || bay.depth <= 0) {
-      res.status(400).json({ error: `Bay ${bayName}: depth must be a positive number` });
-      return;
-    }
-
-    if (typeof bay.height !== 'number' || bay.height <= 0) {
-      res.status(400).json({ error: `Bay ${bayName}: height must be a positive number` });
-      return;
-    }
-
-    validatedBays2.push({
-      name: bayName,
-      width: bay.width,
-      depth: bay.depth,
-      height: bay.height
-    });
-  }
-
   try {
-    const hangar = updateHangar(id, req.user!.id, name.trim(), validatedBays2);
+    const hangar = updateHangar(id, req.user!.id, name.trim(), parsedBays);
     if (!hangar) {
       res.status(404).json({ error: 'Hangar not found' });
       return;
     }
-
     res.json({ hangar });
   } catch (error: any) {
     if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {

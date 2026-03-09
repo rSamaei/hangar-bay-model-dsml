@@ -1,182 +1,484 @@
 import './style.css';
-import { parseModel, runSimulation, getExampleModel } from './services/api';
-import { renderDiagnostics } from './components/diagnostics';
-import { renderModelInfo } from './components/model-info';
-import { renderSimulationResults } from './components/simulation-results';
-import { renderTimeline } from './components/timeline';
+import { router } from './router';
+import { createHomePage } from './components/home-page';
+import { createResultsPage } from './components/results-page';
+import { createLoginPage, attachLoginPageListeners } from './components/login-page';
+import { createDashboardPage, attachDashboardPageListeners } from './components/dashboard-page';
+import { createAircraftListPage, createAircraftFormPage, attachAircraftListListeners, attachAircraftFormListeners } from './components/aircraft-page';
+import { createHangarsListPage, createHangarFormPage, attachHangarsListListeners, attachHangarFormListeners } from './components/hangars-page';
+import { createSchedulePage, attachSchedulePageListeners, cleanupSchedulePage } from './components/schedule-page';
+import { createTimelinePage, attachTimelinePageListeners } from './components/timeline-page';
+import { parseModel, analyzeModel, ApiError, type AnalysisResult } from './services/api';
+import { examples, loadExample } from './services/examples';
+import { isLoggedIn, authFetch } from './services/auth';
+import { initMonacoEditor, type MonacoEditorInstance } from './editor/monaco-editor';
+import { setupLiveValidation } from './editor/diagnostics';
+import { setupProblemsPanel, type PanelController } from './editor/problems-panel';
 
-function initializeApp(): void {
+// Module-level Monaco editor instance — shared across all home-page listener closures.
+// Disposed and recreated each time the home page is rendered.
+let monacoEditor: MonacoEditorInstance | null = null;
+// Live-validation subscription — disposed alongside the editor.
+let validationDisposable: { dispose(): void } | null = null;
+// Problems panel controller — disposed alongside the editor.
+let panelController: PanelController | null = null;
+
+// Initialize the application
+function initApp() {
   const app = document.getElementById('app');
   if (!app) return;
 
-  app.innerHTML = `
-    <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-slate-50">
-      <div class="border-b border-white/10 backdrop-blur bg-white/5 sticky top-0 z-10">
-        <div class="container mx-auto px-6 py-5 flex items-center gap-3">
-          <div class="w-11 h-11 bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-500 rounded-xl shadow-lg shadow-cyan-500/20 flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-            </svg>
-          </div>
-          <div>
-            <h1 class="text-2xl font-bold">Airfield Simulation Platform</h1>
-            <p class="text-sm text-slate-300">Model, schedule, and optimize hangar bay operations</p>
-          </div>
-        </div>
-      </div>
+  // Initialize router from URL hash
+  router.initFromHash();
 
-      <div class="container mx-auto px-6 py-8 space-y-6">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur shadow-2xl shadow-black/30 overflow-hidden">
-            <div class="px-6 py-4 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500">
-              <h2 class="text-lg font-semibold flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
-                </svg>
-                DSL Editor
-              </h2>
-            </div>
-            <div class="p-6 space-y-4">
-              <textarea
-                id="code-editor"
-                class="w-full h-96 p-4 font-mono text-sm bg-slate-950/70 border border-white/10 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all resize-none text-slate-100 placeholder:text-slate-500"
-                placeholder="Loading example model..."
-              ></textarea>
-              <div class="flex gap-3">
-                <button
-                  id="parse-btn"
-                  class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg shadow-cyan-500/30 hover:-translate-y-0.5 flex items-center justify-center gap-2"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                  </svg>
-                  Parse Model
-                </button>
-                <button
-                  id="simulate-btn"
-                  class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg shadow-indigo-500/30 hover:-translate-y-0.5 flex items-center justify-center gap-2"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                  Run Simulation
-                </button>
-              </div>
-              <div id="diagnostics" class="mt-2"></div>
-            </div>
-          </div>
+  // Set up router
+  router.onRouteChange((state) => {
+    renderRoute(state.currentRoute, state.data);
+  });
 
-          <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur shadow-2xl shadow-black/30 overflow-hidden">
-            <div class="px-6 py-4 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500">
-              <h2 class="text-lg font-semibold flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                </svg>
-                Results
-              </h2>
-            </div>
-            <div class="p-6">
-              <div id="results" class="space-y-4">
-                <div class="text-center py-12 text-slate-400">
-                  <svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                  </svg>
-                  <p class="font-medium">Run a simulation to see results</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur shadow-2xl shadow-black/30 overflow-hidden">
-          <div class="px-6 py-4 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500">
-            <h2 class="text-lg font-semibold flex items-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-              </svg>
-              Timeline Visualization
-            </h2>
-          </div>
-          <div class="p-6">
-            <div id="timeline" class="overflow-x-auto"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  attachEventListeners();
-  loadExampleModel();
+  // Initial render based on current route
+  renderRoute(router.getCurrentRoute(), router.getData());
 }
 
-function attachEventListeners(): void {
-  const parseBtn = document.getElementById('parse-btn');
-  const simulateBtn = document.getElementById('simulate-btn');
-  
-  parseBtn?.addEventListener('click', handleParse);
-  simulateBtn?.addEventListener('click', handleSimulate);
-}
+function renderRoute(route: string, data?: any) {
+  const app = document.getElementById('app');
+  if (!app) return;
 
-async function handleParse(): Promise<void> {
-  const codeEditor = document.getElementById('code-editor') as HTMLTextAreaElement;
-  const diagnosticsDiv = document.getElementById('diagnostics');
-  const resultsDiv = document.getElementById('results');
-  
-  if (!codeEditor || !diagnosticsDiv || !resultsDiv) return;
-  
-  try {
-    const data = await parseModel(codeEditor.value);
-    
-    diagnosticsDiv.innerHTML = renderDiagnostics(data);
-    resultsDiv.innerHTML = renderModelInfo(data);
-    
-  } catch (error) {
-    diagnosticsDiv.innerHTML = `
-      <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-        <p class="text-red-800 font-semibold">Error: ${error instanceof Error ? error.message : 'Unknown error'}</p>
-      </div>
-    `;
+  // Dispose Monaco and its subscriptions when navigating away from home
+  if (route !== 'home' && monacoEditor) {
+    validationDisposable?.dispose();
+    validationDisposable = null;
+    panelController?.dispose();
+    panelController = null;
+    monacoEditor.dispose();
+    monacoEditor = null;
+  }
+
+  // Unmount the React schedule app when navigating away from schedule
+  if (route !== 'schedule') {
+    cleanupSchedulePage();
+  }
+
+  // Protected routes check
+  const protectedRoutes = ['dashboard', 'aircraft', 'aircraft-form', 'hangars', 'hangar-form', 'schedule', 'timeline'];
+  if (protectedRoutes.includes(route) && !isLoggedIn()) {
+    router.navigate('login');
+    return;
+  }
+
+  switch (route) {
+    case 'login':
+      app.innerHTML = createLoginPage();
+      attachLoginPageListeners();
+      break;
+    case 'dashboard':
+      app.innerHTML = createDashboardPage();
+      attachDashboardPageListeners();
+      break;
+    case 'aircraft':
+      app.innerHTML = createAircraftListPage();
+      attachAircraftListListeners();
+      break;
+    case 'aircraft-form':
+      app.innerHTML = createAircraftFormPage();
+      attachAircraftFormListeners();
+      break;
+    case 'hangars':
+      app.innerHTML = createHangarsListPage();
+      attachHangarsListListeners();
+      break;
+    case 'hangar-form':
+      app.innerHTML = createHangarFormPage();
+      attachHangarFormListeners();
+      break;
+    case 'schedule':
+      app.innerHTML = createSchedulePage();
+      attachSchedulePageListeners();
+      break;
+    case 'timeline':
+      app.innerHTML = createTimelinePage();
+      attachTimelinePageListeners();
+      break;
+    case 'results':
+      renderResultsPage(data as AnalysisResult);
+      break;
+    case 'home':
+    default:
+      renderHomePage(data);
+      break;
   }
 }
 
-async function handleSimulate(): Promise<void> {
-  const codeEditor = document.getElementById('code-editor') as HTMLTextAreaElement;
-  const resultsDiv = document.getElementById('results');
-  
-  if (!codeEditor || !resultsDiv) return;
-  
-  try {
-    const data = await runSimulation(codeEditor.value);
-    
-    if (!data.simulation) {
-      throw new Error(data.error || 'Simulation failed');
+function renderHomePage(data?: any) {
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  // Pick up DSL stashed by the schedule page's "View as DSL" button.
+  // sessionStorage survives the double router.navigate() / hashchange cycle.
+  const storedPrefill = sessionStorage.getItem('schedule_dsl_prefill');
+  if (storedPrefill) {
+    sessionStorage.removeItem('schedule_dsl_prefill');
+    data = { prefillCode: storedPrefill };
+  }
+
+  // Dispose any existing Monaco instance (and subscriptions) before replacing the DOM
+  if (monacoEditor) {
+    validationDisposable?.dispose();
+    validationDisposable = null;
+    panelController?.dispose();
+    panelController = null;
+    monacoEditor.dispose();
+    monacoEditor = null;
+  }
+
+  app.innerHTML = createHomePage();
+  attachHomePageListeners();
+
+  // Handle prefilled code (e.g. from scheduler)
+  if (data?.prefillCode) {
+    monacoEditor?.setValue(data.prefillCode);
+    updateLineCount(data.prefillCode);
+
+    if (data.autoAnalyze) {
+      setTimeout(() => {
+        document.getElementById('analyze-btn')?.click();
+      }, 500);
     }
-    
-    resultsDiv.innerHTML = renderSimulationResults(data);
-    renderTimeline(data.simulation?.timeline);
-    
-  } catch (error) {
-    resultsDiv.innerHTML = `
-      <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-        <p class="text-red-800 font-semibold">Error: ${error instanceof Error ? error.message : 'Unknown error'}</p>
-      </div>
-    `;
+  } else {
+    loadDefaultExample();
   }
 }
 
-async function loadExampleModel(): Promise<void> {
-  const codeEditor = document.getElementById('code-editor') as HTMLTextAreaElement;
-  if (!codeEditor) return;
+function renderResultsPage(data: AnalysisResult) {
+  const app = document.getElementById('app');
+  if (!app) return;
 
-  codeEditor.value = '// Loading example...';
+  app.innerHTML = createResultsPage(data);
+  attachResultsPageListeners();
+}
+
+function attachHomePageListeners() {
+  // Create Monaco editor in the container div
+  const container = document.getElementById('code-editor-container');
+  if (container) {
+    monacoEditor = initMonacoEditor(container, '');
+
+    // Keep the line-count badge in sync with Monaco content changes
+    monacoEditor.onDidChangeModelContent(() => {
+      updateLineCount(monacoEditor?.getValue() ?? '');
+    });
+
+    // Set up the problems panel (drag/resize, tabs, diagnostics list)
+    panelController = setupProblemsPanel(monacoEditor);
+
+    // Attach live Langium validation → inline squiggles + problems panel list
+    validationDisposable = setupLiveValidation(
+      monacoEditor,
+      (items) => panelController?.updateDiagnostics(items),
+    );
+  }
+
+  // "Load from Schedule" button — fetches the current schedule's DSL and loads it
+  const loadFromScheduleBtn = document.getElementById('load-from-schedule-btn') as HTMLButtonElement | null;
+  loadFromScheduleBtn?.addEventListener('click', async () => {
+    if (loadFromScheduleBtn.disabled) return;
+    loadFromScheduleBtn.disabled = true;
+    const originalText = loadFromScheduleBtn.textContent ?? '';
+    loadFromScheduleBtn.textContent = 'Loading…';
+    try {
+      const resp = await authFetch('/api/schedule');
+      if (!resp.ok) {
+        showNotification('Failed to load schedule', 'error');
+        return;
+      }
+      const data = await resp.json();
+      const dsl: string | undefined = data?.dslCode;
+      if (!dsl?.trim()) {
+        showNotification('Schedule is empty — add entries first', 'warning');
+        return;
+      }
+      monacoEditor?.setValue(dsl);
+      updateLineCount(dsl);
+      showNotification('Schedule DSL loaded', 'success');
+    } catch {
+      showNotification('Failed to load schedule', 'error');
+    } finally {
+      loadFromScheduleBtn.disabled = false;
+      loadFromScheduleBtn.textContent = originalText;
+    }
+  });
+
+  // Panel "Analyze" button — inline results in the Schedule Results tab
+  const panelAnalyzeBtn = document.getElementById('panel-analyze-btn') as HTMLButtonElement | null;
+  panelAnalyzeBtn?.addEventListener('click', async () => {
+    const code = monacoEditor?.getValue();
+    if (!code?.trim()) {
+      showNotification('Please enter DSL code', 'warning');
+      return;
+    }
+
+    const originalHTML = panelAnalyzeBtn.innerHTML;
+    panelAnalyzeBtn.innerHTML = `
+      <svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Analyzing...`;
+    panelAnalyzeBtn.disabled = true;
+
+    try {
+      const result = await analyzeModel(code);
+      panelController?.updateScheduleResults(result);
+    } catch (error) {
+      showNotification(
+        error instanceof Error ? error.message : 'Analysis failed',
+        'error',
+      );
+    } finally {
+      panelAnalyzeBtn.innerHTML = originalHTML;
+      panelAnalyzeBtn.disabled  = false;
+    }
+  });
+
+  const parseBtn = document.getElementById('parse-btn');
+  const analyzeBtn = document.getElementById('analyze-btn');
+
+  // Example card click handlers
+  const exampleCards = document.querySelectorAll('.example-card');
+  exampleCards.forEach(card => {
+    card.addEventListener('click', async () => {
+      const exampleId = card.getAttribute('data-example-id');
+      if (!exampleId) return;
+
+      const example = examples.find(ex => ex.id === exampleId);
+      if (!example) return;
+
+      // Update active state visually
+      exampleCards.forEach(c => c.classList.remove('ring-2', 'ring-cyan-500'));
+      card.classList.add('ring-2', 'ring-cyan-500');
+
+      try {
+        const code = await loadExample(example.file);
+        monacoEditor?.setValue(code);
+        updateLineCount(code);
+
+        // Update selected example name
+        const nameSpan = document.getElementById('selected-example-name');
+        if (nameSpan) {
+          nameSpan.textContent = `Loaded: ${example.name}`;
+        }
+      } catch (error) {
+        console.error('Failed to load example:', error);
+        showNotification('Failed to load example. Please try again.', 'error');
+      }
+    });
+  });
+
+  // Parse button
+  parseBtn?.addEventListener('click', async () => {
+    const code = monacoEditor?.getValue();
+    if (!code) {
+      showNotification('Please enter DSL code', 'warning');
+      return;
+    }
+
+    try {
+      parseBtn.textContent = 'Parsing...';
+      parseBtn.setAttribute('disabled', 'true');
+
+      const result = await parseModel(code);
+
+      const parseResultsDiv = document.getElementById('parse-results');
+      if (parseResultsDiv) {
+        if (result.errors && result.errors.length > 0) {
+          parseResultsDiv.innerHTML = `
+            <div class="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+              <h4 class="font-medium text-red-400 mb-2">Parse Errors</h4>
+              <ul class="text-sm text-red-300 space-y-1">
+                ${result.errors.map((e: any) => `<li>${e.message || JSON.stringify(e)}</li>`).join('')}
+              </ul>
+            </div>
+          `;
+        } else if (result.model) {
+          parseResultsDiv.innerHTML = `
+            <div class="mt-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+              <div class="flex items-center gap-2 text-emerald-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="font-medium">Parse successful!</span>
+              </div>
+              <p class="text-sm text-slate-400 mt-1">Click "Analyze & Schedule" to run full analysis.</p>
+            </div>
+          `;
+        }
+      }
+    } catch (error) {
+      console.error('Parse error:', error);
+      const parseResultsDiv = document.getElementById('parse-results');
+      if (error instanceof ApiError && error.parseErrors.length > 0) {
+        if (parseResultsDiv) {
+          parseResultsDiv.innerHTML = `
+            <div class="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+              <h4 class="font-medium text-red-400 mb-2">Parse Errors</h4>
+              <ul class="text-sm text-red-300 space-y-2">
+                ${error.parseErrors.map(e => `
+                  <li class="flex items-start gap-2">
+                    <span class="text-red-500 mt-0.5">&#x2717;</span>
+                    <div>
+                      <span>${e.message}</span>
+                      ${e.line ? `<span class="text-slate-500 ml-2">(line ${e.line}${e.column ? `:${e.column}` : ''})</span>` : ''}
+                    </div>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+          `;
+        }
+        showNotification(`Parse failed: ${error.parseErrors.length} error(s)`, 'error');
+      } else {
+        showNotification('Parse failed. Check console for details.', 'error');
+      }
+    } finally {
+      parseBtn.textContent = 'Parse Only';
+      parseBtn.removeAttribute('disabled');
+    }
+  });
+
+  // Analyze button
+  analyzeBtn?.addEventListener('click', async () => {
+    const code = monacoEditor?.getValue();
+    if (!code) {
+      showNotification('Please enter DSL code', 'warning');
+      return;
+    }
+
+    try {
+      // Show loading state
+      analyzeBtn.innerHTML = `
+        <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        Analyzing...
+      `;
+      analyzeBtn.setAttribute('disabled', 'true');
+
+      const result = await analyzeModel(code);
+
+      // Debug log
+      console.log('[Frontend] Analysis result:', result);
+
+      // Navigate to results page
+      router.navigate('results', result);
+
+    } catch (error) {
+      console.error('Analysis error:', error);
+
+      // Display detailed errors if available
+      const parseResultsDiv = document.getElementById('parse-results');
+      if (error instanceof ApiError && error.parseErrors.length > 0) {
+        if (parseResultsDiv) {
+          parseResultsDiv.innerHTML = `
+            <div class="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+              <h4 class="font-medium text-red-400 mb-2">Validation Errors</h4>
+              <ul class="text-sm text-red-300 space-y-2">
+                ${error.parseErrors.map(e => `
+                  <li class="flex items-start gap-2">
+                    <span class="text-red-500 mt-0.5">&#x2717;</span>
+                    <div>
+                      <span>${e.message}</span>
+                      ${e.line ? `<span class="text-slate-500 ml-2">(line ${e.line}${e.column ? `:${e.column}` : ''})</span>` : ''}
+                    </div>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+          `;
+        }
+        showNotification(`Analysis failed: ${error.parseErrors.length} validation error(s)`, 'error');
+      } else {
+        if (parseResultsDiv) {
+          parseResultsDiv.innerHTML = `
+            <div class="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+              <h4 class="font-medium text-red-400 mb-2">Error</h4>
+              <p class="text-sm text-red-300">${error instanceof Error ? error.message : 'Unknown error occurred'}</p>
+            </div>
+          `;
+        }
+        showNotification('Analysis failed. Check console for details.', 'error');
+      }
+
+      // Reset button
+      analyzeBtn.innerHTML = `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Analyze & Schedule
+      `;
+      analyzeBtn.removeAttribute('disabled');
+    }
+  });
+}
+
+function attachResultsPageListeners() {
+  const backBtn = document.getElementById('back-btn');
+
+  backBtn?.addEventListener('click', () => {
+    router.navigate('home');
+  });
+}
+
+async function loadDefaultExample() {
+  if (!monacoEditor) return;
+
   try {
-    const { code } = await getExampleModel();
-    codeEditor.value = code;
+    const defaultExample = examples[0];
+    const code = await loadExample(defaultExample.file);
+    monacoEditor.setValue(code);
+    updateLineCount(code);
+
+    // Highlight the first example card
+    const firstCard = document.querySelector(`[data-example-id="${defaultExample.id}"]`);
+    if (firstCard) {
+      firstCard.classList.add('ring-2', 'ring-cyan-500');
+    }
+
+    // Update selected example name
+    const nameSpan = document.getElementById('selected-example-name');
+    if (nameSpan) {
+      nameSpan.textContent = `Loaded: ${defaultExample.name}`;
+    }
   } catch (error) {
-    codeEditor.value = '// Failed to load example model. Please enter your own model.';
-    console.error(error);
+    console.error('Failed to load default example:', error);
   }
 }
 
-initializeApp();
+function updateLineCount(code: string) {
+  const lineCountSpan = document.getElementById('editor-line-count');
+  if (lineCountSpan) {
+    const lines = code.split('\n').length;
+    lineCountSpan.textContent = `${lines} line${lines !== 1 ? 's' : ''}`;
+  }
+}
+
+function showNotification(message: string, type: 'success' | 'error' | 'warning' = 'error') {
+  const colors = {
+    success: 'bg-emerald-500/90 text-white',
+    error: 'bg-red-500/90 text-white',
+    warning: 'bg-amber-500/90 text-white'
+  };
+
+  const notification = document.createElement('div');
+  notification.className = `fixed bottom-4 right-4 px-4 py-3 rounded-lg ${colors[type]} shadow-lg z-50 animate-fade-in`;
+  notification.textContent = message;
+
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.classList.add('opacity-0', 'transition-opacity');
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+
+// Start the app
+initApp();

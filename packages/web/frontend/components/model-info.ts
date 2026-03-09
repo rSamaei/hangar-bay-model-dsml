@@ -1,59 +1,118 @@
-import type { ParseResponse } from '../types/api';
+import type { ExportModel } from '../types/api';
 
-export function renderModelInfo(data: ParseResponse): string {
-  if (!data.model) return '<p class="text-gray-400 text-center py-8">No model data</p>';
-  
-  const { model } = data;
-  
-  return `
-    <div class="space-y-6">
-      <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-4 border border-purple-100">
-        <h3 class="font-bold text-lg text-gray-900 mb-1">${model.name}</h3>
-        <p class="text-sm text-gray-600">Airfield Configuration</p>
-      </div>
-      
-      <div>
-        <div class="flex items-center gap-2 mb-3">
-          <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-          </svg>
-          <h4 class="font-semibold text-gray-700">Aircraft Types</h4>
-          <span class="ml-auto bg-purple-100 text-purple-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">${model.aircraftTypes.length}</span>
+export function renderModelInfo(exportModel: ExportModel): string {
+    const { airfieldName, inductions, autoSchedule, derived } = exportModel;
+    
+    const manualCount = inductions.filter(i => i.kind === 'manual').length;
+    const autoCount = inductions.filter(i => i.kind === 'auto').length;
+    const conflictCount = inductions.filter(i => i.conflicts.length > 0).length;
+    
+    return `
+        <div class="model-info-container">
+            <div class="model-header">
+                <h2>${airfieldName}</h2>
+                <div class="model-stats">
+                    <div class="stat">
+                        <span class="label">Total Inductions:</span>
+                        <span class="value">${inductions.length}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">Manual:</span>
+                        <span class="value">${manualCount}</span>
+                    </div>
+                    ${autoCount > 0 ? `
+                        <div class="stat">
+                            <span class="label">Auto-scheduled:</span>
+                            <span class="value">${autoCount}</span>
+                        </div>
+                    ` : ''}
+                    ${conflictCount > 0 ? `
+                        <div class="stat warning">
+                            <span class="label">With Conflicts:</span>
+                            <span class="value">${conflictCount}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <div class="adjacency-info">
+                <h3>Adjacency Configuration</h3>
+                ${Object.entries(derived.adjacencyModeByHangar).map(([hangar, mode]) => `
+                    <div class="adjacency-item">
+                        <span class="hangar-name">${hangar}:</span>
+                        <span class="mode ${mode}">${mode}</span>
+                    </div>
+                `).join('')}
+            </div>
+            
+            ${autoSchedule && autoSchedule.unscheduled.length > 0 ? `
+                <div class="unscheduled-section">
+                    <h3>Unscheduled Auto-Inductions (${autoSchedule.unscheduled.length})</h3>
+                    ${autoSchedule.unscheduled.map(u => `
+                        <div class="unscheduled-item">
+                            <div class="unscheduled-header">
+                                <strong>${u.id}</strong> (${u.aircraft})
+                                ${u.preferredHangar ? `<span class="preferred-hangar">Preferred: ${u.preferredHangar}</span>` : ''}
+                            </div>
+                            <div class="unscheduled-reason">
+                                <code>${u.reasonRuleId}</code>
+                            </div>
+                            <details class="unscheduled-evidence">
+                                <summary>Rejection Details</summary>
+                                <pre>${JSON.stringify(u.evidence, null, 2)}</pre>
+                            </details>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+            
+            <div class="inductions-list">
+                <h3>All Inductions</h3>
+                ${inductions.map(ind => renderInductionCard(ind)).join('')}
+            </div>
         </div>
-        <ul class="space-y-2">
-          ${model.aircraftTypes.map(ac => `
-            <li class="bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-purple-300 transition-colors">
-              <div class="flex items-center justify-between">
-                <span class="font-medium text-gray-900">${ac.name}</span>
-                <span class="text-sm text-gray-600">Wingspan: <span class="font-semibold text-purple-600">${ac.wingspan}m</span></span>
-              </div>
-            </li>
-          `).join('')}
-        </ul>
-      </div>
-      
-      <div>
-        <div class="flex items-center gap-2 mb-3">
-          <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-          </svg>
-          <h4 class="font-semibold text-gray-700">Hangars</h4>
-          <span class="ml-auto bg-indigo-100 text-indigo-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">${model.hangars.length}</span>
+    `;
+}
+
+function renderInductionCard(induction: ReturnType<typeof import('../types/api')>['ExportedInduction']): string {
+    const hasConflicts = induction.conflicts.length > 0;
+    
+    return `
+        <div class="induction-card ${induction.kind} ${hasConflicts ? 'has-conflicts' : ''}">
+            <div class="induction-header">
+                <span class="induction-id">${induction.id}</span>
+                <span class="kind-badge">${induction.kind}</span>
+            </div>
+            
+            <div class="induction-body">
+                <div class="induction-info">
+                    <div><strong>Aircraft:</strong> ${induction.aircraft}</div>
+                    <div><strong>Hangar:</strong> ${induction.hangar}</div>
+                    ${induction.door ? `<div><strong>Door:</strong> ${induction.door}</div>` : ''}
+                    <div><strong>Bays:</strong> ${induction.bays.join(', ')}</div>
+                    <div><strong>Time:</strong> ${new Date(induction.start).toLocaleString()} → ${new Date(induction.end).toLocaleString()}</div>
+                </div>
+                
+                <div class="derived-properties">
+                    <h4>Derived Properties</h4>
+                    <div class="derived-grid">
+                        <div><strong>Wingspan (eff):</strong> ${induction.derived.wingspanEff.toFixed(2)}m</div>
+                        <div><strong>Length (eff):</strong> ${induction.derived.lengthEff.toFixed(2)}m</div>
+                        <div><strong>Tail Height (eff):</strong> ${induction.derived.tailEff.toFixed(2)}m</div>
+                        <div><strong>Bays Required:</strong> ${induction.derived.baysRequired}</div>
+                        <div><strong>Connected:</strong> ${induction.derived.connected ? '✓' : '✗'}</div>
+                    </div>
+                </div>
+                
+                ${hasConflicts ? `
+                    <div class="conflicts-section">
+                        <h4>Conflicts (${induction.conflicts.length})</h4>
+                        <div class="conflicts-list">
+                            ${induction.conflicts.map(c => `<span class="conflict-tag">${c}</span>`).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
         </div>
-        <ul class="space-y-2">
-          ${model.hangars.map(h => `
-            <li class="bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-indigo-300 transition-colors">
-              <div class="flex items-center justify-between mb-1">
-                <span class="font-medium text-gray-900">${h.name}</span>
-              </div>
-              <div class="flex gap-4 text-sm text-gray-600">
-                <span>Bays: <span class="font-semibold text-indigo-600">${h.bays}</span></span>
-                <span>Width: <span class="font-semibold">${h.bayWidth}m</span></span>
-              </div>
-            </li>
-          `).join('')}
-        </ul>
-      </div>
-    </div>
-  `;
+    `;
 }

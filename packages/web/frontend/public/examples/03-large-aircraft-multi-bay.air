@@ -1,0 +1,252 @@
+// =============================================================================
+// Large Aircraft Multi-Bay Allocation
+//
+// Demonstrates: SFR12_COMBINED (combined bay-set fit), span direction
+// (lateral vs longitudinal), bay count (SFR25_BAY_COUNT), contiguity
+// (SFR13_CONTIGUITY), diagonal adjacency (adjacency 8), requires clause,
+// clearance envelope effects on bay-count calculation.
+//
+// Scenario
+// --------
+// A400M Atlas (42.4 m wingspan, 45.1 m length) requires multiple 14 m bays.
+// The hangar has a 2×4 grid of equal bays with 8-connected adjacency.
+// Operators can assign bays laterally (side-by-side) or longitudinally (end-to-end).
+//
+//   Grid layout (row, col):
+//     [A(0,0)] [B(0,1)] [C(0,2)] [D(0,3)]
+//     [E(1,0)] [F(1,1)] [G(1,2)] [H(1,3)]
+//
+// Each WRONG line is immediately followed by the correct version commented out.
+// =============================================================================
+
+airfield LargeAircraftDemo {
+
+    // =========================================================================
+    // Clearance envelopes
+    // =========================================================================
+
+    clearance MilitaryTransport {
+        lateralMargin      2.0 m
+        longitudinalMargin 3.0 m
+        verticalMargin     1.5 m
+    }
+
+    clearance TightTransport {
+        lateralMargin      0.5 m
+        longitudinalMargin 1.0 m
+        verticalMargin     0.5 m
+    }
+
+    // =========================================================================
+    // Aircraft
+    // =========================================================================
+
+    aircraft A400M {
+        wingspan  42.4 m
+        length    45.1 m
+        height    14.7 m
+        tailHeight 14.7 m
+        clearance MilitaryTransport
+        // effective wingspan = 42.4 + 2.0 = 44.4 m
+        // effective length   = 45.1 + 3.0 = 48.1 m
+        // effective height   = 14.7 + 1.5 = 16.2 m
+        // bays needed (lateral, 14 m each): ceil(44.4 / 14) = ceil(3.17) = 4 bays
+    }
+
+    aircraft C17 {
+        wingspan  51.81 m
+        length    53.04 m
+        height    16.79 m
+        tailHeight 16.79 m
+        clearance MilitaryTransport
+        // effective wingspan = 51.81 + 2.0 = 53.81 m
+        // effective length   = 53.04 + 3.0 = 56.04 m
+        // effective height   = 16.79 + 1.5 = 18.29 m
+        // bays needed (lateral, 14 m each): ceil(53.81 / 14) = ceil(3.84) = 4 bays
+    }
+
+    // =========================================================================
+    // AtlasHangar — 2×4 grid, 8-connected adjacency, 14 m wide × 57 m deep × 19 m tall bays.
+    //
+    // 8-connected means diagonal pairs like A(0,0)↔F(1,1) are treated as adjacent.
+    // This matters for SFR13_CONTIGUITY when assigning non-rectangular bay sets.
+    //
+    // Bay dimensions:
+    //   width  14 m  (< 44.4 m effectiveWingspan — per-bay width fails, expected)
+    //   depth  57 m  (≥ 56.04 m C17 effectiveLength ✓)
+    //   height 19 m  (≥ 18.29 m C17 effectiveHeight ✓)
+    // =========================================================================
+
+    hangar AtlasHangar {
+        doors {
+            door TransportGate {
+                width  57.0 m
+                height 19.5 m
+            }
+        }
+        grid baygrid {
+            rows 2 cols 4
+            adjacency 8                 // diagonal pairs count as adjacent for contiguity
+
+            bay BayA { at row 0 col 0   width 14.0 m   depth 57.0 m   height 19.0 m }
+            bay BayB { at row 0 col 1   width 14.0 m   depth 57.0 m   height 19.0 m }
+            bay BayC { at row 0 col 2   width 14.0 m   depth 57.0 m   height 19.0 m }
+            bay BayD { at row 0 col 3   width 14.0 m   depth 57.0 m   height 19.0 m }
+            bay BayE { at row 1 col 0   width 14.0 m   depth 57.0 m   height 19.0 m }
+            bay BayF { at row 1 col 1   width 14.0 m   depth 57.0 m   height 19.0 m }
+            bay BayG { at row 1 col 2   width 14.0 m   depth 57.0 m   height 19.0 m }
+            bay BayH { at row 1 col 3   width 14.0 m   depth 57.0 m   height 19.0 m }
+        }
+    }
+
+    // =========================================================================
+    // LATERAL_OK — A400M assigned to 4 contiguous lateral bays (top row).
+    //
+    //   sumWidth = 4 × 14 = 56 m ≥ 44.4 m effectiveWingspan ✓
+    //   minDepth = 57 m ≥ 48.1 m effectiveLength ✓
+    //   SFR12_COMBINED passes → per-bay width failures downgraded to INFO
+    //   SFR13 passes — BayA→BayB→BayC→BayD are sequential columns ✓
+    //   SFR25 passes — 4 assigned ≥ ceil(44.4/14)=4 required ✓
+    // =========================================================================
+    induct id "LATERAL_OK"
+        A400M into AtlasHangar bays BayA BayB BayC BayD via TransportGate
+        span lateral
+        from 2025-11-01T08:00
+        to   2025-11-01T20:00
+        meta {
+            squadron:    "70 Squadron"
+            maintenance: "Full_C-Check"
+        };
+
+    // =========================================================================
+    // TOO_FEW_BAYS — only 3 bays assigned; SFR25 and SFR12_COMBINED fire.
+    //
+    //   sumWidth = 3 × 14 = 42 m < 44.4 m effectiveWingspan → SFR12_COMBINED ERROR
+    //   SFR25_BAY_COUNT warning: 3 assigned < 4 required
+    //
+    // WRONG: only 3 bays.
+    // CORRECT: 4 bays for A400M with MilitaryTransport clearance.
+    // =========================================================================
+    induct id "TOO_FEW_BAYS"
+        A400M into AtlasHangar bays BayA BayB BayC via TransportGate
+    //  A400M into AtlasHangar bays BayA BayB BayC BayD via TransportGate   // ← CORRECT
+        span lateral
+        from 2025-11-02T08:00
+        to   2025-11-02T20:00;
+
+    // =========================================================================
+    // WRONG_SPAN — 4 bays assigned but `span longitudinal` used.
+    //
+    //   Longitudinal check: minWidth = 14 m < 44.4 m effectiveWingspan → SFR12_COMBINED ERROR
+    //   The bays are not wide enough for the wingspan even in longitudinal mode.
+    //
+    // WRONG: `span longitudinal` — A400M is too wide for 14 m single-bay width.
+    // CORRECT: `span lateral` — 4 × 14 m = 56 m width accommodates the wingspan.
+    // =========================================================================
+    induct id "WRONG_SPAN"
+        A400M into AtlasHangar bays BayA BayB BayC BayD via TransportGate
+        span longitudinal                // ← WRONG: minWidth 14 m < effectiveWingspan 44.4 m
+        // span lateral                 // ← CORRECT
+        from 2025-11-03T08:00
+        to   2025-11-03T20:00;
+
+    // =========================================================================
+    // NOT_CONTIGUOUS — Bay gap: BayA and BayC assigned, BayB skipped.
+    //
+    //   Under adjacency 8: BayA(0,0) neighbours are BayB(0,1), BayE(1,0), BayF(1,1).
+    //   BayC(0,2) is NOT a neighbour of BayA — Chebyshev distance = 2.
+    //   BFS from BayA within assigned {BayA, BayC}: reaches only BayA.
+    //   → SFR13_CONTIGUITY ERROR: 1/2 reachable.
+    //
+    // WRONG: BayA + BayC — non-contiguous, Bay B skipped.
+    // CORRECT: BayA + BayB (direct neighbours), or BayA + BayF (diagonal, Chebyshev=1).
+    // =========================================================================
+    induct id "NOT_CONTIGUOUS"
+        A400M into AtlasHangar bays BayA BayC via TransportGate
+    //  A400M into AtlasHangar bays BayA BayF via TransportGate   // ← CORRECT: diagonal pair, adjacent under adjacency 8
+        span lateral
+        from 2025-11-04T08:00
+        to   2025-11-04T20:00;
+
+    // =========================================================================
+    // DIAGONAL_OK — Bay A(0,0) + Bay F(1,1): diagonal pair.
+    //
+    //   Under adjacency 4 (orthogonal only), this would fail SFR13_CONTIGUITY.
+    //   Under adjacency 8, diagonal neighbours ARE adjacent → SFR13 passes ✓
+    //
+    //   Combined fit: sumWidth = 2 × 14 = 28 m < 44.4 m → SFR12_COMBINED fails.
+    //   This is intentional — 2 diagonal bays don't give enough combined width.
+    //   Use this to show that adjacency 8 enables the diagonal assignment but
+    //   fit still requires enough total dimension.
+    // =========================================================================
+    induct id "DIAGONAL_OK"
+        A400M into AtlasHangar bays BayA BayF via TransportGate
+    //  A400M into AtlasHangar bays BayA BayB BayC BayD via TransportGate  // ← CORRECT: 4 contiguous bays, sufficient combined width
+        span lateral
+        from 2025-11-05T08:00
+        to   2025-11-05T20:00;
+    // Note: SFR13 passes (diagonal adjacent under adjacency 8).
+    // SFR12_COMBINED fires — 2 × 14 = 28 m < 44.4 m effectiveWingspan.
+
+    // =========================================================================
+    // REQUIRES_TIGHT — using TightTransport clearance reduces geometric minimum.
+    //
+    //   With TightTransport: effective wingspan = 42.4 + 0.5 = 42.9 m
+    //   ceil(42.9 / 14) = ceil(3.06) = 4 bays still required.
+    //
+    //   `requires 3 bays` — below geometric minimum (4).
+    //   → SFR_BAY_COUNT_OVERRIDE warning.
+    //   `requires 4 bays` — matches geometric minimum.
+    //
+    // WRONG: `requires 3 bays` < geometric minimum 4.
+    // CORRECT: `requires 4 bays`.
+    // =========================================================================
+    induct id "REQUIRES_TIGHT"
+        A400M into AtlasHangar bays BayA BayB BayC BayD via TransportGate
+        clearance TightTransport
+        span lateral
+        requires 3 bays                  // ← WRONG: 3 < geometric minimum 4
+        // requires 4 bays              // ← CORRECT
+        from 2025-11-06T08:00
+        to   2025-11-06T20:00;
+
+    // =========================================================================
+    // C17_FULL — C17 Globemaster needs 4 bays.
+    //   effectiveWingspan = 53.81 m → 4 × 14 = 56 m ≥ 53.81 m ✓
+    //   effectiveLength   = 56.04 m → bay depth 57 m ≥ 56.04 m ✓
+    //   effectiveHeight   = 18.29 m → bay height 19 m ≥ 18.29 m ✓
+    //   SFR12_COMBINED passes for width; per-bay width failures → INFO only.
+    //
+    // WRONG: wrong hangar door — if door were too narrow (e.g. 50 m < 53.81 m).
+    //   The TransportGate is 57 m wide, which fits. Correct as-is.
+    // =========================================================================
+    induct id "C17_FULL"
+        C17 into AtlasHangar bays BayE BayF BayG BayH via TransportGate
+        span lateral
+        from 2025-11-07T08:00
+        to   2025-11-07T20:00;
+
+    // =========================================================================
+    // AUTO-INDUCTIONS
+    // =========================================================================
+
+    // AUTO_A400M — scheduler picks 4 contiguous lateral bays automatically.
+    auto-induct id "AUTO_A400M"
+        A400M
+        duration 600 minutes
+        prefer AtlasHangar
+        requires 4 bays;
+
+    // AUTO_C17 — C17 with WRONG requires clause.
+    //
+    // WRONG: `requires 2 bays` — far below geometric minimum 4.
+    //   → SFR_BAY_COUNT_OVERRIDE warning.
+    // CORRECT: `requires 4 bays`.
+    // -------------------------------------------------------------------------
+    auto-induct id "AUTO_C17"
+        C17
+        duration 720 minutes
+        prefer AtlasHangar
+        requires 2 bays;                 // ← WRONG: geometric minimum is 4
+        // requires 4 bays;             // ← CORRECT
+}

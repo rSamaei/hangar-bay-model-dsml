@@ -1,0 +1,637 @@
+airfield RAF_Northolt_Complex {
+    // ============================================================================
+    // CLEARANCE ENVELOPES
+    // ============================================================================
+    clearance Standard {
+        lateralMargin 2.0 m
+        longitudinalMargin 3.0 m
+        verticalMargin 1.5 m
+    }
+
+    clearance Tight {
+        lateralMargin 1.0 m
+        longitudinalMargin 1.5 m
+        verticalMargin 0.8 m
+    }
+
+    clearance Minimal {
+        lateralMargin 0.5 m
+        longitudinalMargin 1.0 m
+        verticalMargin 0.5 m
+    }
+
+    // ============================================================================
+    // AIRCRAFT TYPES - Expanded fleet with varying sizes
+    // ============================================================================
+
+    // Small trainers
+    aircraft Hawk {
+        wingspan 9.94 m
+        length 11.35 m
+        height 3.98 m
+        tailHeight 3.98 m
+        clearance Standard
+    }
+
+    // Fast jets
+    aircraft Typhoon {
+        wingspan 10.95 m
+        length 15.96 m
+        height 5.28 m
+        tailHeight 5.28 m
+        clearance Standard
+    }
+
+    aircraft F35B {
+        wingspan 10.67 m
+        length 15.67 m
+        height 4.36 m
+        tailHeight 4.36 m
+        clearance Standard
+    }
+
+    // Helicopters
+    aircraft Chinook {
+        wingspan 18.29 m
+        length 30.14 m
+        height 5.68 m
+        tailHeight 5.68 m
+        clearance Tight
+    }
+
+    aircraft Apache {
+        wingspan 14.63 m
+        length 17.76 m
+        height 4.66 m
+        tailHeight 4.66 m
+        clearance Standard
+    }
+
+    aircraft Wildcat {
+        wingspan 12.80 m
+        length 15.24 m
+        height 3.73 m
+        tailHeight 3.73 m
+        clearance Tight
+    }
+
+    // Transport aircraft
+    aircraft C130J {
+        wingspan 40.41 m
+        length 29.79 m
+        height 11.84 m
+        tailHeight 11.84 m
+        clearance Standard
+    }
+
+    aircraft A400M {
+        wingspan 42.36 m
+        length 45.1 m
+        height 14.7 m
+        tailHeight 14.7 m
+        clearance Standard
+    }
+
+    // ============================================================================
+    // ACCESS PATHS - Complex network with multiple entry points
+    // ============================================================================
+    accessPath MainNetwork {
+        nodes {
+            // Main aprons
+            node MainApron width 100.0 m clearanceHeight 18.0 m
+            node NorthApron width 60.0 m clearanceHeight 12.0 m
+            node SouthApron width 80.0 m clearanceHeight 15.0 m
+
+            // Junctions
+            node CentralJunction width 50.0 m clearanceHeight 15.0 m
+            node NorthJunction width 40.0 m clearanceHeight 10.0 m
+            node SouthJunction width 45.0 m clearanceHeight 12.0 m
+            node HeliJunction width 30.0 m clearanceHeight 8.0 m
+
+            // Hangar doors
+            node FighterNorthDoor width 18.0 m clearanceHeight 8.0 m
+            node FighterSouthDoor width 18.0 m clearanceHeight 8.0 m
+            node HeliHangar1Door width 22.0 m clearanceHeight 8.0 m
+            node HeliHangar2Door width 28.0 m clearanceHeight 10.0 m
+            node MediumHangarDoor width 30.0 m clearanceHeight 12.0 m
+            node HeavyHangarDoor width 50.0 m clearanceHeight 16.0 m
+
+            // Bay access nodes
+            node FN_BayA width 15.0 m clearanceHeight 8.0 m
+            node FN_BayB width 15.0 m clearanceHeight 8.0 m
+            node FS_BayA width 15.0 m clearanceHeight 8.0 m
+            node FS_BayB width 15.0 m clearanceHeight 8.0 m
+            node FS_BayC width 15.0 m clearanceHeight 8.0 m
+            node HH1_Bay width 20.0 m clearanceHeight 8.0 m
+            node HH2_BayA width 25.0 m clearanceHeight 10.0 m
+            node HH2_BayB width 25.0 m clearanceHeight 10.0 m
+            node MH_BayA width 28.0 m clearanceHeight 12.0 m
+            node MH_BayB width 28.0 m clearanceHeight 12.0 m
+            node Heavy_Bay width 48.0 m clearanceHeight 16.0 m
+        }
+        links {
+            // Main connections
+            link MainApron to CentralJunction bidirectional true type taxi
+            link MainApron to NorthApron bidirectional true type taxi
+            link MainApron to SouthApron bidirectional true type taxi
+            link NorthApron to NorthJunction type taxi
+            link SouthApron to SouthJunction type taxi
+            link CentralJunction to HeliJunction type taxi
+            link CentralJunction to SouthJunction type taxi
+
+            // Fighter hangars
+            link NorthJunction to FighterNorthDoor type taxi
+            link SouthJunction to FighterSouthDoor type taxi
+            link FighterNorthDoor to FN_BayA type tow
+            link FighterNorthDoor to FN_BayB type tow
+            link FighterSouthDoor to FS_BayA type tow
+            link FighterSouthDoor to FS_BayB type tow
+            link FighterSouthDoor to FS_BayC type tow
+
+            // Helicopter hangars
+            link HeliJunction to HeliHangar1Door type taxi
+            link HeliJunction to HeliHangar2Door type taxi
+            link HeliHangar1Door to HH1_Bay type tow
+            link HeliHangar2Door to HH2_BayA type tow
+            link HeliHangar2Door to HH2_BayB type tow
+
+            // Medium and Heavy hangars
+            link SouthJunction to MediumHangarDoor type taxi
+            link CentralJunction to HeavyHangarDoor type taxi
+            link MediumHangarDoor to MH_BayA type tow
+            link MediumHangarDoor to MH_BayB type tow
+            link HeavyHangarDoor to Heavy_Bay type tow
+        }
+    }
+
+    // ============================================================================
+    // HANGARS - Diverse configurations
+    // ============================================================================
+
+    // Fighter Hangar North - 2 bays for small jets
+    hangar FighterNorth {
+        doors {
+            door MainDoor {
+                width 18.0 m
+                height 8.0 m
+                accessNode FighterNorthDoor
+            }
+        }
+        grid baygrid {
+            rows 1 cols 2
+            bay BayA {
+                at row 0 col 0
+                width 15.0 m
+                depth 20.0 m
+                height 8.0 m
+                adjacent { BayB }
+                accessNode FN_BayA
+            }
+            bay BayB {
+                at row 0 col 1
+                width 15.0 m
+                depth 20.0 m
+                height 8.0 m
+                adjacent { BayA }
+                accessNode FN_BayB
+            }
+        }
+    }
+
+    // Fighter Hangar South - 3 bays (can hold larger aircraft spanning bays)
+    hangar FighterSouth {
+        doors {
+            door MainDoor {
+                width 18.0 m
+                height 8.0 m
+                accessNode FighterSouthDoor
+            }
+        }
+        grid baygrid {
+            rows 1 cols 3
+            bay BayA {
+                at row 0 col 0
+                width 14.0 m
+                depth 22.0 m
+                height 8.0 m
+                adjacent { BayB }
+                accessNode FS_BayA
+            }
+            bay BayB {
+                at row 0 col 1
+                width 14.0 m
+                depth 22.0 m
+                height 8.0 m
+                adjacent { BayA BayC }
+                accessNode FS_BayB
+            }
+            bay BayC {
+                at row 0 col 2
+                width 14.0 m
+                depth 22.0 m
+                height 8.0 m
+                adjacent { BayB }
+                accessNode FS_BayC
+            }
+        }
+    }
+
+    // Helicopter Hangar 1 - Single bay for smaller helicopters
+    hangar HeliHangar1 {
+        doors {
+            door MainDoor {
+                width 22.0 m
+                height 8.0 m
+                accessNode HeliHangar1Door
+            }
+        }
+        grid baygrid {
+            bay SingleBay {
+                width 20.0 m
+                depth 20.0 m
+                height 8.0 m
+                accessNode HH1_Bay
+            }
+        }
+    }
+
+    // Helicopter Hangar 2 - 2 bays for larger helicopters
+    hangar HeliHangar2 {
+        doors {
+            door MainDoor {
+                width 28.0 m
+                height 10.0 m
+                accessNode HeliHangar2Door
+            }
+        }
+        grid baygrid {
+            rows 1 cols 2
+            bay BayA {
+                at row 0 col 0
+                width 22.0 m
+                depth 35.0 m
+                height 10.0 m
+                adjacent { BayB }
+                accessNode HH2_BayA
+            }
+            bay BayB {
+                at row 0 col 1
+                width 22.0 m
+                depth 35.0 m
+                height 10.0 m
+                adjacent { BayA }
+                accessNode HH2_BayB
+            }
+        }
+    }
+
+    // Medium Transport Hangar - 2 large bays
+    hangar MediumTransport {
+        doors {
+            door MainDoor {
+                width 30.0 m
+                height 12.0 m
+                accessNode MediumHangarDoor
+            }
+        }
+        grid baygrid {
+            rows 1 cols 2
+            bay BayA {
+                at row 0 col 0
+                width 25.0 m
+                depth 35.0 m
+                height 12.0 m
+                adjacent { BayB }
+                accessNode MH_BayA
+            }
+            bay BayB {
+                at row 0 col 1
+                width 25.0 m
+                depth 35.0 m
+                height 12.0 m
+                adjacent { BayA }
+                accessNode MH_BayB
+            }
+        }
+    }
+
+    // Heavy Transport Hangar - Single massive bay
+    hangar HeavyTransport {
+        doors {
+            door MainDoor {
+                width 50.0 m
+                height 16.0 m
+                accessNode HeavyHangarDoor
+            }
+        }
+        grid baygrid {
+            bay MassiveBay {
+                width 48.0 m
+                depth 50.0 m
+                height 16.0 m
+                accessNode Heavy_Bay
+            }
+        }
+    }
+
+    // ============================================================================
+    // AUTO-INDUCTIONS - Complex scheduling with tight windows and dependencies
+    // ============================================================================
+
+    // === EARLY MORNING WAVE (06:00-10:00) - Pre-flight inspections ===
+
+    auto-induct id "HAWK_PREFLIGHT_01" Hawk duration 45 minutes
+        prefer FighterNorth
+        notBefore 2024-06-15T06:00
+        notAfter 2024-06-15T08:00
+        meta {
+            priority: "critical"
+            taskType: "pre_flight_check"
+            squadron: "4_Squadron"
+            flight: "morning_sortie"
+        };
+
+    auto-induct id "HAWK_PREFLIGHT_02" Hawk duration 45 minutes
+        prefer FighterNorth
+        notBefore 2024-06-15T06:00
+        notAfter 2024-06-15T08:00
+        meta {
+            priority: "critical"
+            taskType: "pre_flight_check"
+            squadron: "4_Squadron"
+            flight: "morning_sortie"
+        };
+
+    auto-induct id "TYPHOON_PREFLIGHT_01" Typhoon duration 60 minutes
+        prefer FighterSouth
+        notBefore 2024-06-15T06:30
+        notAfter 2024-06-15T09:00
+        meta {
+            priority: "critical"
+            taskType: "pre_flight_check"
+            squadron: "1_Squadron"
+        };
+
+    auto-induct id "F35_PREFLIGHT_01" F35B duration 90 minutes
+        prefer FighterSouth
+        notBefore 2024-06-15T06:00
+        notAfter 2024-06-15T09:00
+        meta {
+            priority: "critical"
+            taskType: "stealth_prep"
+            squadron: "617_Squadron"
+            notes: "requires_RAM_inspection"
+        };
+
+    // === MORNING HELICOPTER OPS (07:00-12:00) ===
+
+    auto-induct id "APACHE_MAINT_01" Apache duration 120 minutes
+        prefer HeliHangar1
+        notBefore 2024-06-15T07:00
+        notAfter 2024-06-15T11:00
+        meta {
+            priority: "high"
+            taskType: "weapons_check"
+            squadron: "656_Squadron"
+        };
+
+    auto-induct id "WILDCAT_MAINT_01" Wildcat duration 90 minutes
+        prefer HeliHangar1
+        notBefore 2024-06-15T07:00
+        notAfter 2024-06-15T10:00
+        meta {
+            priority: "medium"
+            taskType: "sensor_calibration"
+            squadron: "815_NAS"
+        };
+
+    auto-induct id "CHINOOK_ROTOR_01" Chinook duration 180 minutes
+        prefer HeliHangar2
+        notBefore 2024-06-15T08:00
+        notAfter 2024-06-15T14:00
+        meta {
+            priority: "high"
+            taskType: "rotor_inspection"
+            squadron: "27_Squadron"
+            notes: "scheduled_phase_check"
+        };
+
+    // === MIDDAY SURGE (10:00-16:00) - High activity period ===
+
+    auto-induct id "TYPHOON_TURNAROUND_01" Typhoon duration 45 minutes
+        prefer FighterNorth
+        notBefore 2024-06-15T10:00
+        notAfter 2024-06-15T12:00
+        meta {
+            priority: "critical"
+            taskType: "turnaround"
+            squadron: "1_Squadron"
+            notes: "between_sorties"
+        };
+
+    auto-induct id "TYPHOON_TURNAROUND_02" Typhoon duration 45 minutes
+        prefer FighterNorth
+        notBefore 2024-06-15T10:30
+        notAfter 2024-06-15T12:30
+        meta {
+            priority: "critical"
+            taskType: "turnaround"
+            squadron: "1_Squadron"
+        };
+
+    auto-induct id "F35_TURNAROUND_01" F35B duration 60 minutes
+        prefer FighterSouth
+        notBefore 2024-06-15T11:00
+        notAfter 2024-06-15T14:00
+        meta {
+            priority: "critical"
+            taskType: "stealth_turnaround"
+            squadron: "617_Squadron"
+        };
+
+    auto-induct id "HAWK_TRAINING_01" Hawk duration 30 minutes
+        prefer FighterSouth
+        notBefore 2024-06-15T11:00
+        notAfter 2024-06-15T13:00
+        meta {
+            priority: "medium"
+            taskType: "training_prep"
+            squadron: "4_Squadron"
+        };
+
+    auto-induct id "HAWK_TRAINING_02" Hawk duration 30 minutes
+        prefer FighterSouth
+        notBefore 2024-06-15T11:00
+        notAfter 2024-06-15T13:00
+        meta {
+            priority: "medium"
+            taskType: "training_prep"
+            squadron: "4_Squadron"
+        };
+
+    // === TRANSPORT OPERATIONS (12:00-20:00) ===
+
+    auto-induct id "C130_MAJOR_01" C130J duration 300 minutes
+        prefer HeavyTransport
+        notBefore 2024-06-15T12:00
+        notAfter 2024-06-15T22:00
+        meta {
+            priority: "high"
+            taskType: "major_service"
+            squadron: "47_Squadron"
+            notes: "5_hour_phase_check"
+        };
+
+    auto-induct id "A400M_LOAD_01" A400M duration 180 minutes
+        prefer HeavyTransport
+        notBefore 2024-06-15T10:00
+        notAfter 2024-06-15T16:00
+        meta {
+            priority: "critical"
+            taskType: "cargo_prep"
+            squadron: "70_Squadron"
+            notes: "deployment_prep"
+        };
+
+    auto-induct id "CHINOOK_AVIONICS_01" Chinook duration 150 minutes
+        prefer HeliHangar2
+        notBefore 2024-06-15T14:00
+        notAfter 2024-06-15T20:00
+        meta {
+            priority: "medium"
+            taskType: "avionics_update"
+            squadron: "27_Squadron"
+        };
+
+    // === AFTERNOON WAVE (14:00-18:00) ===
+
+    auto-induct id "APACHE_WEAPONS_01" Apache duration 90 minutes
+        prefer HeliHangar1
+        notBefore 2024-06-15T14:00
+        notAfter 2024-06-15T17:00
+        meta {
+            priority: "high"
+            taskType: "weapons_reload"
+            squadron: "656_Squadron"
+        };
+
+    auto-induct id "WILDCAT_ASW_01" Wildcat duration 120 minutes
+        prefer HeliHangar1
+        notBefore 2024-06-15T14:00
+        notAfter 2024-06-15T18:00
+        meta {
+            priority: "high"
+            taskType: "sonobuoy_load"
+            squadron: "815_NAS"
+        };
+
+    auto-induct id "TYPHOON_PHASE_01" Typhoon duration 240 minutes
+        prefer FighterSouth
+        notBefore 2024-06-15T14:00
+        notAfter 2024-06-15T22:00
+        meta {
+            priority: "high"
+            taskType: "phase_inspection"
+            squadron: "1_Squadron"
+            notes: "scheduled_maintenance"
+        };
+
+    // === EVENING OPERATIONS (16:00-22:00) ===
+
+    auto-induct id "F35_STEALTH_01" F35B duration 180 minutes
+        prefer FighterSouth
+        notBefore 2024-06-15T16:00
+        notAfter 2024-06-15T22:00
+        meta {
+            priority: "high"
+            taskType: "RAM_repair"
+            squadron: "617_Squadron"
+            notes: "coating_inspection"
+        };
+
+    auto-induct id "HAWK_POST_01" Hawk duration 45 minutes
+        prefer FighterNorth
+        notBefore 2024-06-15T17:00
+        notAfter 2024-06-15T20:00
+        meta {
+            priority: "medium"
+            taskType: "post_flight"
+            squadron: "4_Squadron"
+        };
+
+    auto-induct id "HAWK_POST_02" Hawk duration 45 minutes
+        prefer FighterNorth
+        notBefore 2024-06-15T17:00
+        notAfter 2024-06-15T20:00
+        meta {
+            priority: "medium"
+            taskType: "post_flight"
+            squadron: "4_Squadron"
+        };
+
+    // === NIGHT SHIFT (20:00-06:00) - Heavy maintenance ===
+
+    auto-induct id "CHINOOK_DEEP_01" Chinook duration 420 minutes
+        prefer HeliHangar2
+        notBefore 2024-06-15T20:00
+        notAfter 2024-06-16T06:00
+        meta {
+            priority: "high"
+            taskType: "deep_inspection"
+            squadron: "27_Squadron"
+            overnight: "true"
+        };
+
+    auto-induct id "C130_OVERNIGHT_01" C130J duration 480 minutes
+        prefer HeavyTransport
+        notBefore 2024-06-15T22:00
+        notAfter 2024-06-16T08:00
+        meta {
+            priority: "high"
+            taskType: "engine_check"
+            squadron: "47_Squadron"
+            overnight: "true"
+        };
+
+    auto-induct id "APACHE_NIGHT_01" Apache duration 180 minutes
+        prefer HeliHangar1
+        notBefore 2024-06-15T20:00
+        notAfter 2024-06-16T02:00
+        meta {
+            priority: "medium"
+            taskType: "NVG_calibration"
+            squadron: "656_Squadron"
+        };
+
+    // === OVERFLOW/FLEX SLOTS - Will likely conflict ===
+
+    auto-induct id "TYPHOON_FLEX_01" Typhoon duration 90 minutes
+        notBefore 2024-06-15T12:00
+        notAfter 2024-06-15T18:00
+        meta {
+            priority: "low"
+            taskType: "flexible_check"
+            squadron: "1_Squadron"
+            notes: "schedule_if_capacity"
+        };
+
+    auto-induct id "CHINOOK_FLEX_01" Chinook duration 120 minutes
+        notBefore 2024-06-15T16:00
+        notAfter 2024-06-16T00:00
+        meta {
+            priority: "low"
+            taskType: "fuel_system"
+            squadron: "27_Squadron"
+            notes: "schedule_if_capacity"
+        };
+
+    auto-induct id "A400M_FLEX_01" A400M duration 240 minutes
+        notBefore 2024-06-15T18:00
+        notAfter 2024-06-16T04:00
+        meta {
+            priority: "low"
+            taskType: "systems_check"
+            squadron: "70_Squadron"
+            notes: "schedule_if_capacity"
+        };
+}

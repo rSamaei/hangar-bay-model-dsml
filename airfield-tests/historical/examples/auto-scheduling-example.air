@@ -1,0 +1,127 @@
+airfield RAF_Lakenheath {
+    clearance StandardSafety {
+        lateralMargin 2.0 m
+        longitudinalMargin 3.0 m
+        verticalMargin 1.5 m
+    }
+
+    aircraft F15E {
+        wingspan 13.05 m
+        length 19.43 m
+        height 5.63 m
+        tailHeight 5.63 m
+        clearance StandardSafety
+    }
+
+    aircraft F35A {
+        wingspan 10.7 m
+        length 15.67 m
+        height 4.38 m
+        tailHeight 4.38 m
+        clearance StandardSafety
+    }
+
+    accessPath HangarAccess {
+        nodes {
+            node Taxiway width 40.0 m clearanceHeight 10.0 m
+            node H1Threshold width 18.0 m clearanceHeight 8.0 m
+            node H2Threshold width 18.0 m clearanceHeight 8.0 m
+        }
+        links {
+            link Taxiway to H1Threshold bidirectional true type taxi
+            link Taxiway to H2Threshold bidirectional true type taxi
+        }
+    }
+
+    hangar Hangar1 {
+        doors {
+            door Door1 {
+                width 18.0 m
+                height 8.0 m
+                accessNode H1Threshold
+            }
+        }
+        grid baygrid {
+            rows 1 cols 3
+            bay H1B1 {
+                at row 0 col 0
+                width 25.0 m
+                depth 30.0 m
+                height 10.0 m
+                adjacent { H1B2 }
+            }
+            bay H1B2 {
+                at row 0 col 1
+                width 25.0 m
+                depth 30.0 m
+                height 10.0 m
+                adjacent { H1B1 H1B3 }
+            }
+            bay H1B3 {
+                at row 0 col 2
+                width 25.0 m
+                depth 30.0 m
+                height 10.0 m
+                adjacent { H1B2 }
+            }
+        }
+    }
+
+    hangar Hangar2 {
+        doors {
+            door Door2 {
+                width 18.0 m
+                height 8.0 m
+                accessNode H2Threshold
+            }
+        }
+        grid baygrid {
+            rows 1 cols 2
+            bay H2B1 {
+                at row 0 col 0
+                width 25.0 m
+                depth 30.0 m
+                height 10.0 m
+                adjacent { H2B2 }
+            }
+            bay H2B2 {
+                at row 0 col 1
+                width 25.0 m
+                depth 30.0 m
+                height 10.0 m
+                adjacent { H2B1 }
+            }
+        }
+    }
+
+    // Manual induction that creates a time constraint
+    induct id "BASE001" F15E into Hangar1 bays H1B1
+        from 2024-02-01T08:00 to 2024-02-01T12:00
+        meta {
+            maintenanceType: "scheduled_maintenance"
+        };
+
+    // Auto-inductions that will be scheduled around the manual one
+    auto-induct id "AUTO001" F35A duration 240 minutes
+        prefer Hangar1
+        notBefore 2024-02-01T06:00
+        notAfter 2024-02-01T20:00
+        meta {
+            priority: "high"
+            maintenanceType: "phase_inspection"
+        };
+
+    auto-induct id "AUTO002" F15E duration 180 minutes
+        after BASE001
+        notAfter 2024-02-01T22:00
+        meta {
+            dependency: "wait_for_BASE001"
+        };
+
+    auto-induct id "AUTO003" F35A duration 120 minutes
+        prefer Hangar2
+        notBefore 2024-02-01T10:00
+        meta {
+            priority: "low"
+        };
+}

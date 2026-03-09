@@ -1,0 +1,257 @@
+// =============================================================================
+// Access Paths and Bay Reachability
+//
+// Demonstrates: access graph modelling, SFR_DYNAMIC_REACHABILITY, SFR_CORRIDOR_FIT,
+// traversable bays, and how corridor width interacts with aircraft wingspan.
+//
+// Scenario
+// --------
+// NarrowHangar has a sequential tow route from the apron:
+//
+//   [Apron] ↔ [Threshold (10 m)] → [Corridor (6 m)] → [Bay1] → [Bay2] → [Bay3]
+//
+// Aircraft:
+//   Hawk       — wingspan  9.4 m, effective 10.9 m (with margins)
+//   Chinook    — wingspan 18.3 m, effective 19.8 m  → too wide for Corridor (6 m)
+//
+// Bay1 is a `traversable` through-bay — tow vehicles can pass through even
+// when an aircraft is parked there.
+//
+// Each WRONG line is immediately followed by the correct version commented out.
+// =============================================================================
+
+airfield NarrowHangarDemo {
+
+    // =========================================================================
+    // Clearance envelopes
+    // =========================================================================
+
+    clearance HeloClearance {
+        lateralMargin      1.5 m
+        longitudinalMargin 2.0 m
+        verticalMargin     1.0 m
+    }
+
+    // =========================================================================
+    // Aircraft
+    // =========================================================================
+
+    aircraft Hawk {
+        wingspan   9.4 m
+        length    11.4 m
+        height     3.99 m
+        tailHeight  3.99 m
+        clearance HeloClearance
+        // effective wingspan = 9.4 + 1.5 = 10.9 m   — fits 6 m corridor? No → 10.9 > 6.0
+        // Wait — Hawk does NOT fit through the 6 m corridor with clearance.
+        // Without clearance: 9.4 m > 6 m.  Hawk is too wide for this corridor.
+        // This is intentional — see HAWK_STATIC induction below.
+    }
+
+    aircraft Gazelle {
+        wingspan   11.97 m
+        length     11.97 m
+        height      3.15 m
+        tailHeight   3.15 m
+        clearance HeloClearance
+        // effective wingspan = 11.97 + 1.5 = 13.47 m — definitely too wide for Corridor (6 m)
+    }
+
+    aircraft Scout {
+        wingspan   4.5 m
+        length     8.5 m
+        height     2.8 m
+        tailHeight  2.8 m
+        clearance HeloClearance
+        // effective wingspan = 4.5 + 1.5 = 6.0 m — exactly fits the 6 m corridor ✓
+    }
+
+    // =========================================================================
+    // Access path — narrow internal corridor is the bottleneck.
+    // =========================================================================
+
+    accessPath NarrowPath {
+        nodes {
+            node Apron      width 30.0 m   clearanceHeight 10.0 m
+            node Threshold  width 12.0 m   clearanceHeight  5.5 m
+            node Corridor   width  6.0 m   clearanceHeight  4.0 m   // the bottleneck
+            node Bay1Node   width  8.0 m   clearanceHeight  4.0 m
+            node Bay2Node   width  8.0 m   clearanceHeight  4.0 m
+            node Bay3Node   width  8.0 m   clearanceHeight  4.0 m
+        }
+        links {
+            link Apron     to Threshold   bidirectional true  type taxi
+            link Threshold to Corridor    bidirectional true  type tow
+            link Corridor  to Bay1Node    bidirectional true  type tow
+            link Bay1Node  to Bay2Node    bidirectional true  type tow
+            link Bay2Node  to Bay3Node    bidirectional true  type tow
+        }
+    }
+
+    // =========================================================================
+    // NarrowHangar — three bays in a chain behind the 6 m corridor.
+    //
+    // Bay1 is a through-bay: it must be marked `traversable` so that inductions
+    // for Bay2 and Bay3 remain reachable even when Bay1 is occupied.
+    // =========================================================================
+
+    hangar NarrowHangar {
+        doors {
+            door HangarDoor {
+                width  11.5 m
+                height  5.5 m
+                accessNode Threshold
+            }
+        }
+        grid baygrid {
+            bay Bay1 {
+                width   8.0 m
+                depth  12.0 m
+                height  4.5 m
+                adjacent { Bay2 }
+                traversable                 // REQUIRED: allows tow vehicles to pass through
+                accessNode Bay1Node
+            }
+            bay Bay2 {
+                width   8.0 m
+                depth  12.0 m
+                height  4.5 m
+                adjacent { Bay1 Bay3 }
+                accessNode Bay2Node
+            }
+            bay Bay3 {
+                width   8.0 m
+                depth  12.0 m
+                height  4.5 m
+                adjacent { Bay2 }
+                accessNode Bay3Node
+            }
+        }
+    }
+
+    // =========================================================================
+    // SCOUT_OK — Scout helicopter (effective wingspan 6.0 m) fits the 6 m
+    // corridor exactly.  No SFR_CORRIDOR_FIT.
+    // =========================================================================
+    induct id "SCOUT_OK"
+        Scout into NarrowHangar bays Bay3 via HangarDoor
+        from 2025-10-01T08:00
+        to   2025-10-01T16:00;
+
+    // =========================================================================
+    // HAWK_STATIC — Hawk effective wingspan 10.9 m > Corridor width 6.0 m.
+    //
+    // SFR_CORRIDOR_FIT (warning, shown in VS Code): Hawk cannot physically pass
+    // through Corridor (6 m) to reach Bay2 — too wide even before any scheduling.
+    //
+    // WRONG: assigning Hawk to Bay2 — corridor blocks it structurally.
+    // CORRECT: either use Scout (fits corridor) or Bay1 (reachable without crossing Corridor).
+    // -------------------------------------------------------------------------
+    induct id "HAWK_STATIC"
+        Hawk into NarrowHangar bays Bay2 via HangarDoor
+    //  Scout into NarrowHangar bays Bay2 via HangarDoor   // ← CORRECT: Scout (6.0 m) fits Corridor
+        from 2025-10-02T08:00
+        to   2025-10-02T16:00;
+
+    // =========================================================================
+    // BAY1_OCC — Scout occupies Bay1 (the traversable through-bay) all day.
+    // =========================================================================
+    induct id "BAY1_OCC"
+        Scout into NarrowHangar bays Bay1 via HangarDoor
+        from 2025-10-03T08:00
+        to   2025-10-03T20:00;
+
+    // =========================================================================
+    // BAY3_REACH — Scout wants Bay3 while BAY1_OCC occupies Bay1 (10:00–18:00 overlap).
+    //
+    // Bay1 is `traversable` → BFS passes through it even while occupied.
+    // Bay2Node and Bay3Node are both reachable → no SFR_DYNAMIC_REACHABILITY.
+    //
+    // If `traversable` were removed from Bay1 (WRONG), then:
+    //   BAY1_OCC would block Bay1Node → Bay2 and Bay3 become unreachable.
+    //   SFR_DYNAMIC_REACHABILITY would fire for BAY3_REACH.
+    // =========================================================================
+    induct id "BAY3_REACH"
+        Scout into NarrowHangar bays Bay3 via HangarDoor
+        from 2025-10-03T10:00
+        to   2025-10-03T18:00;
+
+    // =========================================================================
+    // GAZELLE_BLOCKED — Gazelle effective wingspan 13.47 m > Corridor 6 m.
+    //
+    // SFR_CORRIDOR_FIT fires (static — visible in VS Code as warning).
+    // Even Bay1 (directly after Corridor) is unreachable for Gazelle because
+    // the BFS width check blocks Corridor before reaching Bay1Node.
+    //
+    // Also: Gazelle (8.0 m wide bay, 13.47 m effective) fails SFR12_BAY_FIT.
+    //
+    // WRONG: assigning Gazelle to Bay1 — corridor and bay are both too narrow.
+    // CORRECT: use NarrowHangar only for aircraft with wingspan ≤ 4.5 m (Scout class).
+    // -------------------------------------------------------------------------
+    induct id "GAZELLE_BLOCKED"
+        Gazelle into NarrowHangar bays Bay1 via HangarDoor   // ← WRONG: Gazelle too wide for Corridor AND Bay1
+    //  Scout   into NarrowHangar bays Bay1 via HangarDoor   // ← CORRECT
+        from 2025-10-04T08:00
+        to   2025-10-04T16:00;
+
+    // =========================================================================
+    // WRONG_DOOR — door too narrow for Scout (effective 6.0 m, door 5.9 m).
+    //
+    // WRONG: HangarDoor width 5.9 m < Scout effective wingspan 6.0 m → SFR11_DOOR_FIT.
+    // CORRECT: door width must be ≥ 6.0 m (at minimum 6.0 m, so use 10.5 m as modelled above).
+    //
+    // (This is shown via a second hangar definition to illustrate the error.)
+    // =========================================================================
+    hangar TightHangar {
+        doors {
+            door TightDoor {
+                width   5.9 m               // ← WRONG: 5.9 m < Scout effectiveWingspan 6.0 m → SFR11_DOOR_FIT
+                // width   6.5 m            // ← CORRECT: wider than Scout effectiveWingspan
+                height  4.0 m
+            }
+        }
+        grid baygrid {
+            bay TightBay {
+                width   8.0 m
+                depth  12.0 m
+                height  4.0 m
+            }
+        }
+    }
+
+    induct id "TIGHT_FAIL"
+        Scout into TightHangar bays TightBay via TightDoor
+        from 2025-10-05T08:00
+        to   2025-10-05T12:00;
+
+    // =========================================================================
+    // AUTO-INDUCTIONS
+    // =========================================================================
+
+    // AUTO_SCOUT — schedule Scout automatically, no time constraints.
+    auto-induct id "AUTO_SCOUT"
+        Scout
+        duration 180 minutes
+        prefer NarrowHangar;
+
+    // AUTO_SEQUENCE — two maintenance steps, B must follow A.
+    //
+    // WRONG: notBefore set in the past relative to notAfter — window reversed.
+    //   SFR21_TIME_WINDOW fires.
+    // CORRECT: notBefore < notAfter.
+    // -------------------------------------------------------------------------
+    auto-induct id "AUTO_STEP_A"
+        Scout
+        duration 60 minutes
+        prefer NarrowHangar;
+
+    auto-induct id "AUTO_STEP_B"
+        Scout
+        duration 60 minutes
+        prefer NarrowHangar
+        after AUTO_STEP_A
+        notBefore 2025-10-06T18:00         // ← WRONG: notBefore is later than notAfter
+        notAfter  2025-10-06T10:00;        // ← WRONG: should be the later bound
+        // notBefore 2025-10-06T10:00      // ← CORRECT
+        // notAfter  2025-10-06T18:00;     // ← CORRECT
+}

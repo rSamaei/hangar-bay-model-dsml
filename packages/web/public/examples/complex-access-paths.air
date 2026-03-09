@@ -1,0 +1,106 @@
+airfield RAF_Marham {
+    clearance WideClearance {
+        lateralMargin 3.0 m
+        longitudinalMargin 4.0 m
+        verticalMargin 2.0 m
+    }
+
+    aircraft A400M {
+        wingspan 42.4 m
+        length 45.1 m
+        height 14.7 m
+        tailHeight 14.7 m
+        clearance WideClearance
+    }
+
+    aircraft Voyager {
+        wingspan 60.3 m
+        length 58.8 m
+        height 17.4 m
+        tailHeight 17.4 m
+        clearance WideClearance
+    }
+
+    // Complex access path network
+    accessPath ComplexNetwork {
+        nodes {
+            node MainApron width 100.0 m clearanceHeight 20.0 m
+            node Junction1 width 50.0 m clearanceHeight 18.0 m
+            node Junction2 width 50.0 m clearanceHeight 18.0 m
+            node H1Entry width 45.0 m clearanceHeight 16.0 m
+            node H2Entry width 45.0 m clearanceHeight 16.0 m
+            node H3Entry width 45.0 m clearanceHeight 16.0 m
+            node Bay1Access width 45.0 m clearanceHeight 16.0 m
+            node Bay2Access width 45.0 m clearanceHeight 16.0 m
+        }
+        links {
+            link MainApron to Junction1 bidirectional true type taxi
+            link MainApron to Junction2 bidirectional true type taxi
+            link Junction1 to H1Entry type taxi
+            link Junction1 to H2Entry type taxi
+            link Junction2 to H3Entry type taxi
+            link H1Entry to Bay1Access type tow
+            link H2Entry to Bay2Access type tow
+        }
+    }
+
+    hangar LargeHangar1 {
+        doors {
+            door BigDoor1 {
+                width 45.0 m
+                height 16.0 m
+                accessNode H1Entry
+            }
+        }
+        grid baygrid {
+            rows 1 cols 2
+            bay LB1 {
+                at row 0 col 0
+                width 50.0 m
+                depth 60.0 m
+                height 20.0 m
+                adjacent { LB2 }
+                accessNode Bay1Access
+            }
+            bay LB2 {
+                at row 0 col 1
+                width 50.0 m
+                depth 60.0 m
+                height 20.0 m
+                adjacent { LB1 }
+            }
+        }
+    }
+
+    hangar LargeHangar2 {
+        doors {
+            door BigDoor2 {
+                width 45.0 m
+                height 16.0 m
+                accessNode H2Entry
+            }
+        }
+        grid baygrid {
+            bay SingleBay {
+                width 55.0 m
+                depth 65.0 m
+                height 20.0 m
+                accessNode Bay2Access
+            }
+        }
+    }
+
+    induct id "HEAVY001" A400M into LargeHangar1 bays LB1 via BigDoor1
+        from 2024-03-10T09:00 to 2024-03-10T17:00
+        meta {
+            squadron: "70 Squadron"
+            maintenance: "C-Check"
+        };
+
+    induct id "HEAVY002" Voyager into LargeHangar2 bays SingleBay via BigDoor2
+        from 2024-03-10T14:00 to 2024-03-11T10:00
+        meta {
+            squadron: "10 Squadron"
+            maintenance: "Major_Service"
+        };
+}

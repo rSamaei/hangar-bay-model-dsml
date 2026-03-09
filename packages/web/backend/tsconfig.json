@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "./out",
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@airfield/simulator": ["../../simulator/out/index.js"],
+      "@airfield/simulator/*": ["../../simulator/out/*.js"]
+    }
+  },
+  "include": ["./**/*"],
+  "references": [
+    { "path": "../../simulator" }
+  ]
+}
