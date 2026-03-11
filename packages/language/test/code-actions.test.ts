@@ -46,6 +46,124 @@ function getCodeActions(document: LangiumDocument, diagnostic: Diagnostic): Code
 }
 
 // ---------------------------------------------------------------------------
+// SFR12_BAY_FIT quick-fix: add adjacent bays when aircraft too wide for bay
+// ---------------------------------------------------------------------------
+
+describe('Code action: SFR12_BAY_FIT bay fit width fix', () => {
+
+    /**
+     * Aircraft wingspan 20m > bay width 12m → SFR12_BAY_FIT fires.
+     * ceil(20/12) = 2 bays needed; 1 is assigned → offer to add BayB.
+     */
+    test('offers to add adjacent bay when aircraft wingspan exceeds single bay width', async () => {
+        const document = await parse(`
+            airfield BayFitWidthTest {
+                aircraft WideAircraft {
+                    wingspan 20.0 m
+                    length   15.0 m
+                    height    5.0 m
+                }
+                hangar TestHangar {
+                    doors {
+                        door D1 {
+                            width  25.0 m
+                            height  8.0 m
+                        }
+                    }
+                    grid baygrid {
+                        bay BayA {
+                            width  12.0 m
+                            depth  20.0 m
+                            height  6.0 m
+                            adjacent { BayB }
+                        }
+                        bay BayB {
+                            width  12.0 m
+                            depth  20.0 m
+                            height  6.0 m
+                            adjacent { BayA }
+                        }
+                    }
+                }
+                induct WideAircraft into TestHangar bays BayA
+                from 2024-01-01T08:00
+                to   2024-01-01T16:00;
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+
+        const diagnostics = await validateDoc(document);
+        const bayFitDiag = diagnostics.find(d => d.message.includes('SFR12_BAY_FIT'));
+        expect(bayFitDiag).toBeDefined();
+
+        const actions = getCodeActions(document, bayFitDiag!);
+        expect(actions.length).toBeGreaterThanOrEqual(1);
+
+        const action = actions[0];
+        expect(action.kind).toBe('quickfix');
+        expect(action.title).toContain('wingspan');
+
+        const uri = document.textDocument.uri;
+        const edits = action.edit?.changes?.[uri];
+        expect(edits).toBeDefined();
+        const newText = edits![0].newText;
+        expect(newText).toContain('BayB');
+    });
+
+    /**
+     * Aircraft fits width-wise but not depth/height → no wingspan violation in
+     * the message → no quick fix offered.
+     */
+    test('no wingspan fix when only height/depth violations exist', async () => {
+        const document = await parse(`
+            airfield BayFitHeightTest {
+                aircraft TallAircraft {
+                    wingspan  8.0 m
+                    length   25.0 m
+                    height   10.0 m
+                }
+                hangar TestHangar {
+                    doors {
+                        door D1 {
+                            width  15.0 m
+                            height 12.0 m
+                        }
+                    }
+                    grid baygrid {
+                        bay BayA {
+                            width  10.0 m
+                            depth  20.0 m
+                            height  5.0 m
+                            adjacent { BayB }
+                        }
+                        bay BayB {
+                            width  10.0 m
+                            depth  20.0 m
+                            height  5.0 m
+                            adjacent { BayA }
+                        }
+                    }
+                }
+                induct TallAircraft into TestHangar bays BayA
+                from 2024-01-01T08:00
+                to   2024-01-01T16:00;
+            }
+        `);
+
+        expect(document.parseResult.parserErrors).toHaveLength(0);
+
+        const diagnostics = await validateDoc(document);
+        const bayFitDiag = diagnostics.find(d => d.message.includes('SFR12_BAY_FIT'));
+        expect(bayFitDiag).toBeDefined();
+
+        // Width fits (8m ≤ 10m) → no wingspan violation in message → no fix
+        const actions = getCodeActions(document, bayFitDiag!);
+        expect(actions).toHaveLength(0);
+    });
+});
+
+// ---------------------------------------------------------------------------
 // SFR25_BAY_COUNT quick-fix: add adjacent bay to meet wingspan requirement
 // ---------------------------------------------------------------------------
 

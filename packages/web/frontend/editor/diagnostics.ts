@@ -34,8 +34,8 @@ function toMonacoSeverity(lsp: number): monaco.MarkerSeverity {
   }
 }
 
-// SFR rule-ID prefix pattern — e.g. "SFR13_CONTIGUITY: ..."
-const SFR_PREFIX_RE = /^(SFR\w+):\s*/;
+// SFR rule-ID prefix pattern — e.g. "[SFR13_CONTIGUITY] ..."
+const SFR_PREFIX_RE = /^\[(SFR\w+)\]\s*/;
 
 function toMarker(d: DiagnosticItem): monaco.editor.IMarkerData {
   // Monaco columns are 1-based; backend delivers 0-based.

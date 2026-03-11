@@ -27,6 +27,13 @@ export const examples: Example[] = [
     description: 'A400M and C17 requiring 4 bays, adjacency 8 diagonal contiguity, combined bay-set fit checks',
     file: '/examples/03-large-aircraft-multi-bay.air',
     category: 'validation'
+  },
+  {
+    id: 'quick-fixes',
+    name: 'Quick Fixes Showcase',
+    description: 'Three fixable errors (wingspan fit, contiguity gap, bay count) — press Ctrl+. on any squiggle to auto-fix',
+    file: '/examples/04-quick-fixes-showcase.air',
+    category: 'validation'
   }
 ];
 

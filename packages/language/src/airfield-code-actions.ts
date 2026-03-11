@@ -42,6 +42,9 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         if (msg.includes('SFR25_BAY_COUNT')) {
             return this.createBayCountFix(diagnostic, document);
         }
+        if (msg.includes('SFR12_BAY_FIT')) {
+            return this.createBayFitWidthFix(diagnostic, document);
+        }
         return [];
     }
 
@@ -79,6 +82,66 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
                     [document.textDocument.uri]: [{
                         range: { start: insertPos, end: insertPos },
                         newText: ' ' + bridgingBays.join(' ')
+                    }]
+                }
+            }
+        }];
+    }
+
+    // -------------------------------------------------------------------------
+    // SFR12: Bay fit width fix
+    // -------------------------------------------------------------------------
+
+    /**
+     * When the aircraft wingspan exceeds a single bay's width, offer to add
+     * enough adjacent bays so their combined width covers the aircraft.
+     * Height and depth violations cannot be resolved by adding bays, so only
+     * wingspan failures get a fix.
+     */
+    private createBayFitWidthFix(diagnostic: Diagnostic, document: LangiumDocument): CodeAction[] {
+        // Only fix wingspan (width) violations — height/depth can't be resolved by adding bays
+        const wingspanMatch = diagnostic.message.match(/wingspan:\s*([\d.]+)m\s*>\s*([\d.]+)m/);
+        if (!wingspanMatch) return [];
+
+        const induction = this.findInductionAtDiagnostic(document, diagnostic);
+        if (!induction) return [];
+
+        const hangar = induction.hangar?.ref;
+        if (!hangar) return [];
+
+        const assigned = induction.bays
+            .map(b => b.ref?.name)
+            .filter((n): n is string => n !== undefined);
+        if (assigned.length === 0) return [];
+
+        const effectiveWingspan = parseFloat(wingspanMatch[1]);
+        const bayWidth = parseFloat(wingspanMatch[2]);
+        const needed = Math.ceil(effectiveWingspan / bayWidth) - assigned.length;
+        if (needed <= 0) return [];
+
+        const adjacency = this.buildAdjacencyGraph(hangar);
+        const allBayNames = hangar.grid.bays.map(b => b.name);
+        const candidates = this.findAdjacentCandidateBays(assigned, adjacency, allBayNames, needed);
+        if (candidates.length === 0) return [];
+
+        const insertPos = this.insertionPosition(induction);
+        if (!insertPos) return [];
+
+        const bayList = candidates.map(b => `'${b}'`).join(', ');
+        const label = candidates.length === 1
+            ? `Add bay ${bayList} to accommodate aircraft wingspan`
+            : `Add bays ${bayList} to accommodate aircraft wingspan`;
+
+        return [{
+            title: label,
+            kind: CodeActionKind.QuickFix,
+            diagnostics: [diagnostic],
+            isPreferred: true,
+            edit: {
+                changes: {
+                    [document.textDocument.uri]: [{
+                        range: { start: insertPos, end: insertPos },
+                        newText: ' ' + candidates.join(' ')
                     }]
                 }
             }

@@ -13,6 +13,7 @@ import aircraftRoute from './routes/aircraft.js';
 import hangarsRoute from './routes/hangars.js';
 import schedulingRoute from './routes/scheduling.js';
 import diagnosticsRoute from './routes/diagnostics.js';
+import codeActionsRoute from './routes/code-actions.js';
 
 // Initialise database
 import { getDatabase } from './db/database.js';
@@ -38,6 +39,7 @@ app.use('/api', aircraftRoute);
 app.use('/api', hangarsRoute);
 app.use('/api', schedulingRoute);
 app.use('/api', diagnosticsRoute);
+app.use('/api', codeActionsRoute);
 
 // Health check
 app.get('/api/health', (req, res) => {

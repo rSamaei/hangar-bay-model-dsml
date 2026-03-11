@@ -16,7 +16,7 @@ export interface PanelController {
 }
 
 // ── SFR rule-ID prefix pattern (mirrors diagnostics.ts) ───────────────────────
-const SFR_PREFIX_RE = /^(SFR\w+):\s*/;
+const SFR_PREFIX_RE = /^\[(SFR\w+)\]\s*/;
 
 // ── HTML escaping ─────────────────────────────────────────────────────────────
 function esc(s: string): string {

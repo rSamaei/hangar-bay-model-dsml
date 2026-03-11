@@ -67,7 +67,7 @@ export function checkInductionFeasibility(induction: Induction, accept: Validati
                 );
             } else {
                 accept('error',
-                    `[${result.ruleId}] ${result.message}\nEvidence: ${JSON.stringify(result.evidence, null, 2)}`,
+                    `[${result.ruleId}] ${result.message}`,
                     { node: induction, property: getPropertyForRule(result.ruleId) }
                 );
             }

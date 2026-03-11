@@ -306,6 +306,72 @@ function registerAirfieldLanguage(): void {
     },
   });
 
+  // ── Code action provider (quick fixes) ────────────────────────────────────
+
+  interface RestEdit {
+    startLine: number; startColumn: number;
+    endLine: number;   endColumn: number;
+    newText: string;
+  }
+  interface RestAction {
+    title: string;
+    isPreferred: boolean;
+    edits: RestEdit[];
+  }
+
+  monaco.languages.registerCodeActionProvider(AIRFIELD_LANGUAGE_ID, {
+    async provideCodeActions(model, _range, context) {
+      // Only handle validator markers that carry an SFR code
+      const relevant = context.markers.filter(
+        m => typeof m.code === 'string' && (m.code as string).startsWith('SFR'),
+      );
+      if (relevant.length === 0) return { actions: [], dispose() {} };
+
+      const dslCode = model.getValue();
+      const diagnostics = relevant.map(m => ({
+        // Reconstruct the full message the backend code-action provider expects
+        message:     `[${m.code as string}] ${m.message}`,
+        startLine:   m.startLineNumber,        // 1-based
+        startColumn: m.startColumn - 1,        // Monaco 1-based → 0-based
+      }));
+
+      try {
+        const resp = await fetch('/api/code-actions', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ dslCode, diagnostics }),
+        });
+        if (!resp.ok) return { actions: [], dispose() {} };
+
+        const data: { actions: RestAction[] } = await resp.json();
+
+        const actions: monaco.languages.CodeAction[] = data.actions.map(a => ({
+          title:       a.title,
+          kind:        'quickfix',
+          isPreferred: a.isPreferred,
+          edit: {
+            edits: a.edits.map(e => ({
+              resource: model.uri,
+              textEdit: {
+                range: {
+                  startLineNumber: e.startLine,
+                  startColumn:     e.startColumn + 1,   // 0-based → Monaco 1-based
+                  endLineNumber:   e.endLine,
+                  endColumn:       e.endColumn + 1,
+                },
+                text: e.newText,
+              },
+            })),
+          },
+        }));
+
+        return { actions, dispose() {} };
+      } catch {
+        return { actions: [], dispose() {} };
+      }
+    },
+  });
+
   // ── Hover provider ────────────────────────────────────────────────────────
 
   monaco.languages.registerHoverProvider(AIRFIELD_LANGUAGE_ID, {
