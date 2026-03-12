@@ -5,7 +5,7 @@ import {
   sanitizeName,
   generateDSLCode,
   type ScheduleEntryForDSL,
-} from '../backend/services/dsl-helpers';
+} from '../../../backend/services/dsl-helpers';
 
 // ── toFloat ───────────────────────────────────────────────────────────────────
 

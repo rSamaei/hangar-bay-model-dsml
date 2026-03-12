@@ -13,7 +13,7 @@
 import { describe, expect, test } from 'vitest';
 import express from 'express';
 import supertest from 'supertest';
-import validateRoute from '../../backend/routes/validate.js';
+import validateRoute from '../../../backend/routes/validate.js';
 
 // Minimal app with no DB initialisation
 const app = express();

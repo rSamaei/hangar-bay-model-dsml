@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { checkPlacement } from '../frontend/pages/schedule/utils/placementCheck';
-import type { Aircraft, HangarBay, ScheduledPlacement } from '../frontend/pages/schedule/types';
+import { checkPlacement } from '../../../frontend/pages/schedule/utils/placementCheck';
+import type { Aircraft, HangarBay, ScheduledPlacement } from '../../../frontend/pages/schedule/types';
 
 // ── Test fixtures ─────────────────────────────────────────────────────────────
 

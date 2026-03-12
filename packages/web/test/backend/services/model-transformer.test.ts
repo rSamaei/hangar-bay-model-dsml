@@ -17,7 +17,7 @@
  *   - Auto-induction: id, aircraft, duration, preferredHangar, precedingInductions
  */
 import { describe, expect, test } from 'vitest';
-import { transformToDomainModel } from '../backend/services/model-transformer.js';
+import { transformToDomainModel } from '../../../backend/services/model-transformer.js';
 
 // ---------------------------------------------------------------------------
 // Minimal AST mock helpers (no Langium runtime required)
