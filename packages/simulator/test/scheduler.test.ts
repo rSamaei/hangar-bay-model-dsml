@@ -10,61 +10,7 @@
  */
 import { describe, expect, test } from 'vitest';
 import { AutoScheduler } from '../src/scheduler.js';
-
-// ---------------------------------------------------------------------------
-// Fixture helpers
-// ---------------------------------------------------------------------------
-
-function mkAircraft(name: string, wingspan: number, length: number, height: number, tailHeight?: number) {
-    return { name, wingspan, length, height, tailHeight: tailHeight ?? height, $type: 'AircraftType' };
-}
-
-function mkDoor(name: string, width: number, height: number) {
-    return { name, width, height, accessNode: undefined, $type: 'HangarDoor' };
-}
-
-function mkBay(name: string, width: number, depth: number, height: number, row?: number, col?: number) {
-    return { name, width, depth, height, row, col, adjacent: [], accessNode: undefined, $type: 'HangarBay' };
-}
-
-function mkHangar(name: string, doors: any[], bays: any[], rows?: number, cols?: number) {
-    return { name, doors, grid: { bays, rows, cols }, $type: 'Hangar' };
-}
-
-function mkAutoInduction(
-    id: string | undefined,
-    aircraft: any,
-    hangar: any | undefined,
-    duration: number,
-    options: { notBefore?: string; notAfter?: string; precedingInductions?: any[]; requires?: number } = {}
-) {
-    return {
-        id,
-        aircraft: { ref: aircraft, $refText: aircraft?.name ?? '' },
-        preferredHangar: hangar ? { ref: hangar, $refText: hangar.name } : undefined,
-        duration,
-        requires: options.requires,
-        notBefore: options.notBefore,
-        notAfter: options.notAfter,
-        precedingInductions: (options.precedingInductions ?? []).map((a: any) => ({
-            ref: a,
-            $refText: a?.id ?? ''
-        })),
-        clearance: undefined,
-        $type: 'AutoInduction'
-    };
-}
-
-function mkModel(hangars: any[], inductions: any[], autoInductions: any[]): any {
-    return {
-        name: 'TestAirfield',
-        hangars,
-        inductions,
-        autoInductions,
-        accessPaths: [],
-        $type: 'Model'
-    };
-}
+import { mkAircraft, mkDoor, mkBay, mkHangar, mkAutoInduction, mkModel } from './helpers/fixtures.js';
 
 // ---------------------------------------------------------------------------
 // Standard fixtures

@@ -8,18 +8,11 @@
  */
 import { describe, expect, test } from 'vitest';
 import { findConnectedSetsOfSize, findSuitableBaySets } from '../src/search/bay-sets.js';
+import { ref, mkAircraft } from './helpers/fixtures.js';
 
 // ---------------------------------------------------------------------------
 // Fixture helpers
 // ---------------------------------------------------------------------------
-
-function ref<T extends { name: string }>(val: T) {
-    return { ref: val, $refText: val.name };
-}
-
-function mkAircraft(name: string, wingspan: number, length: number, height: number) {
-    return { name, wingspan, length, height, tailHeight: height, $type: 'AircraftType' };
-}
 
 function mkBay(
     name: string,

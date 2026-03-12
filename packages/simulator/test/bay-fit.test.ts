@@ -7,14 +7,11 @@
 import { describe, expect, test } from 'vitest';
 import { checkBaySetFitEffective } from '../src/rules/bay-fit.js';
 import type { EffectiveDimensions } from '../src/types/dimensions.js';
+import { mkBay } from './helpers/fixtures.js';
 
 // ---------------------------------------------------------------------------
 // Fixture helpers
 // ---------------------------------------------------------------------------
-
-function mkBay(name: string, width: number, depth: number, height: number) {
-    return { name, width, depth, height, adjacent: [], accessNode: undefined, $type: 'HangarBay' };
-}
 
 function mkDims(wingspan: number, length: number, tailHeight: number, clearanceName?: string): EffectiveDimensions {
     return {
