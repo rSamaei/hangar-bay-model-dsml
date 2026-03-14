@@ -1,5 +1,6 @@
 import { router } from '../router';
 import { login, isLoggedIn } from '../services/auth';
+import { createNavbar } from './navbar';
 
 export function createLoginPage(): string {
   // Redirect if already logged in
@@ -54,15 +55,6 @@ export function createLoginPage(): string {
             <p class="mt-6 text-center text-sm text-slate-400">
               No password required. Just enter a username to continue.
             </p>
-
-            <div class="mt-8 pt-6 border-t border-slate-700">
-              <p class="text-center text-sm text-slate-500">
-                Or continue with the
-                <button id="dsl-mode-btn" class="text-cyan-400 hover:text-cyan-300 underline">
-                  DSL Editor
-                </button>
-              </p>
-            </div>
           </div>
         </div>
       </main>
@@ -70,32 +62,19 @@ export function createLoginPage(): string {
   `;
 }
 
-function createNavbar(): string {
-  return `
-    <nav class="border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-xl">
-      <div class="container mx-auto px-6 py-4">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-cyan-500/25 flex items-center justify-center">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-            </svg>
-          </div>
-          <div>
-            <h1 class="text-lg font-bold text-white">Airfield Manager</h1>
-            <p class="text-xs text-slate-400">Hangar Bay Scheduling</p>
-          </div>
-        </div>
-      </div>
-    </nav>
-  `;
-}
-
 export function attachLoginPageListeners(): void {
+  // Attach navbar listeners for the DSL Editor link
+  document.querySelectorAll('[data-nav]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const route = (btn as HTMLElement).dataset.nav as any;
+      router.navigate(route);
+    });
+  });
+
   const form = document.getElementById('login-form') as HTMLFormElement;
   const usernameInput = document.getElementById('username') as HTMLInputElement;
   const loginBtn = document.getElementById('login-btn') as HTMLButtonElement;
   const errorDiv = document.getElementById('login-error') as HTMLDivElement;
-  const dslModeBtn = document.getElementById('dsl-mode-btn');
 
   if (form) {
     form.addEventListener('submit', async (e) => {
@@ -119,12 +98,6 @@ export function attachLoginPageListeners(): void {
         loginBtn.disabled = false;
         loginBtn.textContent = 'Continue';
       }
-    });
-  }
-
-  if (dslModeBtn) {
-    dslModeBtn.addEventListener('click', () => {
-      router.navigate('home');
     });
   }
 

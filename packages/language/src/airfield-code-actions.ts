@@ -119,7 +119,7 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         const needed = Math.ceil(effectiveWingspan / bayWidth) - assigned.length;
         if (needed <= 0) return [];
 
-        const adjacency = this.buildAdjacencyGraph(hangar);
+        const { adjacency } = buildBayAdjacencyGraph(hangar.grid);
         const allBayNames = hangar.grid.bays.map(b => b.name);
         const candidates = this.findAdjacentCandidateBays(assigned, adjacency, allBayNames, needed);
         if (candidates.length === 0) return [];

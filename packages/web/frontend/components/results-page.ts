@@ -1,6 +1,7 @@
 import type { AnalysisResult, ParseError } from '../services/api';
 import { renderTimeline } from './timeline';
 import { renderDiagnostics } from './diagnostics';
+import { createNavbar } from './navbar';
 import type { ExportModel, ExportedInduction, ValidationReport } from '../types/api';
 
 export function createResultsPage(data: AnalysisResult): string {
@@ -8,8 +9,19 @@ export function createResultsPage(data: AnalysisResult): string {
 
   return `
     <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      ${createResultsNavbar()}
+      ${createNavbar('editor')}
       <main class="container mx-auto px-6 py-8">
+        <div class="mb-6">
+          <button
+            id="back-btn"
+            class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Editor
+          </button>
+        </div>
         ${createResultsHeader(exportModel, report)}
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
           ${createSummaryCards(exportModel, report)}
@@ -21,37 +33,6 @@ export function createResultsPage(data: AnalysisResult): string {
         </div>
       </main>
     </div>
-  `;
-}
-
-function createResultsNavbar(): string {
-  return `
-    <nav class="border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-50">
-      <div class="container mx-auto px-6 py-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-cyan-500/25 flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-              </svg>
-            </div>
-            <div>
-              <h1 class="text-lg font-bold text-white">Analysis Results</h1>
-              <p class="text-xs text-slate-400">Schedule & Validation Report</p>
-            </div>
-          </div>
-          <button
-            id="back-btn"
-            class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-lg transition-all border border-slate-700 hover:border-slate-600"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-            Back to Editor
-          </button>
-        </div>
-      </div>
-    </nav>
   `;
 }
 
