@@ -28,15 +28,24 @@ import {
     checkAutoInductionTimeWindow,
     checkAutoInductionBayCountOverride
 } from './validators/auto-induction-checks.js';
-import { checkReachabilitySkipped, checkAdjacencyConsistency } from './validators/hangar-checks.js';
+import { checkReachabilitySkipped, checkAdjacencyConsistency, checkAsymmetricAdjacency } from './validators/hangar-checks.js';
 import { checkAccessPathConnectivity } from './validators/access-path-checks.js';
+import {
+    checkDuplicateAircraftNames,
+    checkDuplicateBayNames,
+    checkDuplicateHangarNames,
+    checkDuplicateClearanceNames,
+    checkSelfAdjacency,
+    checkSelfLoopAccessLink,
+    checkAtLeastOneHangar
+} from './validators/well-formedness-checks.js';
 
 export function registerValidationChecks(services: AirfieldServices) {
     const registry = services.validation.ValidationRegistry;
     const validator = services.validation.AirfieldValidator;
     const checks: ValidationChecks<AirfieldAstType> = {
         AircraftType: validator.checkAircraftDimensions,
-        HangarBay: validator.checkBayDimensions,
+        HangarBay: [validator.checkBayDimensions, validator.checkSelfAdjacency],
         HangarDoor: validator.checkDoorDimensions,
         ClearanceEnvelope: [validator.checkClearanceDimensions, validator.checkUnreferencedClearanceEnvelope],
         Induction: [
@@ -57,7 +66,9 @@ export function registerValidationChecks(services: AirfieldServices) {
             validator.checkAutoInductionBayCountOverride
         ],
         AccessPath: validator.checkAccessPathConnectivity,
-        Hangar: [validator.checkReachabilitySkipped, validator.checkAdjacencyConsistency]
+        AccessLink: validator.checkSelfLoopAccessLink,
+        Hangar: [validator.checkReachabilitySkipped, validator.checkAdjacencyConsistency, validator.checkAsymmetricAdjacency, validator.checkDuplicateBayNames],
+        Model: [validator.checkDuplicateAircraftNames, validator.checkDuplicateHangarNames, validator.checkDuplicateClearanceNames, validator.checkAtLeastOneHangar]
     };
     registry.register(checks, validator);
 }
@@ -83,7 +94,15 @@ export class AirfieldValidator {
     checkAutoInductionBayCountOverride = checkAutoInductionBayCountOverride;
     checkReachabilitySkipped = checkReachabilitySkipped;
     checkAdjacencyConsistency = checkAdjacencyConsistency;
+    checkAsymmetricAdjacency = checkAsymmetricAdjacency;
     checkAccessPathConnectivity = checkAccessPathConnectivity;
     generateValidationReport = generateValidationReport;
+    checkDuplicateAircraftNames = checkDuplicateAircraftNames;
+    checkDuplicateBayNames = checkDuplicateBayNames;
+    checkDuplicateHangarNames = checkDuplicateHangarNames;
+    checkDuplicateClearanceNames = checkDuplicateClearanceNames;
+    checkSelfAdjacency = checkSelfAdjacency;
+    checkSelfLoopAccessLink = checkSelfLoopAccessLink;
+    checkAtLeastOneHangar = checkAtLeastOneHangar;
 }
 

@@ -33,6 +33,7 @@ export interface ExportedUnscheduledAuto {
 }
 
 export interface ExportModel {
+    schemaVersion: string;
     airfieldName: string;
     inductions: ExportedInduction[];
     autoSchedule?: {

@@ -281,3 +281,41 @@ describe('AutoScheduler — requires clause (minBaysOverride)', () => {
         expect(result.unscheduled[0].id).toBe('REQ2-FAIL');
     });
 });
+
+// ---------------------------------------------------------------------------
+// Tests: bay-set fallback on time conflict
+// ---------------------------------------------------------------------------
+
+describe('AutoScheduler — bay-set iteration on time conflict', () => {
+    /**
+     * Two-bay hangar: Bay1 (col=0) and Bay2 (col=1), both fit CESSNA individually.
+     * Two auto-inductions at the same notBefore time and same duration:
+     *   - IND-A is scheduled first → assigned Bay1 (baySets[0]).
+     *   - IND-B tries Bay1 → time conflict with IND-A → falls through to Bay2 → succeeds.
+     * Both inductions should be scheduled at the same start time in different bays.
+     */
+    test('second induction uses baySets[1] when baySets[0] has a time conflict', () => {
+        const bay1 = mkBay('Bay1', 12, 10, 3, 0, 0);
+        const bay2 = mkBay('Bay2', 12, 10, 3, 0, 1);
+        const hangar = mkHangar('DualBay', [MAIN_DOOR], [bay1, bay2], 1, 2);
+
+        const notBefore = '2025-12-15T08:00:00Z';
+        const autoA = mkAutoInduction('IND-A', CESSNA, hangar, 120, { notBefore });
+        const autoB = mkAutoInduction('IND-B', CESSNA, hangar, 120, { notBefore });
+
+        const result = new AutoScheduler().schedule(mkModel([hangar], [], [autoA, autoB]));
+
+        expect(result.scheduled).toHaveLength(2);
+        expect(result.unscheduled).toHaveLength(0);
+
+        const a = result.scheduled.find(s => s.id === 'IND-A')!;
+        const b = result.scheduled.find(s => s.id === 'IND-B')!;
+
+        expect(a.bays).toHaveLength(1);
+        expect(b.bays).toHaveLength(1);
+        // Different bays — B fell through to the second candidate
+        expect(a.bays[0]).not.toBe(b.bays[0]);
+        // Same start time (both pinned to the same notBefore)
+        expect(a.start).toBe(b.start);
+    });
+});

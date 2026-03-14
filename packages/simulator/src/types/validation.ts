@@ -139,6 +139,18 @@ export interface DynamicReachabilityViolation extends ValidationViolation {
     };
 }
 
+/** SFR_CORRIDOR_FIT: Aircraft's effective wingspan exceeds a corridor node's width on the path to an assigned bay. */
+export interface CorridorFitViolation extends ValidationViolation {
+    ruleId: 'SFR_CORRIDOR_FIT';
+    evidence: {
+        aircraftName: string;
+        effectiveWingspan: number;
+        corridorNodeName: string;
+        corridorWidth: number;
+        unreachableBays: string[];
+    };
+}
+
 export type TypedViolation =
     | DoorFitViolation
     | BaySetFitViolation
@@ -146,6 +158,7 @@ export type TypedViolation =
     | TimeOverlapViolation
     | SchedulingFailedViolation
     | DynamicReachabilityViolation
+    | CorridorFitViolation
     | ValidationViolation; // fallback for rules without a specific type
 
 /** Complete validation report. */

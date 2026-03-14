@@ -123,7 +123,7 @@ export class AutoScheduler {
             };
         }
 
-        const clearance = autoInd.clearance?.ref;
+        const clearance = autoInd.clearance?.ref ?? aircraft.clearance?.ref;
         const rejections: RejectionReason[] = [];
         const targetHangars = autoInd.preferredHangar?.ref ? [autoInd.preferredHangar.ref] : model.hangars;
 
@@ -131,22 +131,24 @@ export class AutoScheduler {
             const placement = this.findSpatialPlacement(aircraft, hangar, clearance, autoInd.requires, rejections);
             if (!placement) continue;
 
-            const timing = this.findTiming(autoInd, hangar.name, placement.bayNames, existing, scheduledById, searchWindow, dependencyMap, rejections);
-            if (!timing) continue;
+            for (const bayNames of placement.baySetCandidates) {
+                const timing = this.findTiming(autoInd, hangar.name, bayNames, existing, scheduledById, searchWindow, dependencyMap, rejections);
+                if (!timing) continue;
 
-            return {
-                success: true,
-                scheduled: {
-                    id: autoInd.id ?? `auto_${aircraft.name}`,
-                    aircraft: aircraft.name,
-                    hangar: hangar.name,
-                    bays: placement.bayNames,
-                    door: placement.doorName,
-                    start: timing.start.toISOString(),
-                    end: timing.end.toISOString()
-                },
-                rejections: []
-            };
+                return {
+                    success: true,
+                    scheduled: {
+                        id: autoInd.id ?? `auto_${aircraft.name}`,
+                        aircraft: aircraft.name,
+                        hangar: hangar.name,
+                        bays: bayNames,
+                        door: placement.doorName,
+                        start: timing.start.toISOString(),
+                        end: timing.end.toISOString()
+                    },
+                    rejections: []
+                };
+            }
         }
 
         return { success: false, rejections };
@@ -160,7 +162,7 @@ export class AutoScheduler {
         clearance: ClearanceEnvelope | undefined,
         minBays: number | undefined,
         rejections: RejectionReason[]
-    ): { doorName: string; bayNames: string[] } | null {
+    ): { doorName: string; baySetCandidates: string[][] } | null {
         const doorResult = findSuitableDoors(aircraft, hangar, clearance);
         if (doorResult.doors.length === 0) {
             rejections.push(makeDoorRejection(hangar.name, doorResult));
@@ -175,7 +177,7 @@ export class AutoScheduler {
 
         return {
             doorName: doorResult.doors[0].name,
-            bayNames: bayResult.baySets[0].map((b: HangarBay) => b.name)
+            baySetCandidates: bayResult.baySets.map((bs: HangarBay[]) => bs.map((b: HangarBay) => b.name))
         };
     }
 

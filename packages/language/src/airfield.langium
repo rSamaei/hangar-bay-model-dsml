@@ -16,10 +16,10 @@ entry Model:
 
 AircraftType:
     'aircraft' name=ID '{'
-        'wingspan' wingspan=FLOAT 'm'
-        'length'   length=FLOAT 'm'
-        'height'   height=FLOAT 'm'
-        ('tailHeight' tailHeight=FLOAT 'm')?
+        'wingspan' wingspan=FVAL 'm'
+        'length'   length=FVAL 'm'
+        'height'   height=FVAL 'm'
+        ('tailHeight' tailHeight=FVAL 'm')?
         ('clearance' clearance=[ClearanceEnvelope:ID])?
     '}';
 
@@ -29,9 +29,9 @@ AircraftType:
 
 ClearanceEnvelope:
     'clearance' name=ID '{'
-        'lateralMargin' lateralMargin=FLOAT 'm'
-        'longitudinalMargin' longitudinalMargin=FLOAT 'm'
-        'verticalMargin' verticalMargin=FLOAT 'm'
+        'lateralMargin' lateralMargin=FVAL 'm'
+        'longitudinalMargin' longitudinalMargin=FVAL 'm'
+        'verticalMargin' verticalMargin=FVAL 'm'
     '}';
 
 // ---------------------------------------------------------------------------
@@ -46,8 +46,8 @@ Hangar:
 
 HangarDoor:
     'door' name=ID '{'
-        'width'  width=FLOAT 'm'
-        'height' height=FLOAT 'm'
+        'width'  width=FVAL 'm'
+        'height' height=FVAL 'm'
         ('accessNode' accessNode=[AccessNode:ID])?
     '}';
 
@@ -61,9 +61,9 @@ BayGrid:
 HangarBay:
     'bay' name=ID '{'
         ('at' 'row' row=INT 'col' col=INT)?
-        'width'  width=FLOAT 'm'
-        'depth'  depth=FLOAT 'm'
-        'height' height=FLOAT 'm'
+        'width'  width=FVAL 'm'
+        'depth'  depth=FVAL 'm'
+        'height' height=FVAL 'm'
         ('adjacent' '{' adjacent+=[HangarBay:ID]+ '}')?
         (traversable?='traversable')?
         ('accessNode' accessNode=[AccessNode:ID])?
@@ -81,8 +81,8 @@ AccessPath:
 
 AccessNode:
     'node' name=ID
-        ('width' width=FLOAT 'm')?          // optional dimension constraints
-        ('clearanceHeight' height=FLOAT 'm')?
+        ('width' width=FVAL 'm')?          // optional dimension constraints
+        ('clearanceHeight' height=FVAL 'm')?
     ;
 
 AccessLink:
@@ -142,6 +142,13 @@ AutoInduction:
 
         (metadata=InductionMetadata)?
     ';';
+
+// ---------------------------------------------------------------------------
+// Data type rules
+// ---------------------------------------------------------------------------
+
+// Physical dimension value: accepts both integer (e.g. 11) and decimal (e.g. 11.5) literals.
+FVAL returns number: FLOAT | INT;
 
 // ---------------------------------------------------------------------------
 // Terminals

@@ -145,6 +145,112 @@ describe('generateAction — valid .air file', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Tests — enriched JSON fields (3b schemaVersion + 3c richer output)
+// ---------------------------------------------------------------------------
+
+/**
+ * A richer model with a clearance envelope, an induction with an explicit id
+ * and via-door clause, a traversable bay, and a grid with rows/cols.
+ */
+const RICH_AIR = `
+airfield RichField {
+    clearance WingTip {
+        lateralMargin      0.5 m
+        longitudinalMargin 0.5 m
+        verticalMargin     0.3 m
+    }
+    aircraft Cessna {
+        wingspan 11.0 m
+        length    8.3 m
+        height    2.7 m
+        clearance WingTip
+    }
+    hangar AlphaHangar {
+        doors {
+            door MainDoor {
+                width  15.0 m
+                height  5.0 m
+            }
+        }
+        grid baygrid {
+            rows 1
+            cols 2
+            bay Bay1 { width 12.0 m  depth 10.0 m  height 5.0 m }
+            bay Bay2 { width 12.0 m  depth 10.0 m  height 5.0 m  traversable }
+        }
+    }
+    induct id "IND001" Cessna into AlphaHangar bays Bay1 via MainDoor
+        from 2024-06-01T08:00
+        to   2024-06-01T10:00;
+}
+`;
+
+describe('generateAction — schema version and enriched fields', () => {
+    test('output carries schemaVersion "1.0.0"', async () => {
+        const airFile = writeAir('gen-schema1.air', VALID_AIR);
+        const destDir = path.join(tmpDir, 'out-schema1');
+
+        await generateAction(airFile, { destination: destDir });
+
+        const data = JSON.parse(fs.readFileSync(path.join(destDir, 'gen-schema1.json'), 'utf-8'));
+        expect(data.schemaVersion).toBe('1.0.0');
+    });
+
+    test('output carries clearanceEnvelopes array', async () => {
+        const airFile = writeAir('gen-clear1.air', RICH_AIR);
+        const destDir = path.join(tmpDir, 'out-clear1');
+
+        await generateAction(airFile, { destination: destDir });
+
+        const data = JSON.parse(fs.readFileSync(path.join(destDir, 'gen-clear1.json'), 'utf-8'));
+        expect(Array.isArray(data.clearanceEnvelopes)).toBe(true);
+        expect(data.clearanceEnvelopes).toHaveLength(1);
+        expect(data.clearanceEnvelopes[0].name).toBe('WingTip');
+        expect(data.clearanceEnvelopes[0].lateralMargin).toBe(0.5);
+    });
+
+    test('manual induction entry carries id, door and clearance fields', async () => {
+        const airFile = writeAir('gen-ind1.air', RICH_AIR);
+        const destDir = path.join(tmpDir, 'out-ind1');
+
+        await generateAction(airFile, { destination: destDir });
+
+        const data = JSON.parse(fs.readFileSync(path.join(destDir, 'gen-ind1.json'), 'utf-8'));
+        expect(data.manualInductions).toHaveLength(1);
+        const ind = data.manualInductions[0];
+        expect(ind.id).toBe('IND001');
+        expect(ind.door).toBe('MainDoor');
+        expect(ind.clearance).toBeUndefined(); // clearance set on aircraft, not induction
+    });
+
+    test('bay entries include traversable flag', async () => {
+        const airFile = writeAir('gen-trav1.air', RICH_AIR);
+        const destDir = path.join(tmpDir, 'out-trav1');
+
+        await generateAction(airFile, { destination: destDir });
+
+        const data = JSON.parse(fs.readFileSync(path.join(destDir, 'gen-trav1.json'), 'utf-8'));
+        const bays = data.hangars[0].bays;
+        expect(bays[0].traversable).toBe(false);
+        expect(bays[1].traversable).toBe(true);
+    });
+
+    test('hangar entry includes grid with rows, cols and adjacencyMode', async () => {
+        const airFile = writeAir('gen-grid1.air', RICH_AIR);
+        const destDir = path.join(tmpDir, 'out-grid1');
+
+        await generateAction(airFile, { destination: destDir });
+
+        const data = JSON.parse(fs.readFileSync(path.join(destDir, 'gen-grid1.json'), 'utf-8'));
+        const grid = data.hangars[0].grid;
+        expect(grid).toBeDefined();
+        expect(grid.rows).toBe(1);
+        expect(grid.cols).toBe(2);
+        expect(grid.adjacencyMode).toBe(4); // default, no adjacency keyword
+    });
+});
+
+// ---------------------------------------------------------------------------
 // Tests — model with validation errors
 // ---------------------------------------------------------------------------
 

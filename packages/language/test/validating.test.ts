@@ -23,6 +23,10 @@ describe('Validating', () => {
                     length 8.28 m
                     height 2.72 m
                 }
+                hangar Alpha {
+                    doors { door D1 { width 15.0 m  height 5.0 m } }
+                    grid baygrid { bay B1 { width 12.0 m  depth 15.0 m  height 5.0 m } }
+                }
             }
         `);
 

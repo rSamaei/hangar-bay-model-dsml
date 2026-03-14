@@ -30,6 +30,43 @@ export function checkReachabilitySkipped(hangar: Hangar, accept: ValidationAccep
 }
 
 /**
+ * SFR7_ASYMMETRIC_ADJACENCY: Warn when a hangar uses pure explicit adjacency
+ * (no grid rows/cols defined) and the declarations are not symmetric — i.e.
+ * Bay A declares Bay B adjacent but Bay B does not declare Bay A adjacent.
+ *
+ * The adjacency builder silently adds the reverse edge, so the simulation is
+ * unaffected, but the DSL model is misleading. This check prompts authors to
+ * keep explicit models symmetric.
+ */
+export function checkAsymmetricAdjacency(hangar: Hangar, accept: ValidationAcceptor): void {
+    if (hangar.grid.rows !== undefined && hangar.grid.cols !== undefined) return;
+
+    // Build a map from bay name → set of explicitly declared neighbour names
+    const explicitAdj = new Map<string, Set<string>>();
+    for (const bay of hangar.grid.bays) {
+        const declared = new Set<string>();
+        for (const adjRef of bay.adjacent ?? []) {
+            if (adjRef.ref) declared.add(adjRef.ref.name);
+        }
+        explicitAdj.set(bay.name, declared);
+    }
+
+    for (const bay of hangar.grid.bays) {
+        for (const adjRef of bay.adjacent ?? []) {
+            const nb = adjRef.ref;
+            if (!nb) continue;
+            const nbDeclared = explicitAdj.get(nb.name);
+            if (!nbDeclared?.has(bay.name)) {
+                accept('warning',
+                    `[SFR7_ASYMMETRIC_ADJACENCY] Bay '${bay.name}' declares '${nb.name}' as adjacent, but '${nb.name}' does not declare '${bay.name}' — the adjacency builder will add the reverse edge automatically, but explicit models should be symmetric.`,
+                    { node: bay, property: 'adjacent' }
+                );
+            }
+        }
+    }
+}
+
+/**
  * SFR_NONGRID_ADJACENCY / SFR_GRID_OVERRIDE: Warn when explicit adjacent {}
  * declarations contradict the grid-derived 4-connected neighbour structure.
  *

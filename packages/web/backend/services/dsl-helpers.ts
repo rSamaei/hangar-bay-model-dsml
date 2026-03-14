@@ -12,8 +12,8 @@ export interface ScheduleEntryForDSL {
 }
 
 /**
- * Ensure a number is formatted as a FLOAT literal understood by the grammar
- * (requires a decimal point).  Integer 32 → "32.0", float 32.5 → "32.5".
+ * Format a number as a FLOAT literal understood by the grammar.
+ * Integer 32 → "32.0", float 32.5 → "32.5".
  */
 export function toFloat(value: number): string {
   const num = Number(value);

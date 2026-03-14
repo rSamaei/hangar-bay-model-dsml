@@ -7,7 +7,8 @@ import type {
     ContiguityViolation,
     TimeOverlapViolation,
     SchedulingFailedViolation,
-    DynamicReachabilityViolation
+    DynamicReachabilityViolation,
+    CorridorFitViolation
 } from '../types/validation.js';
 import type { InductionInfo } from '../types/conflict.js';
 import type { ScheduleResult, RejectionReason } from '../scheduler.js';
@@ -17,7 +18,7 @@ import { checkDoorFitEffective } from '../rules/door-fit.js';
 import { checkBaySetFitEffective } from '../rules/bay-fit.js';
 import { checkContiguity } from '../rules/contiguity.js';
 import { detectConflicts } from '../rules/time-overlap.js';
-import { checkDynamicBayReachability } from '../geometry/access.js';
+import { checkDynamicBayReachability, checkCorridorFit } from '../geometry/access.js';
 
 // ---------------------------------------------------------------------------
 // Public entry point
@@ -58,7 +59,7 @@ function checkInduction(
     const violations: TypedViolation[] = [];
     const door = induction.door?.ref;
     const bays = induction.bays.map(b => b.ref).filter((b): b is HangarBay => b !== undefined);
-    const clearance = induction.clearance?.ref;
+    const clearance = induction.clearance?.ref ?? aircraft.clearance?.ref;
     const effectiveDims = calculateEffectiveDimensions(aircraft, clearance);
     const subject = { type: 'Induction' as const, name: aircraft.name, id: induction.id };
 
@@ -86,6 +87,37 @@ function checkInduction(
             subject,
             evidence: reachResult.evidence
         } satisfies DynamicReachabilityViolation);
+    }
+
+    if (effectiveDims.wingspan > 0) {
+        const corridorResult = checkCorridorFit(hangar, induction, model.accessPaths, effectiveDims.wingspan);
+        if (!corridorResult.ok && !corridorResult.skipped) {
+            // Group by corridor node — one violation per narrow corridor node.
+            const byNode = new Map<string, { nodeWidth: number; bays: string[] }>();
+            for (const vi of corridorResult.violations) {
+                const entry = byNode.get(vi.nodeName);
+                if (entry) {
+                    if (!entry.bays.includes(vi.bayName)) entry.bays.push(vi.bayName);
+                } else {
+                    byNode.set(vi.nodeName, { nodeWidth: vi.nodeWidth, bays: [vi.bayName] });
+                }
+            }
+            for (const [nodeName, { nodeWidth, bays }] of byNode) {
+                violations.push({
+                    ruleId: 'SFR_CORRIDOR_FIT',
+                    severity: 'warning',
+                    message: `[SFR_CORRIDOR_FIT] Aircraft '${aircraft.name}' (effective wingspan ${effectiveDims.wingspan} m) cannot pass through corridor '${nodeName}' (width ${nodeWidth} m) to reach bay(s) [${bays.join(', ')}]`,
+                    subject,
+                    evidence: {
+                        aircraftName: aircraft.name,
+                        effectiveWingspan: effectiveDims.wingspan,
+                        corridorNodeName: nodeName,
+                        corridorWidth: nodeWidth,
+                        unreachableBays: bays
+                    }
+                } satisfies CorridorFitViolation);
+            }
+        }
     }
 
     return violations;

@@ -66,6 +66,7 @@ export function buildExportModel(model: Model, scheduleResult?: ScheduleResult):
     sortExportModel(allInductions, autoSchedule);
 
     return {
+        schemaVersion: '1.0.0',
         airfieldName: model.name,
         inductions: allInductions,
         autoSchedule,
@@ -98,7 +99,7 @@ function exportManualInductions(model: Model, inductionInfos: InductionInfo[], c
         if (!aircraft || !hangar) continue;
 
         const bays = induction.bays.map(b => b.ref).filter((b): b is HangarBay => b !== undefined);
-        const result = exportInduction(induction, aircraft, hangar, bays, induction.clearance?.ref, caches);
+        const result = exportInduction(induction, aircraft, hangar, bays, induction.clearance?.ref ?? aircraft.clearance?.ref, caches);
         exported.push(result.exported);
         inductionInfos.push(result.info);
     }
@@ -123,7 +124,7 @@ function exportInduction(
         bays: bays.map(b => b.name),
         start: induction.start,
         end: induction.end,
-        derived: computeDerived(aircraft, hangar, clearance, bays.map(b => b.name), caches),
+        derived: computeDerived(aircraft, hangar, clearance, bays.map(b => b.name), caches, induction.span),
         conflicts: []
     };
     const info: InductionInfo = {
@@ -185,7 +186,7 @@ function exportScheduledAuto(
         bays: s.bays,
         start: s.start,
         end: s.end,
-        derived: computeDerived(autoInd.aircraft.ref!, hangar, autoInd.clearance?.ref, s.bays, caches),
+        derived: computeDerived(autoInd.aircraft.ref!, hangar, autoInd.clearance?.ref ?? autoInd.aircraft.ref!.clearance?.ref, s.bays, caches, undefined),
         conflicts: []
     };
     const info: InductionInfo = {
@@ -221,10 +222,11 @@ function computeDerived(
     hangar: Hangar,
     clearance: ClearanceEnvelope | undefined,
     bayNames: string[],
-    caches: ExportCaches
+    caches: ExportCaches,
+    span?: string
 ): DerivedInductionProperties {
     const effectiveDims = getCachedEffectiveDims(caches, aircraft, clearance);
-    const baysRequiredInfo = calculateBaysRequired(effectiveDims, hangar);
+    const baysRequiredInfo = calculateBaysRequired(effectiveDims, hangar, span);
     const { adjacency } = getCachedAdjacency(caches, hangar);
     const contiguityCheck = checkContiguity(bayNames, adjacency);
     return {
