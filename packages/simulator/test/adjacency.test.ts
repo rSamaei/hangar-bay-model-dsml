@@ -6,14 +6,11 @@
  */
 import { describe, expect, test } from 'vitest';
 import { buildAdjacencyGraph } from '../src/geometry/adjacency.js';
+import { ref } from './helpers/fixtures.js';
 
 // ---------------------------------------------------------------------------
 // Fixture helpers
 // ---------------------------------------------------------------------------
-
-function ref<T>(val: T | undefined) {
-    return { ref: val, $refText: (val as any)?.name ?? '' };
-}
 
 function mkBay(name: string, opts: { row?: number; col?: number; adjacent?: any[] } = {}) {
     return {

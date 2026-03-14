@@ -1,22 +1,14 @@
-import { beforeAll, describe, expect, test } from "vitest";
-import { EmptyFileSystem, type LangiumDocument } from "langium";
-import { parseHelper } from "langium/test";
-import type { Model } from "airfield-language";
-import { createAirfieldServices, isModel } from "airfield-language";
+import { describe, expect, test } from 'vitest';
+import { EmptyFileSystem, type LangiumDocument } from 'langium';
+import { setupServices, services, parse, validate } from '../helpers/setup.js';
+import { isModel } from 'airfield-language';
 
-let services: ReturnType<typeof createAirfieldServices>;
-let parse:    ReturnType<typeof parseHelper<Model>>;
-let document: LangiumDocument<Model> | undefined;
+setupServices();
 
-beforeAll(async () => {
-    services = createAirfieldServices(EmptyFileSystem);
-    parse = parseHelper<Model>(services.Airfield);
-});
-
-describe('Validating', () => {
+describe('SFR_DYNAMIC_REACHABILITY — bay blocking by concurrent inductions', () => {
 
     test('check no validation errors for valid airfield', async () => {
-        document = await parse(`
+        const document = await parse(`
             airfield MyAirfield {
                 aircraft Cessna172 {
                     wingspan 11.0 m
@@ -32,27 +24,12 @@ describe('Validating', () => {
 
         expect(checkDocumentValid(document)).toBe(true);
 
-        const validationResult = await services.Airfield.validation.DocumentValidator.validateDocument(document);
+        const validationResult = await validate(document);
         expect(validationResult).toHaveLength(0);
     });
 
-    // ---------------------------------------------------------------------------
-    // SFR_DYNAMIC_REACHABILITY: bay blocking by concurrent inductions
-    // ---------------------------------------------------------------------------
-
-    test('SFR_DYNAMIC_REACHABILITY: error when blocker induction occupies the access path', async () => {
-        // Layout:
-        //   Door D1 → accessNode NodeD
-        //   Bay1     → accessNode Node1  (IND001 occupies this bay during the overlap)
-        //   Bay2     → accessNode Node2  (IND002 targets this bay)
-        //
-        // AccessPath: NodeD → Node1 → Node2  (unidirectional chain)
-        //
-        // IND001 occupies Bay1 08:00–16:00.
-        // IND002 wants Bay2 10:00–14:00 (overlaps with IND001).
-        // Node1 is therefore blocked → Bay2 is unreachable from NodeD.
-        // Expect: SFR_DYNAMIC_REACHABILITY error on IND002.
-        document = await parse(`
+    test('error when blocker induction occupies the access path', async () => {
+        const document = await parse(`
             airfield BlockingTest {
                 aircraft A320 {
                     wingspan 34.1 m
@@ -109,7 +86,7 @@ describe('Validating', () => {
 
         expect(document.parseResult.parserErrors).toHaveLength(0);
 
-        const diagnostics = await services.Airfield.validation.DocumentValidator.validateDocument(document);
+        const diagnostics = await validate(document);
         const reachabilityErrors = diagnostics.filter(
             d => typeof d.message === 'string' && d.message.includes('SFR_DYNAMIC_REACHABILITY')
         );
@@ -120,10 +97,8 @@ describe('Validating', () => {
         expect(msg).toContain('IND001');
     });
 
-    test('SFR_DYNAMIC_REACHABILITY: no error when inductions do not overlap in time', async () => {
-        // Same topology as the blocking test but IND001 ends exactly when IND002
-        // starts — no overlap interval → no blocking → no reachability error.
-        document = await parse(`
+    test('no error when inductions do not overlap in time', async () => {
+        const document = await parse(`
             airfield NoOverlapTest {
                 aircraft A320 {
                     wingspan 34.1 m
@@ -180,17 +155,15 @@ describe('Validating', () => {
 
         expect(document.parseResult.parserErrors).toHaveLength(0);
 
-        const diagnostics = await services.Airfield.validation.DocumentValidator.validateDocument(document);
+        const diagnostics = await validate(document);
         const reachabilityErrors = diagnostics.filter(
             d => typeof d.message === 'string' && d.message.includes('SFR_DYNAMIC_REACHABILITY')
         );
         expect(reachabilityErrors).toHaveLength(0);
     });
 
-    test('SFR_DYNAMIC_REACHABILITY: skipped silently when no access graph is modelled', async () => {
-        // Hangar with no accessNode hooks on doors or bays.
-        // The check must be skipped (ok=true, skipped=true) — no false positive.
-        document = await parse(`
+    test('skipped silently when no access graph is modelled', async () => {
+        const document = await parse(`
             airfield NoGraphTest {
                 aircraft A320 {
                     wingspan 34.1 m
@@ -220,7 +193,7 @@ describe('Validating', () => {
 
         expect(document.parseResult.parserErrors).toHaveLength(0);
 
-        const diagnostics = await services.Airfield.validation.DocumentValidator.validateDocument(document);
+        const diagnostics = await validate(document);
         const reachabilityErrors = diagnostics.filter(
             d => typeof d.message === 'string' && d.message.includes('SFR_DYNAMIC_REACHABILITY')
         );

@@ -7,14 +7,11 @@
 import { describe, expect, test } from 'vitest';
 import { checkDoorFitEffective } from '../src/rules/door-fit.js';
 import type { EffectiveDimensions } from '../src/types/dimensions.js';
+import { mkDoor } from './helpers/fixtures.js';
 
 // ---------------------------------------------------------------------------
 // Fixture helpers
 // ---------------------------------------------------------------------------
-
-function mkDoor(name: string, width: number, height: number) {
-    return { name, width, height, accessNode: undefined, $type: 'HangarDoor' };
-}
 
 function mkDims(wingspan: number, tailHeight: number, opts: { rawWingspan?: number; rawTailHeight?: number; clearanceName?: string } = {}): EffectiveDimensions {
     const rw = opts.rawWingspan ?? wingspan;

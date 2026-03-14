@@ -15,7 +15,7 @@
 import { describe, expect, test } from 'vitest';
 import express from 'express';
 import supertest from 'supertest';
-import analyseRoute from '../../backend/routes/analyse.js';
+import analyseRoute from '../../../backend/routes/analyse.js';
 
 const app = express();
 app.use(express.json());

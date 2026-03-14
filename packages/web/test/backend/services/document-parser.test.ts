@@ -14,7 +14,7 @@
  *     validationDiagnostics contains the rule-code string
  */
 import { describe, expect, test } from 'vitest';
-import { parseDocument } from '../backend/services/document-parser.js';
+import { parseDocument } from '../../../backend/services/document-parser.js';
 
 // ---------------------------------------------------------------------------
 // Fixtures

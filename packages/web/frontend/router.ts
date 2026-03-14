@@ -9,6 +9,7 @@ export type Route =
   | 'hangar-form'
   | 'schedule'
   | 'timeline'
+  | 'editor'
   | 'results';
 
 export interface RouterState {
@@ -47,7 +48,7 @@ class Router {
   // Initialize from URL hash
   initFromHash(): void {
     const hash = window.location.hash.slice(1) || 'home';
-    const validRoutes: Route[] = ['home', 'login', 'dashboard', 'aircraft', 'aircraft-form', 'hangars', 'hangar-form', 'schedule', 'timeline', 'results'];
+    const validRoutes: Route[] = ['home', 'login', 'dashboard', 'aircraft', 'aircraft-form', 'hangars', 'hangar-form', 'schedule', 'timeline', 'editor', 'results'];
 
     if (validRoutes.includes(hash as Route)) {
       this.state = { currentRoute: hash as Route };

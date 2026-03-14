@@ -1,7 +1,8 @@
 import { router } from '../router';
-import { isLoggedIn, logout, getUser } from '../services/auth';
+import { isLoggedIn } from '../services/auth';
 import { getSchedule, type ScheduleResult, type ScheduledPlacement } from '../services/scheduling-api';
 import { renderTimeline } from './timeline';
+import { createNavbar } from './navbar';
 import type { ExportModel, ExportedInduction, ExportedUnscheduledAuto } from '../types/api';
 
 let scheduleResult: ScheduleResult = { entries: [], placements: [], validationErrors: [] };
@@ -14,7 +15,7 @@ export function createTimelinePage(): string {
 
   return `
     <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      ${createNavbar()}
+      ${createNavbar('timeline')}
       <main class="container mx-auto px-6 py-8">
         <div class="flex items-center justify-between mb-6">
           <div>
@@ -99,48 +100,6 @@ export function createTimelinePage(): string {
         </div>
       </main>
     </div>
-  `;
-}
-
-function createNavbar(): string {
-  const user = getUser();
-  return `
-    <nav class="border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-40">
-      <div class="container mx-auto px-6 py-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-cyan-500/25 flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-              </svg>
-            </div>
-            <div>
-              <h1 class="text-lg font-bold text-white">Airfield Manager</h1>
-              <p class="text-xs text-slate-400">Timeline View</p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-4">
-            <nav class="hidden md:flex items-center gap-2">
-              <button data-nav="dashboard" class="px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-sm font-medium transition-colors">Dashboard</button>
-              <button data-nav="aircraft" class="px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-sm font-medium transition-colors">Aircraft</button>
-              <button data-nav="hangars" class="px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-sm font-medium transition-colors">Hangars</button>
-              <button data-nav="schedule" class="px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-sm font-medium transition-colors">Schedule</button>
-              <button data-nav="timeline" class="px-3 py-2 text-cyan-400 bg-cyan-500/10 rounded-lg text-sm font-medium transition-colors">Timeline</button>
-            </nav>
-
-            <div class="flex items-center gap-3 pl-4 border-l border-slate-700">
-              <span class="text-sm text-slate-300">${user?.username || ''}</span>
-              <button id="logout-btn" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title="Logout">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </nav>
   `;
 }
 
@@ -269,19 +228,6 @@ async function loadData(): Promise<void> {
 }
 
 export async function attachTimelinePageListeners(): Promise<void> {
-  // Nav listeners
-  document.querySelectorAll('[data-nav]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const route = (btn as HTMLElement).dataset.nav as any;
-      router.navigate(route);
-    });
-  });
-
-  document.getElementById('logout-btn')?.addEventListener('click', async () => {
-    await logout();
-    router.navigate('login');
-  });
-
   document.getElementById('back-to-schedule')?.addEventListener('click', () => {
     router.navigate('schedule');
   });

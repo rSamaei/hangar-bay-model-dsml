@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { createPortal } from 'react-dom';
 import {
   DndContext,
   DragOverlay,
@@ -14,253 +13,14 @@ import {
 import { AircraftSidebar, AircraftCardContent } from './AircraftSidebar';
 import { TimelineGrid } from './TimelineGrid';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
+import { ScheduleSkeleton, ScheduleError } from './ScheduleSkeleton';
+import { Banner } from './Banner';
+import { Toast } from './Toast';
+import { DurationPopover, type PendingDrop } from './DurationPopover';
+import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { authFetch } from '../../services/auth';
 import { router } from '../../router';
 import type { Aircraft, DiagnosticItem, Hangar, ScheduleResult, ScheduledPlacement } from './types';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface PendingDrop {
-  aircraft: Aircraft;
-  startMs: number;
-  durationMs: number;
-}
-
-// ─── Loading skeleton ─────────────────────────────────────────────────────────
-function ScheduleSkeleton() {
-  return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden animate-pulse">
-      {/* Sidebar skeleton */}
-      <div className="w-[260px] h-full bg-slate-900/60 border-r border-slate-700/50 shrink-0 flex flex-col gap-3 p-4">
-        <div className="h-5 w-24 rounded bg-slate-700/60" />
-        <div className="h-8 w-full rounded bg-slate-800/60" />
-        {[0, 1, 2, 3].map(i => (
-          <div key={i} className="h-16 rounded-lg bg-slate-800/40" />
-        ))}
-      </div>
-      {/* Main area skeleton */}
-      <div className="flex-1 flex flex-col gap-4 p-6">
-        <div className="h-8 w-48 rounded bg-slate-700/40" />
-        <div className="flex-1 rounded-xl bg-slate-800/30" />
-      </div>
-    </div>
-  );
-}
-
-// ─── Error state ──────────────────────────────────────────────────────────────
-function ScheduleError({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="flex h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="text-center max-w-sm px-6">
-        <div className="w-12 h-12 rounded-full bg-red-950/60 border border-red-700/50 flex items-center justify-center mx-auto mb-4">
-          <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <h2 className="text-sm font-semibold text-white mb-1">Failed to load</h2>
-        <p className="text-xs text-slate-400 mb-4">{message}</p>
-        <button
-          onClick={onRetry}
-          className="px-4 py-2 text-sm font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
-        >
-          Retry
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Banner ───────────────────────────────────────────────────────────────────
-function Banner({ type, children }: { type: 'warn' | 'info'; children: React.ReactNode }) {
-  const styles = type === 'warn'
-    ? 'bg-amber-950/60 border-amber-700/40 text-amber-300'
-    : 'bg-slate-800/60 border-slate-700/40 text-slate-400';
-  return (
-    <div className={`flex items-center gap-2 px-4 py-2 border-b text-xs ${styles}`}>
-      {type === 'warn' ? (
-        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-      ) : (
-        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )}
-      {children}
-    </div>
-  );
-}
-
-// ─── Toast ────────────────────────────────────────────────────────────────────
-function Toast({
-  msg,
-  ok,
-  onDismiss,
-}: {
-  msg: string;
-  ok: boolean;
-  onDismiss: () => void;
-}) {
-  useEffect(() => {
-    const t = setTimeout(onDismiss, 4000);
-    return () => clearTimeout(t);
-  }, [onDismiss]);
-
-  return createPortal(
-    <div
-      className={`fixed bottom-5 right-5 z-50 max-w-sm px-4 py-3 rounded-xl border shadow-xl shadow-black/50 text-sm leading-snug ${
-        ok
-          ? 'bg-emerald-950/95 border-emerald-700/60 text-emerald-200'
-          : 'bg-red-950/95 border-red-700/60 text-red-200'
-      }`}
-    >
-      {msg}
-    </div>,
-    document.body,
-  );
-}
-
-// ─── DurationPopover ─────────────────────────────────────────────────────────
-function DurationPopover({
-  drop,
-  onConfirm,
-  onCancel,
-}: {
-  drop: PendingDrop;
-  onConfirm: (hours: number) => void;
-  onCancel: () => void;
-}) {
-  const [hours, setHours] = useState(Math.round(drop.durationMs / 3_600_000));
-
-  const fmt = (ms: number) => {
-    const d = new Date(ms);
-    const day = d.toLocaleDateString('en-GB', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-    });
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    return `${day} ${hh}:${mm}`;
-  };
-
-  const endMs = drop.startMs + hours * 3_600_000;
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.55)' }}
-      onClick={onCancel}
-    >
-      <div
-        className="bg-slate-900 border border-slate-700/60 rounded-xl p-5 shadow-2xl shadow-black/70 w-80"
-        onClick={e => e.stopPropagation()}
-      >
-        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">
-          Schedule aircraft
-        </p>
-        <h3 className="text-sm font-semibold text-white mb-4 truncate">
-          {drop.aircraft.name}
-        </h3>
-
-        <div className="space-y-3 mb-5">
-          <div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
-              Start time
-            </div>
-            <div className="text-xs text-slate-200 font-mono">{fmt(drop.startMs)}</div>
-          </div>
-
-          <div>
-            <label className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">
-              Duration (hours)
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={168}
-              value={hours}
-              onChange={e =>
-                setHours(Math.max(1, Math.min(168, parseInt(e.target.value, 10) || 1)))
-              }
-              className="w-full px-3 py-1.5 text-sm bg-slate-800/80 border border-slate-700/60 rounded-lg text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
-            />
-          </div>
-
-          <div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
-              End time
-            </div>
-            <div className="text-xs text-slate-200 font-mono">{fmt(endMs)}</div>
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => onConfirm(hours)}
-            className="flex-1 py-2 text-sm font-medium bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors"
-          >
-            Schedule
-          </button>
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
-// ─── DeleteConfirmDialog ──────────────────────────────────────────────────────
-function DeleteConfirmDialog({
-  onConfirm,
-  onCancel,
-}: {
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.55)' }}
-      onClick={onCancel}
-    >
-      <div
-        data-keep-selection="1"
-        className="bg-slate-900 border border-slate-700/60 rounded-xl p-5 shadow-2xl shadow-black/70 w-72"
-        onClick={e => e.stopPropagation()}
-      >
-        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">
-          Confirm deletion
-        </p>
-        <h3 className="text-sm font-semibold text-white mb-3">
-          Remove this induction?
-        </h3>
-        <p className="text-xs text-slate-400 mb-5">
-          The schedule entry will be permanently deleted and the grid will refresh.
-        </p>
-        <div className="flex gap-2">
-          <button
-            onClick={onConfirm}
-            className="flex-1 py-2 text-sm font-medium bg-red-700 hover:bg-red-600 text-white rounded-lg transition-colors"
-          >
-            Delete
-          </button>
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
-  );
-}
 
 // ─── ScheduleApp ─────────────────────────────────────────────────────────────
 function ScheduleApp() {
@@ -272,7 +32,7 @@ function ScheduleApp() {
   const [dataError, setDataError]                     = useState<string | null>(null);
   const [retryTrigger, setRetryTrigger]               = useState(0);
 
-  // ── Sidebar collapse ────────────────────────────────────────────────────────
+  // ── Sidebar collapse ───────────────────────────────────────────────────────
   const [sidebarCollapsed, setSidebarCollapsed]       = useState(() => window.innerWidth < 768);
 
   // ── DnD state ──────────────────────────────────────────────────────────────
@@ -298,7 +58,6 @@ function ScheduleApp() {
   // ── Toast ──────────────────────────────────────────────────────────────────
   const [toast, setToast]                             = useState<{ msg: string; ok: boolean } | null>(null);
 
-  // Stable snapshot of the timeline view — read in onDragEnd to decode slot → ms
   const timelineViewRef = useRef({
     viewStartMs: (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); })(),
     slotMin: 60,
@@ -317,7 +76,7 @@ function ScheduleApp() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // ── Parallel data load (aircraft + hangars + schedule) ────────────────────
+  // ── Parallel data load ─────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     setDataLoading(true);
@@ -375,11 +134,11 @@ function ScheduleApp() {
     return () => { cancelled = true; };
   }, [schedule?.dslCode]);
 
-  // ── Panel drag-resize document listeners (stable, no deps) ────────────────
+  // ── Panel drag-resize ──────────────────────────────────────────────────────
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!dragStateRef.current) return;
-      const delta = dragStateRef.current.startY - e.clientY; // up = bigger panel
+      const delta = dragStateRef.current.startY - e.clientY;
       const newH  = Math.max(36, Math.min(480, dragStateRef.current.startH + delta));
       setPanelHeight(newH);
       savedPanelHeight.current = newH;
@@ -398,7 +157,7 @@ function ScheduleApp() {
     };
   }, []);
 
-  // ── Click-outside / Escape deselect ───────────────────────────────────────
+  // ── Click-outside / Escape deselect ────────────────────────────────────────
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
       const target = e.target as Element | null;
@@ -449,11 +208,10 @@ function ScheduleApp() {
     if (panelCollapsed) toggleCollapse();
   }
 
-  // ── "View as DSL" — stash in sessionStorage before navigating ─────────────
   function handleViewAsDsl() {
     if (!schedule?.dslCode) return;
     sessionStorage.setItem('schedule_dsl_prefill', schedule.dslCode);
-    router.navigate('home');
+    router.navigate('editor');
   }
 
   // ── Drag handlers ──────────────────────────────────────────────────────────
@@ -474,7 +232,7 @@ function ScheduleApp() {
   function handleDragEnd(e: DragEndEvent) {
     const id             = String(e.active.id);
     const isBlock        = id.startsWith('block-');
-    const aircraft       = activeAircraft;
+    const ac             = activeAircraft;
     const blockPlacement = activeBlockPlacement;
 
     setActiveAircraft(null);
@@ -487,13 +245,13 @@ function ScheduleApp() {
     if (isBlock) {
       if (blockPlacement) handleBlockMove(blockPlacement, slotId);
     } else {
-      if (!aircraft) return;
+      if (!ac) return;
       const parts = slotId.split('-');
       if (parts.length !== 3) return;
       const slotIdx = parseInt(parts[2], 10);
       if (isNaN(slotIdx)) return;
       const { viewStartMs, slotMin } = timelineViewRef.current;
-      setPendingDrop({ aircraft, startMs: viewStartMs + slotIdx * slotMin * 60_000, durationMs: 4 * 3_600_000 });
+      setPendingDrop({ aircraft: ac, startMs: viewStartMs + slotIdx * slotMin * 60_000, durationMs: 4 * 3_600_000 });
     }
   }
 
@@ -520,7 +278,6 @@ function ScheduleApp() {
     return result as ScheduleResult;
   }
 
-  // ── Block move ─────────────────────────────────────────────────────────────
   async function handleBlockMove(placement: ScheduledPlacement, slotId: string) {
     const parts = slotId.split('-');
     if (parts.length !== 3) return;
@@ -540,7 +297,6 @@ function ScheduleApp() {
     }
   }
 
-  // ── Confirm drop ───────────────────────────────────────────────────────────
   async function handleConfirmDrop(hours: number) {
     if (!pendingDrop) return;
     const startTime = new Date(pendingDrop.startMs).toISOString();
@@ -572,7 +328,6 @@ function ScheduleApp() {
     }
   }
 
-  // ── Delete entry ───────────────────────────────────────────────────────────
   async function handleDeleteEntry(entryId: number) {
     setPendingDelete(entryId);
   }
@@ -596,7 +351,6 @@ function ScheduleApp() {
     }
   }
 
-  // ── Resize commit ──────────────────────────────────────────────────────────
   async function handleResizeCommit(entryId: number, startIso: string, endIso: string) {
     try {
       const result = await updateEntry(entryId, new Date(startIso).getTime(), new Date(endIso).getTime());
@@ -606,13 +360,12 @@ function ScheduleApp() {
     }
   }
 
-  // ── Merge scheduler diagnostics (immediate) with Langium diagnostics (async) ─
+  // ── Merge diagnostics ─────────────────────────────────────────────────────
   const allDiagnostics: DiagnosticItem[] = [
     ...(schedule?.schedulerDiagnostics ?? []),
     ...diagnostics,
   ];
 
-  // ── Badge counts for divider ───────────────────────────────────────────────
   const errorCount   = allDiagnostics.filter(d => d.severity === 1).length;
   const warningCount = allDiagnostics.filter(d => d.severity === 2).length;
   const infoCount    = allDiagnostics.filter(d => d.severity >= 3).length;
@@ -621,12 +374,10 @@ function ScheduleApp() {
   if (dataLoading) return <ScheduleSkeleton />;
   if (dataError)   return <ScheduleError message={dataError} onRetry={() => setRetryTrigger(t => t + 1)} />;
 
-  // ── Empty-state flags ──────────────────────────────────────────────────────
   const noAircraft = aircraft.length === 0;
   const noHangars  = hangars.length === 0;
   const noEntries  = (schedule?.placements?.length ?? 0) === 0;
 
-  // ─────────────────────────────────────────────────────────────────────────
   return (
     <DndContext
       sensors={sensors}
@@ -635,12 +386,11 @@ function ScheduleApp() {
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="flex flex-col h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+      <div className="flex flex-col h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
 
-        {/* ── Top bar ── */}
-        <header className="flex items-center justify-between px-4 h-11 bg-slate-900/80 border-b border-slate-700/50 shrink-0">
+        {/* ── Toolbar ── */}
+        <header className="flex items-center justify-between px-4 h-10 bg-slate-900/80 border-b border-slate-700/50 shrink-0">
           <div className="flex items-center gap-3">
-            {/* Hamburger — toggles sidebar */}
             <button
               data-keep-selection="1"
               onClick={() => setSidebarCollapsed(c => !c)}
@@ -651,11 +401,9 @@ function ScheduleApp() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <span className="text-sm font-semibold text-white">Schedule</span>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* View as DSL button — only shown when there are entries */}
             {schedule?.dslCode && (
               <button
                 data-keep-selection="1"
@@ -669,14 +417,6 @@ function ScheduleApp() {
                 View as DSL
               </button>
             )}
-            {/* Dashboard link */}
-            <button
-              data-keep-selection="1"
-              onClick={() => router.navigate('dashboard')}
-              className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-white rounded-lg hover:bg-slate-700/50 transition-colors"
-            >
-              Dashboard
-            </button>
           </div>
         </header>
 
@@ -720,10 +460,7 @@ function ScheduleApp() {
             onToggleCollapse={() => setSidebarCollapsed(c => !c)}
           />
 
-          {/* ── Main area: timeline + diagnostics panel ── */}
           <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-
-            {/* Timeline grid — takes all remaining vertical space */}
             <div className="flex-1 min-h-0 overflow-hidden">
               <TimelineGrid
                 hangars={hangars}
@@ -743,7 +480,6 @@ function ScheduleApp() {
               className="h-6 flex items-center justify-between px-3 bg-slate-900/95 border-t border-slate-700/50 flex-none select-none cursor-row-resize"
               onMouseDown={handleDividerMouseDown}
             >
-              {/* Left: label + badges */}
               <div className="flex items-center gap-2 pointer-events-none">
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                   Diagnostics
@@ -771,7 +507,6 @@ function ScheduleApp() {
                 )}
               </div>
 
-              {/* Right: collapse/expand button */}
               <button
                 data-panel-collapse="1"
                 data-keep-selection="1"
@@ -789,7 +524,6 @@ function ScheduleApp() {
               </button>
             </div>
 
-            {/* ── Diagnostics panel body ── */}
             {!panelCollapsed && (
               <div
                 style={{ height: panelHeight, flexShrink: 0 }}
