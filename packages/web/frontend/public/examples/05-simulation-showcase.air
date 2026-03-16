@@ -1,0 +1,682 @@
+// =============================================================================
+// Discrete-Event Simulation Showcase (Comprehensive -- Multi-Week)
+//
+// A rich multi-hangar scenario exercising every major simulation capability
+// over a realistic 6-week maintenance scheduling window (Sep 1 -- mid Oct).
+//
+//  1. BAY CONTENTION & QUEUE MANAGEMENT
+//     - Full occupancy across 14 bays during Weeks 1-2 forcing autos into queue
+//     - Staggered departures over days/weeks creating short and long waits
+//     - Queue depth tracking and wait-time measurement in hours/days
+//
+//  2. MULTI-BAY PLACEMENT (SPATIAL SEARCH)
+//     - 3-bay lateral auto-induction (Hercules C-Check in MainHangar, 5 days)
+//     - 2-bay diagonal auto-induction (Falcon in DiagonalHangar, adjacency 8)
+//     - Bay-set enumeration with adjacency and dimension constraints
+//     - Requires clause on auto-inductions
+//
+//  3. ACCESS PATH & CORRIDOR CONSTRAINTS
+//     - Star topology (MainHangar -- all bays directly reachable from corridor)
+//     - Branching chain (NarrowHangar -- Bay3 reachable only through Bay2)
+//     - Narrow passage (11 m) blocks wide aircraft (Tucano at 11.6 m effective)
+//     - Traversable bay (MainHangar Bay2) enabling pass-through
+//
+//  4. DEPENDENCY CHAINS
+//     - 3-level chain: Manual -> Auto A -> Auto B -> Auto C
+//     - Each step is a 5-day servicing (7200 min)
+//     - DEPENDENCY_UNLOCKED events cascade through the chain
+//
+//  5. DEADLINE MANAGEMENT
+//     - Tight 2.5-day deadline -> DEADLINE_EXPIRED (all 14 bays full on Sep 1,
+//       first departure not until Sep 5)
+//
+//  6. PREFERRED-HANGAR FALLBACK
+//     - Primary hangar full -> scheduler finds bay in alternative hangar
+//
+//  7. STRUCTURALLY INFEASIBLE
+//     - Oversized aircraft (Globemaster) cannot fit through any hangar door
+//     - Immediate rejection: STRUCTURALLY_INFEASIBLE
+//
+//  8. MULTIPLE AIRCRAFT TYPES & CLEARANCE ENVELOPES
+//     - Hawk (small trainer, 10.4 m eff. wingspan)
+//     - Tucano (medium trainer, 11.6 m eff. wingspan)
+//     - Falcon (patrol, 22.3 m eff. wingspan -- needs 2 bays)
+//     - Hercules (transport, 41.4 m eff. wingspan -- needs 3 bays)
+//     - Globemaster (strategic lift, 52.7 m eff. wingspan -- too large)
+//     - StandardMargins vs PrecisionMargins clearance envelopes
+//
+//  9. METADATA TAGS
+//     - Squadron, maintenance type, and priority tags on inductions
+//
+// Hangar Layout
+// =============
+//
+//   MainHangar: 2x3 grid, adjacency 4
+//   +----------+------------------+----------+
+//   | A1 (0,0) | A2 (0,1) [trav] | A3 (0,2) |
+//   +----------+------------------+----------+
+//   | A4 (1,0) | A5 (1,1)        | A6 (1,2) |
+//   +----------+------------------+----------+
+//   Door: 45 m x 13 m -> fits Hercules (41.4 m eff. wingspan)
+//   Bays: 14 m x 32 m x 13 m
+//   Star access: Apron(50 m) <-> MainCorridor(45 m) <-> NA1..NA6
+//
+//   NarrowHangar: 1x3 grid, adjacency 4
+//   +------+------+------+
+//   | N1   | N2   | N3   |
+//   +------+------+------+
+//   Door: 15 m x 6 m -> fits Hawk and Tucano
+//   Branching chain: NarrowGate(20 m) <-> Passage(11 m) <-> NHub(15 m)
+//                    NHub <-> NN1(N1)
+//                    NHub <-> NN2(N2) <-> NN3(N3)
+//   Passage at 11 m blocks Tucano (11.6 m eff.) but not Hawk (10.4 m eff.)
+//   N3 only reachable through N2 -- when N2 occupied, N3 is blocked
+//
+//   DiagonalHangar: 2x2 grid, adjacency 8 (diagonals enabled)
+//   +----------+----------+
+//   | D1 (0,0) | D2 (0,1) |
+//   +----------+----------+
+//   | D3 (1,0) | D4 (1,1) |
+//   +----------+----------+
+//   Door: 25 m x 8 m -> fits Falcon (22.3 m eff. wingspan)
+//   Simple access: DiagApron(30 m) <-> DiagHub(25 m) <-> ND1..ND4
+//   adjacency 8 -> D1(0,0) <-> D4(1,1) diagonal pair is valid
+//
+//   OverflowHangar: 1x1, no access path (simple fallback)
+//   +-------+
+//   |  OB1  |
+//   +-------+
+//   Door: 15 m x 6 m -- Hawk/Tucano only
+//
+// Maintenance Durations Reference
+// ================================
+//   Quick turnaround:   4-8 hours (240-480 min)
+//   Short inspection:   1-2 days  (1440-2880 min)
+//   Medium servicing:   3-5 days  (4320-7200 min)
+//   Heavy check:        2-4 weeks (20160-40320 min)
+//
+// Simulation Timeline (Expected)
+// ==============================
+//   Sep 1    All 14 bays occupied by manual inductions.
+//            N3 technically empty but unreachable (behind occupied N2).
+//            Every auto-induction queued.
+//
+//   Sep 3    A_DEADLINE: notAfter Sep 3 18:00 reached, zero bays freed
+//            -> DEADLINE_EXPIRED.
+//
+//   Sep 5    M_EARLY departs (4.5-day inspection) -> A2 free.
+//            A_HAWK_QUICK placed in MainHangar A2 (wait ~4 days). OK
+//
+//   Sep 8    M_OVERFLOW departs (7-day turnaround) -> OB1 free.
+//            A_FALLBACK: MainHangar still full -> placed in OverflowHangar. OK
+//
+//   Sep 12   M_DIAG_D1 + M_DIAG_D4 depart (11-day servicing) -> D1+D4 free.
+//            A_FALCON_DIAG placed in {D1,D4} -- 2-bay diagonal (adjacency 8). OK
+//
+//   Sep 14   M_ANCHOR departs (13-day inspection) -> A1 free.
+//            Dependency satisfied -> A_HAWK_CHAIN1 placed (DEPENDENCY_UNLOCKED). OK
+//            A_HAWK_LONGWAIT also competes for freed bays (~13-day wait). OK
+//
+//   Sep 17   M_NARROW_N2 departs (16-day servicing) -> N2 free.
+//            A_HAWK_NARROW: Passage 11 m > Hawk 10.4 m -> placed in N2. OK
+//
+//            M_DIAG_D2 + M_DIAG_D3 depart (16-day servicing) -> D2+D3 free.
+//            A_TUCANO_CORRIDOR: NarrowHangar Passage 11 m < Tucano 11.6 m -> blocked!
+//            Falls back to DiagonalHangar (DiagHub 25 m fits) -> placed. OK
+//
+//   Sep 19   A_HAWK_CHAIN1 departs (5-day servicing) ->
+//            DEPENDENCY_UNLOCKED -> A_HAWK_CHAIN2 placed. OK
+//
+//   Sep 21   M_HOLD_A4, M_HOLD_A5 depart (20-day holds) -> A4+A5 free.
+//
+//   Sep 24   A_HAWK_CHAIN2 departs -> A_HAWK_CHAIN3 unlocked -> placed. OK
+//
+//   Sep 29   A_HAWK_CHAIN3 departs.
+//            M_HOLD_A3, M_HOLD_A6 depart (28-day C-checks) -> multiple bays free.
+//            A_HERCULES_MULTI: notBefore Sep 28, finds 3+ contiguous bays
+//            available -> placed in 3-bay lateral set (e.g. {A4,A5,A6}). OK
+//
+//   ~Oct 3   Hercules C-Check finishes.
+//
+//   Oct 12   M_BLOCK_N1 departs (41-day deep maintenance). Simulation window closes.
+//
+//   anytime  A_GLOBE: Globemaster eff. wingspan 52.7 m exceeds every door ->
+//            STRUCTURALLY_INFEASIBLE / SCHED_FAILED. FAIL
+// =============================================================================
+
+airfield SimulationShowcase {
+
+    // =========================================================================
+    // Clearance Envelopes
+    // =========================================================================
+
+    clearance StandardMargins {
+        lateralMargin      1.0 m
+        longitudinalMargin 1.0 m
+        verticalMargin     0.5 m
+    }
+
+    clearance PrecisionMargins {
+        lateralMargin      0.3 m
+        longitudinalMargin 0.3 m
+        verticalMargin     0.2 m
+    }
+
+    // =========================================================================
+    // Aircraft Types
+    // =========================================================================
+
+    // Small trainer -- fits single bay easily
+    aircraft Hawk {
+        wingspan    9.4 m
+        length     11.7 m
+        height      3.8 m
+        tailHeight  3.8 m
+        clearance StandardMargins
+        // effective: 10.4 x 12.7 x 4.3 m
+    }
+
+    // Medium turboprop trainer -- slightly wider; blocks on 11 m corridor
+    aircraft Tucano {
+        wingspan   11.3 m
+        length     10.4 m
+        height      3.4 m
+        tailHeight  3.4 m
+        clearance PrecisionMargins
+        // effective: 11.6 x 10.7 x 3.6 m (precision margins)
+    }
+
+    // Patrol aircraft -- needs 2 bays lateral
+    aircraft Falcon {
+        wingspan   22.0 m
+        length     18.0 m
+        height      5.5 m
+        tailHeight  5.5 m
+        clearance PrecisionMargins
+        // effective: 22.3 x 18.3 x 5.7 m -> ceil(22.3/14) = 2 bays lateral
+    }
+
+    // Heavy transport -- needs 3 bays lateral
+    aircraft Hercules {
+        wingspan   40.4 m
+        length     29.8 m
+        height     11.7 m
+        tailHeight 11.7 m
+        clearance StandardMargins
+        // effective: 41.4 x 30.8 x 12.2 m -> ceil(41.4/14) = 3 bays lateral
+    }
+
+    // Strategic airlift -- too large for any door: STRUCTURALLY_INFEASIBLE
+    aircraft Globemaster {
+        wingspan   51.7 m
+        length     53.0 m
+        height     16.8 m
+        tailHeight 16.8 m
+        clearance StandardMargins
+        // effective: 52.7 x 54.0 x 17.3 m -- exceeds all doors
+    }
+
+    // =========================================================================
+    // Access Paths
+    // =========================================================================
+
+    // Star topology -- every MainHangar bay directly reachable from corridor
+    accessPath MainRoute {
+        nodes {
+            node Apron         width 50.0 m
+            node MainCorridor  width 45.0 m
+            node NA1
+            node NA2
+            node NA3
+            node NA4
+            node NA5
+            node NA6
+        }
+        links {
+            link Apron        to MainCorridor bidirectional true
+            link MainCorridor to NA1          bidirectional true
+            link MainCorridor to NA2          bidirectional true
+            link MainCorridor to NA3          bidirectional true
+            link MainCorridor to NA4          bidirectional true
+            link MainCorridor to NA5          bidirectional true
+            link MainCorridor to NA6          bidirectional true
+        }
+    }
+
+    // Branching chain -- narrow Passage (11 m) blocks wide aircraft;
+    // N3 only reachable via N2 (dynamic reachability blocking if N2 occupied)
+    accessPath NarrowRoute {
+        nodes {
+            node NarrowGate  width 20.0 m
+            node Passage     width 11.0 m
+            node NHub        width 15.0 m
+            node NN1
+            node NN2
+            node NN3
+        }
+        links {
+            link NarrowGate to Passage bidirectional true
+            link Passage    to NHub    bidirectional true
+            link NHub       to NN1     bidirectional true
+            link NHub       to NN2     bidirectional true
+            link NN2        to NN3     bidirectional true
+        }
+    }
+
+    // Simple star for DiagonalHangar
+    accessPath DiagRoute {
+        nodes {
+            node DiagApron  width 30.0 m
+            node DiagHub    width 25.0 m
+            node ND1
+            node ND2
+            node ND3
+            node ND4
+        }
+        links {
+            link DiagApron to DiagHub bidirectional true
+            link DiagHub   to ND1     bidirectional true
+            link DiagHub   to ND2     bidirectional true
+            link DiagHub   to ND3     bidirectional true
+            link DiagHub   to ND4     bidirectional true
+        }
+    }
+
+    // =========================================================================
+    // MainHangar -- 2x3 grid, adjacency 4, star access
+    //
+    //   [A1(0,0)] [A2(0,1) traversable] [A3(0,2)]
+    //   [A4(1,0)] [A5(1,1)]             [A6(1,2)]
+    //
+    //   Door: 45 m wide -> Hercules (41.4 m eff.) fits
+    //   Bays: 14 m x 32 m x 13 m -- Hercules needs 3 bays lateral (42 m > 41.4 m)
+    // =========================================================================
+
+    hangar MainHangar {
+        doors {
+            door MainDoor {
+                width   45.0 m
+                height  13.0 m
+                accessNode Apron
+            }
+        }
+        grid baygrid {
+            rows 2 cols 3
+
+            bay A1 { at row 0 col 0  width 14 m  depth 32 m  height 13 m  accessNode NA1 }
+            bay A2 { at row 0 col 1  width 14 m  depth 32 m  height 13 m  traversable  accessNode NA2 }
+            bay A3 { at row 0 col 2  width 14 m  depth 32 m  height 13 m  accessNode NA3 }
+            bay A4 { at row 1 col 0  width 14 m  depth 32 m  height 13 m  accessNode NA4 }
+            bay A5 { at row 1 col 1  width 14 m  depth 32 m  height 13 m  accessNode NA5 }
+            bay A6 { at row 1 col 2  width 14 m  depth 32 m  height 13 m  accessNode NA6 }
+        }
+    }
+
+    // =========================================================================
+    // NarrowHangar -- 1x3 grid, branching chain with 11 m bottleneck
+    //
+    //   [N1] [N2] [N3]
+    //
+    //   Passage at 11 m blocks Tucano (11.6 m eff.) but Hawk (10.4 m) passes.
+    //   N3 only reachable through N2 -- occupied N2 blocks access to N3.
+    // =========================================================================
+
+    hangar NarrowHangar {
+        doors {
+            door NarrowDoor {
+                width   15.0 m
+                height   6.0 m
+                accessNode NarrowGate
+            }
+        }
+        grid baygrid {
+            rows 1 cols 3
+
+            bay N1 { at row 0 col 0  width 12 m  depth 15 m  height 6 m  accessNode NN1 }
+            bay N2 { at row 0 col 1  width 12 m  depth 15 m  height 6 m  accessNode NN2 }
+            bay N3 { at row 0 col 2  width 12 m  depth 15 m  height 6 m  accessNode NN3 }
+        }
+    }
+
+    // =========================================================================
+    // DiagonalHangar -- 2x2 grid, adjacency 8 (diagonals allowed)
+    //
+    //   [D1(0,0)] [D2(0,1)]
+    //   [D3(1,0)] [D4(1,1)]
+    //
+    //   adjacency 8 -> D1 and D4 are diagonally adjacent.
+    //   Falcon (22.3 m eff.) needs 2 bays: {D1,D4} diagonal set fits (28 m > 22.3 m).
+    // =========================================================================
+
+    hangar DiagonalHangar {
+        doors {
+            door DiagDoor {
+                width   25.0 m
+                height   8.0 m
+                accessNode DiagApron
+            }
+        }
+        grid baygrid {
+            rows 2 cols 2
+            adjacency 8
+
+            bay D1 { at row 0 col 0  width 14 m  depth 24 m  height 8 m  accessNode ND1 }
+            bay D2 { at row 0 col 1  width 14 m  depth 24 m  height 8 m  accessNode ND2 }
+            bay D3 { at row 1 col 0  width 14 m  depth 24 m  height 8 m  accessNode ND3 }
+            bay D4 { at row 1 col 1  width 14 m  depth 24 m  height 8 m  accessNode ND4 }
+        }
+    }
+
+    // =========================================================================
+    // OverflowHangar -- single bay, no access path (fallback target)
+    // =========================================================================
+
+    hangar OverflowHangar {
+        doors {
+            door OverflowDoor {
+                width   15.0 m
+                height   6.0 m
+            }
+        }
+        grid baygrid {
+            rows 1 cols 1
+            bay OB1 { at row 0 col 0  width 14 m  depth 15 m  height 6 m }
+        }
+    }
+
+    // =========================================================================
+    // =====================================================================
+    // MANUAL INDUCTIONS -- fill ALL 14 bays from Sep 1 to create full
+    // contention, with staggered departures over the following 6 weeks.
+    // =====================================================================
+    // =========================================================================
+
+    // ---- MainHangar: 6/6 bays filled ----
+
+    // Dependency chain anchor -- 13-day inspection, departs Sep 14 unlocking chain
+    induct id "M_ANCHOR"
+        Hawk into MainHangar bays A1 via MainDoor
+        clearance StandardMargins
+        from 2025-09-01T08:00
+        to   2025-09-14T08:00
+        meta {
+            role:        "chain_anchor"
+            maintenance: "Scheduled_Inspection"
+        };
+
+    // Early departure -- 4.5-day check, frees traversable A2 on Sep 5
+    induct id "M_EARLY"
+        Hawk into MainHangar bays A2 via MainDoor
+        clearance StandardMargins
+        from 2025-09-01T08:00
+        to   2025-09-05T18:00;
+
+    // Long C-check hold -- 4 weeks, free Sep 29
+    induct id "M_HOLD_A3"
+        Hawk into MainHangar bays A3 via MainDoor
+        from 2025-09-01T08:00
+        to   2025-09-29T08:00;
+
+    // 20-day holds, free Sep 21
+    induct id "M_HOLD_A4"
+        Hawk into MainHangar bays A4 via MainDoor
+        from 2025-09-01T08:00
+        to   2025-09-21T08:00;
+
+    induct id "M_HOLD_A5"
+        Hawk into MainHangar bays A5 via MainDoor
+        from 2025-09-01T08:00
+        to   2025-09-21T08:00;
+
+    // 4-week C-check, free Sep 29
+    induct id "M_HOLD_A6"
+        Hawk into MainHangar bays A6 via MainDoor
+        from 2025-09-01T08:00
+        to   2025-09-29T08:00;
+
+    // ---- NarrowHangar: 3/3 bays filled ----
+
+    // Deep maintenance in N1 -- 6-week hold, extends simulation to mid Oct
+    induct id "M_BLOCK_N1"
+        Hawk into NarrowHangar bays N1 via NarrowDoor
+        from 2025-09-01T08:00
+        to   2025-10-12T18:00;
+
+    // N2 frees after 16 days (Sep 17) for A_HAWK_NARROW
+    induct id "M_NARROW_N2"
+        Hawk into NarrowHangar bays N2 via NarrowDoor
+        from 2025-09-01T08:00
+        to   2025-09-17T08:00;
+
+    // N3 left empty -- unreachable while N2 occupied (dynamic reachability blocks it)
+
+    // ---- DiagonalHangar: 4/4 bays filled ----
+
+    // D1+D4 free after 11 days (Sep 12) -> diagonal pair for Falcon
+    induct id "M_DIAG_D1"
+        Hawk into DiagonalHangar bays D1 via DiagDoor
+        from 2025-09-01T08:00
+        to   2025-09-12T08:00;
+
+    // D2+D3 free after 16 days (Sep 17)
+    induct id "M_DIAG_D2"
+        Hawk into DiagonalHangar bays D2 via DiagDoor
+        from 2025-09-01T08:00
+        to   2025-09-17T08:00;
+
+    induct id "M_DIAG_D3"
+        Hawk into DiagonalHangar bays D3 via DiagDoor
+        from 2025-09-01T08:00
+        to   2025-09-17T08:00;
+
+    induct id "M_DIAG_D4"
+        Hawk into DiagonalHangar bays D4 via DiagDoor
+        from 2025-09-01T08:00
+        to   2025-09-12T08:00;
+
+    // ---- OverflowHangar: 1/1 bay filled ----
+
+    // 7-day turnaround, frees Sep 8 for A_FALLBACK
+    induct id "M_OVERFLOW"
+        Hawk into OverflowHangar bays OB1 via OverflowDoor
+        from 2025-09-01T08:00
+        to   2025-09-08T08:00;
+
+    // =========================================================================
+    // =====================================================================
+    // AUTO-INDUCTIONS -- the simulation engine schedules these
+    // =====================================================================
+    // =========================================================================
+
+    // -------------------------------------------------------------------------
+    //  1. DEADLINE EXPIRY
+    //
+    //  All 14 bays occupied from Sep 1. First departure Sep 5 18:00.
+    //  notAfter Sep 3 18:00 -> nothing frees within 2.5 days -> DEADLINE_EXPIRED.
+    //  Would have been an 8-hour wash (480 min).
+    // -------------------------------------------------------------------------
+    auto-induct id "A_DEADLINE"
+        Hawk
+        duration 480 minutes
+        prefer MainHangar
+        clearance StandardMargins
+        notBefore 2025-09-01T08:00
+        notAfter  2025-09-03T18:00
+        meta {
+            priority: "low"
+            reason:   "Scheduled_Wash"
+        };
+
+    // -------------------------------------------------------------------------
+    //  2. DIAGONAL 2-BAY PLACEMENT (adjacency 8)
+    //
+    //  Falcon needs 2 bays lateral (22.3 m eff., each bay 14 m -> 28 m combined).
+    //  D1+D4 free Sep 12. With adjacency 8, D1(0,0) <-> D4(1,1) is valid.
+    //  Combined width 28 m > 22.3 m -> placed.
+    //  2-day patrol turnaround (2880 min).
+    // -------------------------------------------------------------------------
+    auto-induct id "A_FALCON_DIAG"
+        Falcon
+        duration 2880 minutes
+        prefer DiagonalHangar
+        clearance PrecisionMargins
+        requires 2 bays
+        notBefore 2025-09-08T08:00
+        meta {
+            squadron: "31_Squadron"
+            mission:  "Maritime_Patrol"
+        };
+
+    // -------------------------------------------------------------------------
+    //  3. PREFERRED-HANGAR FALLBACK
+    //
+    //  Prefers MainHangar but all 6 bays occupied until Sep 5 18:00.
+    //  OverflowHangar OB1 frees Sep 8 08:00 -> placed there first.
+    //  1-day quick inspection (1440 min).
+    // -------------------------------------------------------------------------
+    auto-induct id "A_FALLBACK"
+        Hawk
+        duration 1440 minutes
+        prefer MainHangar
+        clearance StandardMargins
+        notBefore 2025-09-01T08:00;
+
+    // -------------------------------------------------------------------------
+    //  4. STRUCTURALLY INFEASIBLE
+    //
+    //  Globemaster effective wingspan 52.7 m exceeds ALL hangar doors:
+    //    MainDoor 45 m, NarrowDoor 15 m, DiagDoor 25 m, OverflowDoor 15 m
+    //  -> SCHED_FAILED (no suitable doors). Immediate rejection, no retry.
+    //  Would have been a 5-day engine overhaul (7200 min).
+    // -------------------------------------------------------------------------
+    auto-induct id "A_GLOBE"
+        Globemaster
+        duration 7200 minutes
+        prefer MainHangar
+        clearance StandardMargins
+        notBefore 2025-09-01T08:00
+        meta {
+            priority:    "strategic"
+            maintenance: "Engine_Overhaul"
+        };
+
+    // -------------------------------------------------------------------------
+    //  5. DEPENDENCY CHAIN -- 3 levels deep, each a 5-day servicing
+    //
+    //  Chain1: unlocked when M_ANCHOR departs Sep 14 -> placed in freed bay.
+    //  Chain2: unlocked when Chain1 departs (~Sep 19) -> placed.
+    //  Chain3: unlocked when Chain2 departs (~Sep 24) -> placed.
+    //  Each step: 7200 min (5 days).
+    //  Demonstrates DEPENDENCY_UNLOCKED cascading through the chain.
+    // -------------------------------------------------------------------------
+    auto-induct id "A_HAWK_CHAIN1"
+        Hawk
+        duration 7200 minutes
+        prefer MainHangar
+        clearance StandardMargins
+        after M_ANCHOR
+        meta {
+            sequence: "chain_step_1"
+        };
+
+    auto-induct id "A_HAWK_CHAIN2"
+        Hawk
+        duration 7200 minutes
+        prefer MainHangar
+        clearance StandardMargins
+        after A_HAWK_CHAIN1
+        meta {
+            sequence: "chain_step_2"
+        };
+
+    auto-induct id "A_HAWK_CHAIN3"
+        Hawk
+        duration 7200 minutes
+        prefer MainHangar
+        clearance StandardMargins
+        after A_HAWK_CHAIN2
+        meta {
+            sequence: "chain_step_3"
+        };
+
+    // -------------------------------------------------------------------------
+    //  6. LONG WAIT -- bay contention with ~13-day wait
+    //
+    //  All bays occupied from Sep 1. Queued until a MainHangar bay frees.
+    //  Expected wait ~13 days (until M_ANCHOR departs Sep 14).
+    //  3-day servicing once placed (4320 min).
+    // -------------------------------------------------------------------------
+    auto-induct id "A_HAWK_LONGWAIT"
+        Hawk
+        duration 4320 minutes
+        prefer MainHangar
+        clearance StandardMargins
+        notBefore 2025-09-01T08:00;
+
+    // -------------------------------------------------------------------------
+    //  7. SHORT WAIT -- bay contention with ~4-day wait
+    //
+    //  M_EARLY departs A2 Sep 5 18:00 -> queued auto placed (wait ~4 days).
+    //  A2 is traversable -- doesn't affect placement, only access-path traversal.
+    //  8-hour quick turnaround (480 min).
+    // -------------------------------------------------------------------------
+    auto-induct id "A_HAWK_QUICK"
+        Hawk
+        duration 480 minutes
+        prefer MainHangar
+        clearance StandardMargins
+        notBefore 2025-09-01T08:00;
+
+    // -------------------------------------------------------------------------
+    //  8. NARROW HANGAR PLACEMENT -- Hawk fits through 11 m passage
+    //
+    //  NarrowHangar N2 frees Sep 17 (M_NARROW_N2 departs after 16 days).
+    //  Hawk effective wingspan 10.4 m < Passage 11 m -> bays reachable.
+    //  N3 still blocked (behind occupied N2 until N2 frees).
+    //  5-day inspection once placed (7200 min).
+    // -------------------------------------------------------------------------
+    auto-induct id "A_HAWK_NARROW"
+        Hawk
+        duration 7200 minutes
+        prefer NarrowHangar
+        clearance StandardMargins
+        notBefore 2025-09-01T08:00;
+
+    // -------------------------------------------------------------------------
+    //  9. MULTI-BAY TRANSPORT -- Hercules needs 3 contiguous bays
+    //
+    //  Hercules effective wingspan 41.4 m -> ceil(41.4/14) = 3 bays lateral.
+    //  notBefore Sep 28 -- arrives when most MainHangar bays are finally free.
+    //  M_HOLD_A3/A6 depart Sep 29; A4+A5 already free since Sep 21.
+    //  5-day C-Check (7200 min). Needs 3 contiguous bays.
+    //  E.g. set {A4,A5,A6}: A4(1,0)<->A5(1,1) adj, A5(1,1)<->A6(1,2) adj.
+    //  Combined width 14x3 = 42 m > 41.4 m. OK.
+    // -------------------------------------------------------------------------
+    auto-induct id "A_HERCULES_MULTI"
+        Hercules
+        duration 7200 minutes
+        prefer MainHangar
+        clearance StandardMargins
+        requires 3 bays
+        notBefore 2025-09-28T08:00
+        meta {
+            squadron:    "47_Squadron"
+            maintenance: "C-Check"
+            priority:    "high"
+        };
+
+    // -------------------------------------------------------------------------
+    //  10. CORRIDOR WIDTH CONSTRAINT -- Tucano blocked by narrow passage
+    //
+    //  Tucano effective wingspan 11.6 m > Passage 11.0 m -> NarrowHangar
+    //  bays unreachable (BFS corridor width check blocks traversal).
+    //  Falls back to DiagonalHangar or MainHangar once space is available.
+    //  2-day servicing (2880 min).
+    // -------------------------------------------------------------------------
+    auto-induct id "A_TUCANO_CORRIDOR"
+        Tucano
+        duration 2880 minutes
+        prefer NarrowHangar
+        clearance PrecisionMargins
+        notBefore 2025-09-01T08:00;
+}

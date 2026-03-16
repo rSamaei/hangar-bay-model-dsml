@@ -1,0 +1,1910 @@
+{
+  "report": {
+    "violations": [
+      {
+        "ruleId": "SCHED_FAILED",
+        "severity": "warning",
+        "message": "Auto-induction 'A_GLOBE' for Globemaster could not be scheduled: no suitable doors found (aircraft too large)",
+        "subject": {
+          "type": "AutoInduction",
+          "name": "Globemaster",
+          "id": "A_GLOBE"
+        },
+        "evidence": {
+          "autoInductionId": "A_GLOBE",
+          "aircraft": "Globemaster",
+          "preferredHangar": "MainHangar",
+          "duration": 120,
+          "timeConstraints": {
+            "notBefore": "2025-09-01T08:00"
+          },
+          "rejectionReasons": [
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR11_DOOR_FIT",
+              "message": "No suitable doors in hangar OverflowHangar"
+            }
+          ]
+        }
+      },
+      {
+        "ruleId": "SCHED_FAILED",
+        "severity": "warning",
+        "message": "Auto-induction 'A_DEADLINE' for Hawk could not be scheduled: time slot conflict with other inductions",
+        "subject": {
+          "type": "AutoInduction",
+          "name": "Hawk",
+          "id": "A_DEADLINE"
+        },
+        "evidence": {
+          "autoInductionId": "A_DEADLINE",
+          "aircraft": "Hawk",
+          "preferredHangar": "MainHangar",
+          "duration": 60,
+          "timeConstraints": {
+            "notBefore": "2025-09-01T08:00",
+            "notAfter": "2025-09-01T09:00"
+          },
+          "rejectionReasons": [
+            {
+              "ruleId": "SFR16_TIME_OVERLAP",
+              "message": "Bay set [A1] has time conflict in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR16_TIME_OVERLAP",
+              "message": "Bay set [A2] has time conflict in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR16_TIME_OVERLAP",
+              "message": "Bay set [A3] has time conflict in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR16_TIME_OVERLAP",
+              "message": "Bay set [A4] has time conflict in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR16_TIME_OVERLAP",
+              "message": "Bay set [A5] has time conflict in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR16_TIME_OVERLAP",
+              "message": "Bay set [A6] has time conflict in hangar MainHangar"
+            },
+            {
+              "ruleId": "SFR16_TIME_OVERLAP",
+              "message": "Bay set [N1] has time conflict in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR16_TIME_OVERLAP",
+              "message": "Bay set [N2] has time conflict in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR_DYNAMIC_REACHABILITY",
+              "message": "Bays unreachable via access path in hangar NarrowHangar"
+            },
+            {
+              "ruleId": "SFR16_TIME_OVERLAP",
+              "message": "Bay set [D1] has time conflict in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR16_TIME_OVERLAP",
+              "message": "Bay set [D2] has time conflict in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR16_TIME_OVERLAP",
+              "message": "Bay set [D3] has time conflict in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR16_TIME_OVERLAP",
+              "message": "Bay set [D4] has time conflict in hangar DiagonalHangar"
+            },
+            {
+              "ruleId": "SFR16_TIME_OVERLAP",
+              "message": "Bay set [OB1] has time conflict in hangar OverflowHangar"
+            }
+          ]
+        }
+      }
+    ],
+    "timestamp": "2026-03-15T23:10:16.604Z",
+    "summary": {
+      "totalViolations": 2,
+      "byRuleId": {
+        "SCHED_FAILED": 2
+      },
+      "bySeverity": {
+        "errors": 0,
+        "warnings": 2
+      }
+    }
+  },
+  "exportModel": {
+    "schemaVersion": "1.0.0",
+    "airfieldName": "SimulationShowcase",
+    "inductions": [
+      {
+        "id": "M_ANCHOR",
+        "kind": "manual",
+        "aircraft": "Hawk",
+        "hangar": "MainHangar",
+        "door": "MainDoor",
+        "bays": [
+          "A1"
+        ],
+        "start": "2025-09-01T08:00",
+        "end": "2025-09-01T10:00",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": []
+      },
+      {
+        "id": "M_BLOCK_N1",
+        "kind": "manual",
+        "aircraft": "Hawk",
+        "hangar": "NarrowHangar",
+        "door": "NarrowDoor",
+        "bays": [
+          "N1"
+        ],
+        "start": "2025-09-01T08:00",
+        "end": "2025-09-01T12:00",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": []
+      },
+      {
+        "id": "M_DIAG_D1",
+        "kind": "manual",
+        "aircraft": "Hawk",
+        "hangar": "DiagonalHangar",
+        "door": "DiagDoor",
+        "bays": [
+          "D1"
+        ],
+        "start": "2025-09-01T08:00",
+        "end": "2025-09-01T09:30",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": []
+      },
+      {
+        "id": "M_DIAG_D2",
+        "kind": "manual",
+        "aircraft": "Hawk",
+        "hangar": "DiagonalHangar",
+        "door": "DiagDoor",
+        "bays": [
+          "D2"
+        ],
+        "start": "2025-09-01T08:00",
+        "end": "2025-09-01T10:00",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": []
+      },
+      {
+        "id": "M_DIAG_D3",
+        "kind": "manual",
+        "aircraft": "Hawk",
+        "hangar": "DiagonalHangar",
+        "door": "DiagDoor",
+        "bays": [
+          "D3"
+        ],
+        "start": "2025-09-01T08:00",
+        "end": "2025-09-01T10:00",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": []
+      },
+      {
+        "id": "M_DIAG_D4",
+        "kind": "manual",
+        "aircraft": "Hawk",
+        "hangar": "DiagonalHangar",
+        "door": "DiagDoor",
+        "bays": [
+          "D4"
+        ],
+        "start": "2025-09-01T08:00",
+        "end": "2025-09-01T09:30",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": []
+      },
+      {
+        "id": "M_EARLY",
+        "kind": "manual",
+        "aircraft": "Hawk",
+        "hangar": "MainHangar",
+        "door": "MainDoor",
+        "bays": [
+          "A2"
+        ],
+        "start": "2025-09-01T08:00",
+        "end": "2025-09-01T09:30",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": []
+      },
+      {
+        "id": "M_HOLD_A3",
+        "kind": "manual",
+        "aircraft": "Hawk",
+        "hangar": "MainHangar",
+        "door": "MainDoor",
+        "bays": [
+          "A3"
+        ],
+        "start": "2025-09-01T08:00",
+        "end": "2025-09-01T12:00",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": []
+      },
+      {
+        "id": "M_HOLD_A4",
+        "kind": "manual",
+        "aircraft": "Hawk",
+        "hangar": "MainHangar",
+        "door": "MainDoor",
+        "bays": [
+          "A4"
+        ],
+        "start": "2025-09-01T08:00",
+        "end": "2025-09-01T11:00",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": []
+      },
+      {
+        "id": "M_HOLD_A5",
+        "kind": "manual",
+        "aircraft": "Hawk",
+        "hangar": "MainHangar",
+        "door": "MainDoor",
+        "bays": [
+          "A5"
+        ],
+        "start": "2025-09-01T08:00",
+        "end": "2025-09-01T11:00",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": []
+      },
+      {
+        "id": "M_HOLD_A6",
+        "kind": "manual",
+        "aircraft": "Hawk",
+        "hangar": "MainHangar",
+        "door": "MainDoor",
+        "bays": [
+          "A6"
+        ],
+        "start": "2025-09-01T08:00",
+        "end": "2025-09-01T12:00",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": []
+      },
+      {
+        "id": "M_NARROW_N2",
+        "kind": "manual",
+        "aircraft": "Hawk",
+        "hangar": "NarrowHangar",
+        "door": "NarrowDoor",
+        "bays": [
+          "N2"
+        ],
+        "start": "2025-09-01T08:00",
+        "end": "2025-09-01T10:00",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": []
+      },
+      {
+        "id": "M_OVERFLOW",
+        "kind": "manual",
+        "aircraft": "Hawk",
+        "hangar": "OverflowHangar",
+        "door": "OverflowDoor",
+        "bays": [
+          "OB1"
+        ],
+        "start": "2025-09-01T08:00",
+        "end": "2025-09-01T09:15",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": []
+      },
+      {
+        "id": "A_FALLBACK",
+        "kind": "auto",
+        "aircraft": "Hawk",
+        "hangar": "OverflowHangar",
+        "door": "OverflowDoor",
+        "bays": [
+          "OB1"
+        ],
+        "start": "2025-09-01T08:15:00.000Z",
+        "end": "2025-09-01T09:15:00.000Z",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": [],
+        "requestedStart": "2025-09-01T07:00:00.000Z",
+        "actualStart": "2025-09-01T08:15:00.000Z",
+        "scheduledEnd": "2025-09-01T09:15:00.000Z",
+        "actualEnd": "2025-09-01T09:15:00.000Z",
+        "waitTime": 75,
+        "departureDelay": 0,
+        "waitReason": "Bay set {A1} has time conflict in MainHangar; Bays unreachable via access path in NarrowHangar — blocked nodes: NN3",
+        "departureDelayReason": null,
+        "placementAttempts": 2,
+        "queuePosition": 2
+      },
+      {
+        "id": "A_FALCON_DIAG",
+        "kind": "auto",
+        "aircraft": "Falcon",
+        "hangar": "DiagonalHangar",
+        "door": "DiagDoor",
+        "bays": [
+          "D1",
+          "D4"
+        ],
+        "start": "2025-09-01T08:30:00.000Z",
+        "end": "2025-09-01T10:00:00.000Z",
+        "derived": {
+          "wingspanEff": 22.3,
+          "lengthEff": 18.3,
+          "tailEff": 5.7,
+          "baysRequired": 2,
+          "connected": true
+        },
+        "conflicts": [],
+        "requestedStart": "2025-09-01T07:00:00.000Z",
+        "actualStart": "2025-09-01T08:30:00.000Z",
+        "scheduledEnd": "2025-09-01T10:00:00.000Z",
+        "actualEnd": "2025-09-01T10:00:00.000Z",
+        "waitTime": 90,
+        "departureDelay": 0,
+        "waitReason": "Bay set {D1, D2} has time conflict in DiagonalHangar; No door in NarrowHangar fits aircraft Falcon",
+        "departureDelayReason": null,
+        "placementAttempts": 3,
+        "queuePosition": 1
+      },
+      {
+        "id": "A_HAWK_LONGWAIT",
+        "kind": "auto",
+        "aircraft": "Hawk",
+        "hangar": "MainHangar",
+        "door": "MainDoor",
+        "bays": [
+          "A2"
+        ],
+        "start": "2025-09-01T08:30:00.000Z",
+        "end": "2025-09-01T09:30:00.000Z",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": [],
+        "requestedStart": "2025-09-01T07:00:00.000Z",
+        "actualStart": "2025-09-01T08:30:00.000Z",
+        "scheduledEnd": "2025-09-01T09:30:00.000Z",
+        "actualEnd": "2025-09-01T09:30:00.000Z",
+        "waitTime": 90,
+        "departureDelay": 0,
+        "waitReason": "Bay set {A1} has time conflict in MainHangar; Bays unreachable via access path in NarrowHangar — blocked nodes: NN3",
+        "departureDelayReason": null,
+        "placementAttempts": 3,
+        "queuePosition": 4
+      },
+      {
+        "id": "A_HAWK_CHAIN1",
+        "kind": "auto",
+        "aircraft": "Hawk",
+        "hangar": "DiagonalHangar",
+        "door": "DiagDoor",
+        "bays": [
+          "D3"
+        ],
+        "start": "2025-09-01T09:00:00.000Z",
+        "end": "2025-09-01T10:00:00.000Z",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": [],
+        "requestedStart": "2025-09-01T09:00:00.000Z",
+        "actualStart": "2025-09-01T09:00:00.000Z",
+        "scheduledEnd": "2025-09-01T10:00:00.000Z",
+        "actualEnd": "2025-09-01T10:00:00.000Z",
+        "waitTime": 0,
+        "departureDelay": 0,
+        "waitReason": null,
+        "departureDelayReason": null,
+        "placementAttempts": 1,
+        "queuePosition": null
+      },
+      {
+        "id": "A_HAWK_NARROW",
+        "kind": "auto",
+        "aircraft": "Hawk",
+        "hangar": "NarrowHangar",
+        "door": "NarrowDoor",
+        "bays": [
+          "N2"
+        ],
+        "start": "2025-09-01T09:00:00.000Z",
+        "end": "2025-09-01T10:30:00.000Z",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": [],
+        "requestedStart": "2025-09-01T07:00:00.000Z",
+        "actualStart": "2025-09-01T09:00:00.000Z",
+        "scheduledEnd": "2025-09-01T10:30:00.000Z",
+        "actualEnd": "2025-09-01T10:30:00.000Z",
+        "waitTime": 120,
+        "departureDelay": 0,
+        "waitReason": "Bay set {N1} has time conflict in NarrowHangar; Bays unreachable via access path in NarrowHangar — blocked nodes: NN3",
+        "departureDelayReason": null,
+        "placementAttempts": 6,
+        "queuePosition": 5
+      },
+      {
+        "id": "A_HAWK_QUICK",
+        "kind": "auto",
+        "aircraft": "Hawk",
+        "hangar": "MainHangar",
+        "door": "MainDoor",
+        "bays": [
+          "A1"
+        ],
+        "start": "2025-09-01T09:00:00.000Z",
+        "end": "2025-09-01T10:00:00.000Z",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": [],
+        "requestedStart": "2025-09-01T07:00:00.000Z",
+        "actualStart": "2025-09-01T09:00:00.000Z",
+        "scheduledEnd": "2025-09-01T10:00:00.000Z",
+        "actualEnd": "2025-09-01T10:00:00.000Z",
+        "waitTime": 120,
+        "departureDelay": 0,
+        "waitReason": "Bay set {A1} has time conflict in MainHangar; Bays unreachable via access path in NarrowHangar — blocked nodes: NN3",
+        "departureDelayReason": null,
+        "placementAttempts": 6,
+        "queuePosition": 6
+      },
+      {
+        "id": "A_TUCANO_CORRIDOR",
+        "kind": "auto",
+        "aircraft": "Tucano",
+        "hangar": "DiagonalHangar",
+        "door": "DiagDoor",
+        "bays": [
+          "D2"
+        ],
+        "start": "2025-09-01T09:00:00.000Z",
+        "end": "2025-09-01T10:00:00.000Z",
+        "derived": {
+          "wingspanEff": 11.600000000000001,
+          "lengthEff": 10.700000000000001,
+          "tailEff": 3.6,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": [],
+        "requestedStart": "2025-09-01T07:00:00.000Z",
+        "actualStart": "2025-09-01T09:00:00.000Z",
+        "scheduledEnd": "2025-09-01T10:00:00.000Z",
+        "actualEnd": "2025-09-01T10:00:00.000Z",
+        "waitTime": 120,
+        "departureDelay": 0,
+        "waitReason": "Bay set {N1} has time conflict in NarrowHangar; Bays unreachable via access path in NarrowHangar — blocked nodes: NN3",
+        "departureDelayReason": null,
+        "placementAttempts": 6,
+        "queuePosition": 7
+      },
+      {
+        "id": "A_HAWK_CHAIN2",
+        "kind": "auto",
+        "aircraft": "Hawk",
+        "hangar": "MainHangar",
+        "door": "MainDoor",
+        "bays": [
+          "A1"
+        ],
+        "start": "2025-09-01T10:00:00.000Z",
+        "end": "2025-09-01T11:00:00.000Z",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": [],
+        "requestedStart": "2025-09-01T10:00:00.000Z",
+        "actualStart": "2025-09-01T10:00:00.000Z",
+        "scheduledEnd": "2025-09-01T11:00:00.000Z",
+        "actualEnd": "2025-09-01T11:00:00.000Z",
+        "waitTime": 0,
+        "departureDelay": 0,
+        "waitReason": null,
+        "departureDelayReason": null,
+        "placementAttempts": 1,
+        "queuePosition": null
+      },
+      {
+        "id": "A_HAWK_CHAIN3",
+        "kind": "auto",
+        "aircraft": "Hawk",
+        "hangar": "MainHangar",
+        "door": "MainDoor",
+        "bays": [
+          "A1"
+        ],
+        "start": "2025-09-01T11:00:00.000Z",
+        "end": "2025-09-01T12:00:00.000Z",
+        "derived": {
+          "wingspanEff": 10.4,
+          "lengthEff": 12.7,
+          "tailEff": 4.3,
+          "baysRequired": 1,
+          "connected": true
+        },
+        "conflicts": [],
+        "requestedStart": "2025-09-01T11:00:00.000Z",
+        "actualStart": "2025-09-01T11:00:00.000Z",
+        "scheduledEnd": "2025-09-01T12:00:00.000Z",
+        "actualEnd": "2025-09-01T12:00:00.000Z",
+        "waitTime": 0,
+        "departureDelay": 0,
+        "waitReason": null,
+        "departureDelayReason": null,
+        "placementAttempts": 1,
+        "queuePosition": null
+      },
+      {
+        "id": "A_HERCULES_MULTI",
+        "kind": "auto",
+        "aircraft": "Hercules",
+        "hangar": "MainHangar",
+        "door": "MainDoor",
+        "bays": [
+          "A2",
+          "A5",
+          "A3"
+        ],
+        "start": "2025-09-01T11:00:00.000Z",
+        "end": "2025-09-01T13:00:00.000Z",
+        "derived": {
+          "wingspanEff": 41.4,
+          "lengthEff": 30.8,
+          "tailEff": 12.2,
+          "baysRequired": 3,
+          "connected": true
+        },
+        "conflicts": [],
+        "requestedStart": "2025-09-01T11:00:00.000Z",
+        "actualStart": "2025-09-01T11:00:00.000Z",
+        "scheduledEnd": "2025-09-01T13:00:00.000Z",
+        "actualEnd": "2025-09-01T13:00:00.000Z",
+        "waitTime": 0,
+        "departureDelay": 0,
+        "waitReason": null,
+        "departureDelayReason": null,
+        "placementAttempts": 1,
+        "queuePosition": null
+      }
+    ],
+    "autoSchedule": {
+      "scheduled": [
+        {
+          "id": "A_FALLBACK",
+          "kind": "auto",
+          "aircraft": "Hawk",
+          "hangar": "OverflowHangar",
+          "door": "OverflowDoor",
+          "bays": [
+            "OB1"
+          ],
+          "start": "2025-09-01T08:15:00.000Z",
+          "end": "2025-09-01T09:15:00.000Z",
+          "derived": {
+            "wingspanEff": 10.4,
+            "lengthEff": 12.7,
+            "tailEff": 4.3,
+            "baysRequired": 1,
+            "connected": true
+          },
+          "conflicts": [],
+          "requestedStart": "2025-09-01T07:00:00.000Z",
+          "actualStart": "2025-09-01T08:15:00.000Z",
+          "scheduledEnd": "2025-09-01T09:15:00.000Z",
+          "actualEnd": "2025-09-01T09:15:00.000Z",
+          "waitTime": 75,
+          "departureDelay": 0,
+          "waitReason": "Bay set {A1} has time conflict in MainHangar; Bays unreachable via access path in NarrowHangar — blocked nodes: NN3",
+          "departureDelayReason": null,
+          "placementAttempts": 2,
+          "queuePosition": 2
+        },
+        {
+          "id": "A_FALCON_DIAG",
+          "kind": "auto",
+          "aircraft": "Falcon",
+          "hangar": "DiagonalHangar",
+          "door": "DiagDoor",
+          "bays": [
+            "D1",
+            "D4"
+          ],
+          "start": "2025-09-01T08:30:00.000Z",
+          "end": "2025-09-01T10:00:00.000Z",
+          "derived": {
+            "wingspanEff": 22.3,
+            "lengthEff": 18.3,
+            "tailEff": 5.7,
+            "baysRequired": 2,
+            "connected": true
+          },
+          "conflicts": [],
+          "requestedStart": "2025-09-01T07:00:00.000Z",
+          "actualStart": "2025-09-01T08:30:00.000Z",
+          "scheduledEnd": "2025-09-01T10:00:00.000Z",
+          "actualEnd": "2025-09-01T10:00:00.000Z",
+          "waitTime": 90,
+          "departureDelay": 0,
+          "waitReason": "Bay set {D1, D2} has time conflict in DiagonalHangar; No door in NarrowHangar fits aircraft Falcon",
+          "departureDelayReason": null,
+          "placementAttempts": 3,
+          "queuePosition": 1
+        },
+        {
+          "id": "A_HAWK_LONGWAIT",
+          "kind": "auto",
+          "aircraft": "Hawk",
+          "hangar": "MainHangar",
+          "door": "MainDoor",
+          "bays": [
+            "A2"
+          ],
+          "start": "2025-09-01T08:30:00.000Z",
+          "end": "2025-09-01T09:30:00.000Z",
+          "derived": {
+            "wingspanEff": 10.4,
+            "lengthEff": 12.7,
+            "tailEff": 4.3,
+            "baysRequired": 1,
+            "connected": true
+          },
+          "conflicts": [],
+          "requestedStart": "2025-09-01T07:00:00.000Z",
+          "actualStart": "2025-09-01T08:30:00.000Z",
+          "scheduledEnd": "2025-09-01T09:30:00.000Z",
+          "actualEnd": "2025-09-01T09:30:00.000Z",
+          "waitTime": 90,
+          "departureDelay": 0,
+          "waitReason": "Bay set {A1} has time conflict in MainHangar; Bays unreachable via access path in NarrowHangar — blocked nodes: NN3",
+          "departureDelayReason": null,
+          "placementAttempts": 3,
+          "queuePosition": 4
+        },
+        {
+          "id": "A_HAWK_CHAIN1",
+          "kind": "auto",
+          "aircraft": "Hawk",
+          "hangar": "DiagonalHangar",
+          "door": "DiagDoor",
+          "bays": [
+            "D3"
+          ],
+          "start": "2025-09-01T09:00:00.000Z",
+          "end": "2025-09-01T10:00:00.000Z",
+          "derived": {
+            "wingspanEff": 10.4,
+            "lengthEff": 12.7,
+            "tailEff": 4.3,
+            "baysRequired": 1,
+            "connected": true
+          },
+          "conflicts": [],
+          "requestedStart": "2025-09-01T09:00:00.000Z",
+          "actualStart": "2025-09-01T09:00:00.000Z",
+          "scheduledEnd": "2025-09-01T10:00:00.000Z",
+          "actualEnd": "2025-09-01T10:00:00.000Z",
+          "waitTime": 0,
+          "departureDelay": 0,
+          "waitReason": null,
+          "departureDelayReason": null,
+          "placementAttempts": 1,
+          "queuePosition": null
+        },
+        {
+          "id": "A_HAWK_NARROW",
+          "kind": "auto",
+          "aircraft": "Hawk",
+          "hangar": "NarrowHangar",
+          "door": "NarrowDoor",
+          "bays": [
+            "N2"
+          ],
+          "start": "2025-09-01T09:00:00.000Z",
+          "end": "2025-09-01T10:30:00.000Z",
+          "derived": {
+            "wingspanEff": 10.4,
+            "lengthEff": 12.7,
+            "tailEff": 4.3,
+            "baysRequired": 1,
+            "connected": true
+          },
+          "conflicts": [],
+          "requestedStart": "2025-09-01T07:00:00.000Z",
+          "actualStart": "2025-09-01T09:00:00.000Z",
+          "scheduledEnd": "2025-09-01T10:30:00.000Z",
+          "actualEnd": "2025-09-01T10:30:00.000Z",
+          "waitTime": 120,
+          "departureDelay": 0,
+          "waitReason": "Bay set {N1} has time conflict in NarrowHangar; Bays unreachable via access path in NarrowHangar — blocked nodes: NN3",
+          "departureDelayReason": null,
+          "placementAttempts": 6,
+          "queuePosition": 5
+        },
+        {
+          "id": "A_HAWK_QUICK",
+          "kind": "auto",
+          "aircraft": "Hawk",
+          "hangar": "MainHangar",
+          "door": "MainDoor",
+          "bays": [
+            "A1"
+          ],
+          "start": "2025-09-01T09:00:00.000Z",
+          "end": "2025-09-01T10:00:00.000Z",
+          "derived": {
+            "wingspanEff": 10.4,
+            "lengthEff": 12.7,
+            "tailEff": 4.3,
+            "baysRequired": 1,
+            "connected": true
+          },
+          "conflicts": [],
+          "requestedStart": "2025-09-01T07:00:00.000Z",
+          "actualStart": "2025-09-01T09:00:00.000Z",
+          "scheduledEnd": "2025-09-01T10:00:00.000Z",
+          "actualEnd": "2025-09-01T10:00:00.000Z",
+          "waitTime": 120,
+          "departureDelay": 0,
+          "waitReason": "Bay set {A1} has time conflict in MainHangar; Bays unreachable via access path in NarrowHangar — blocked nodes: NN3",
+          "departureDelayReason": null,
+          "placementAttempts": 6,
+          "queuePosition": 6
+        },
+        {
+          "id": "A_TUCANO_CORRIDOR",
+          "kind": "auto",
+          "aircraft": "Tucano",
+          "hangar": "DiagonalHangar",
+          "door": "DiagDoor",
+          "bays": [
+            "D2"
+          ],
+          "start": "2025-09-01T09:00:00.000Z",
+          "end": "2025-09-01T10:00:00.000Z",
+          "derived": {
+            "wingspanEff": 11.600000000000001,
+            "lengthEff": 10.700000000000001,
+            "tailEff": 3.6,
+            "baysRequired": 1,
+            "connected": true
+          },
+          "conflicts": [],
+          "requestedStart": "2025-09-01T07:00:00.000Z",
+          "actualStart": "2025-09-01T09:00:00.000Z",
+          "scheduledEnd": "2025-09-01T10:00:00.000Z",
+          "actualEnd": "2025-09-01T10:00:00.000Z",
+          "waitTime": 120,
+          "departureDelay": 0,
+          "waitReason": "Bay set {N1} has time conflict in NarrowHangar; Bays unreachable via access path in NarrowHangar — blocked nodes: NN3",
+          "departureDelayReason": null,
+          "placementAttempts": 6,
+          "queuePosition": 7
+        },
+        {
+          "id": "A_HAWK_CHAIN2",
+          "kind": "auto",
+          "aircraft": "Hawk",
+          "hangar": "MainHangar",
+          "door": "MainDoor",
+          "bays": [
+            "A1"
+          ],
+          "start": "2025-09-01T10:00:00.000Z",
+          "end": "2025-09-01T11:00:00.000Z",
+          "derived": {
+            "wingspanEff": 10.4,
+            "lengthEff": 12.7,
+            "tailEff": 4.3,
+            "baysRequired": 1,
+            "connected": true
+          },
+          "conflicts": [],
+          "requestedStart": "2025-09-01T10:00:00.000Z",
+          "actualStart": "2025-09-01T10:00:00.000Z",
+          "scheduledEnd": "2025-09-01T11:00:00.000Z",
+          "actualEnd": "2025-09-01T11:00:00.000Z",
+          "waitTime": 0,
+          "departureDelay": 0,
+          "waitReason": null,
+          "departureDelayReason": null,
+          "placementAttempts": 1,
+          "queuePosition": null
+        },
+        {
+          "id": "A_HAWK_CHAIN3",
+          "kind": "auto",
+          "aircraft": "Hawk",
+          "hangar": "MainHangar",
+          "door": "MainDoor",
+          "bays": [
+            "A1"
+          ],
+          "start": "2025-09-01T11:00:00.000Z",
+          "end": "2025-09-01T12:00:00.000Z",
+          "derived": {
+            "wingspanEff": 10.4,
+            "lengthEff": 12.7,
+            "tailEff": 4.3,
+            "baysRequired": 1,
+            "connected": true
+          },
+          "conflicts": [],
+          "requestedStart": "2025-09-01T11:00:00.000Z",
+          "actualStart": "2025-09-01T11:00:00.000Z",
+          "scheduledEnd": "2025-09-01T12:00:00.000Z",
+          "actualEnd": "2025-09-01T12:00:00.000Z",
+          "waitTime": 0,
+          "departureDelay": 0,
+          "waitReason": null,
+          "departureDelayReason": null,
+          "placementAttempts": 1,
+          "queuePosition": null
+        },
+        {
+          "id": "A_HERCULES_MULTI",
+          "kind": "auto",
+          "aircraft": "Hercules",
+          "hangar": "MainHangar",
+          "door": "MainDoor",
+          "bays": [
+            "A2",
+            "A5",
+            "A3"
+          ],
+          "start": "2025-09-01T11:00:00.000Z",
+          "end": "2025-09-01T13:00:00.000Z",
+          "derived": {
+            "wingspanEff": 41.4,
+            "lengthEff": 30.8,
+            "tailEff": 12.2,
+            "baysRequired": 3,
+            "connected": true
+          },
+          "conflicts": [],
+          "requestedStart": "2025-09-01T11:00:00.000Z",
+          "actualStart": "2025-09-01T11:00:00.000Z",
+          "scheduledEnd": "2025-09-01T13:00:00.000Z",
+          "actualEnd": "2025-09-01T13:00:00.000Z",
+          "waitTime": 0,
+          "departureDelay": 0,
+          "waitReason": null,
+          "departureDelayReason": null,
+          "placementAttempts": 1,
+          "queuePosition": null
+        }
+      ],
+      "unscheduled": [
+        {
+          "id": "A_DEADLINE",
+          "aircraft": "Hawk",
+          "preferredHangar": "MainHangar",
+          "reasonRuleId": "SFR16_TIME_OVERLAP",
+          "evidence": {
+            "bayNames": [
+              "A1"
+            ]
+          }
+        },
+        {
+          "id": "A_GLOBE",
+          "aircraft": "Globemaster",
+          "preferredHangar": "MainHangar",
+          "reasonRuleId": "SFR11_DOOR_FIT",
+          "evidence": {
+            "aircraftName": "Globemaster"
+          }
+        }
+      ]
+    },
+    "derived": {
+      "adjacencyModeByHangar": {
+        "MainHangar": "derived",
+        "NarrowHangar": "derived",
+        "DiagonalHangar": "derived",
+        "OverflowHangar": "derived"
+      }
+    },
+    "simulation": {
+      "simulatedDuration": 21600000,
+      "totalEvents": 58,
+      "placedCount": 10,
+      "failedCount": 2,
+      "maxQueueDepth": 8,
+      "totalWaitTime": 36900000,
+      "totalDepartureDelay": 0,
+      "peakOccupancy": 13
+    },
+    "hangarStatistics": {
+      "MainHangar": {
+        "totalBays": 6,
+        "peakOccupancy": 6,
+        "peakOccupancyTime": "2025-09-01T07:00:00.000Z",
+        "avgUtilisation": 0.764,
+        "totalWaitTime": 210,
+        "totalDepartureDelay": 0,
+        "inductionsServed": 11,
+        "queuedAtPeak": 0
+      },
+      "NarrowHangar": {
+        "totalBays": 3,
+        "peakOccupancy": 2,
+        "peakOccupancyTime": "2025-09-01T07:00:00.000Z",
+        "avgUtilisation": 0.625,
+        "totalWaitTime": 120,
+        "totalDepartureDelay": 0,
+        "inductionsServed": 3,
+        "queuedAtPeak": 0
+      },
+      "DiagonalHangar": {
+        "totalBays": 4,
+        "peakOccupancy": 4,
+        "peakOccupancyTime": "2025-09-01T07:00:00.000Z",
+        "avgUtilisation": 1,
+        "totalWaitTime": 210,
+        "totalDepartureDelay": 0,
+        "inductionsServed": 7,
+        "queuedAtPeak": 0
+      },
+      "OverflowHangar": {
+        "totalBays": 1,
+        "peakOccupancy": 1,
+        "peakOccupancyTime": "2025-09-01T07:00:00.000Z",
+        "avgUtilisation": 1,
+        "totalWaitTime": 75,
+        "totalDepartureDelay": 0,
+        "inductionsServed": 2,
+        "queuedAtPeak": 0
+      }
+    },
+    "simulationStatistics": {
+      "simulationWindow": {
+        "start": "2025-09-01T07:00:00.000Z",
+        "end": "2025-09-01T13:00:00.000Z"
+      },
+      "totalAircraftProcessed": 12,
+      "totalWaitTime": 615,
+      "totalDepartureDelay": 0,
+      "avgWaitTime": 61.5,
+      "maxWaitTime": 120,
+      "maxWaitInduction": "A_HAWK_QUICK",
+      "failedInductions": 2,
+      "maxQueueDepth": 8,
+      "maxQueueTime": "2025-09-01T07:00:00.000Z"
+    }
+  },
+  "simulationLog": [
+    {
+      "kind": "ARRIVAL_QUEUED",
+      "time": 1756710000000,
+      "inductionId": "A_DEADLINE",
+      "aircraft": "Hawk",
+      "reason": "SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR_DYNAMIC_REACHABILITY, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP"
+    },
+    {
+      "kind": "ARRIVAL_QUEUED",
+      "time": 1756710000000,
+      "inductionId": "A_FALCON_DIAG",
+      "aircraft": "Falcon",
+      "reason": "SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR11_DOOR_FIT, SFR11_DOOR_FIT"
+    },
+    {
+      "kind": "ARRIVAL_QUEUED",
+      "time": 1756710000000,
+      "inductionId": "A_FALLBACK",
+      "aircraft": "Hawk",
+      "reason": "SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR_DYNAMIC_REACHABILITY, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP"
+    },
+    {
+      "kind": "ARRIVAL_QUEUED",
+      "time": 1756710000000,
+      "inductionId": "A_GLOBE",
+      "aircraft": "Globemaster",
+      "reason": "SFR11_DOOR_FIT, SFR11_DOOR_FIT, SFR11_DOOR_FIT, SFR11_DOOR_FIT"
+    },
+    {
+      "kind": "ARRIVAL_QUEUED",
+      "time": 1756710000000,
+      "inductionId": "A_HAWK_LONGWAIT",
+      "aircraft": "Hawk",
+      "reason": "SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR_DYNAMIC_REACHABILITY, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP"
+    },
+    {
+      "kind": "ARRIVAL_QUEUED",
+      "time": 1756710000000,
+      "inductionId": "A_HAWK_NARROW",
+      "aircraft": "Hawk",
+      "reason": "SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR_DYNAMIC_REACHABILITY, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP"
+    },
+    {
+      "kind": "ARRIVAL_QUEUED",
+      "time": 1756710000000,
+      "inductionId": "A_HAWK_QUICK",
+      "aircraft": "Hawk",
+      "reason": "SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR_DYNAMIC_REACHABILITY, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP"
+    },
+    {
+      "kind": "ARRIVAL_QUEUED",
+      "time": 1756710000000,
+      "inductionId": "A_TUCANO_CORRIDOR",
+      "aircraft": "Tucano",
+      "reason": "SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR_DYNAMIC_REACHABILITY, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP, SFR16_TIME_OVERLAP"
+    },
+    {
+      "kind": "DEADLINE_EXPIRED",
+      "time": 1756714500000,
+      "inductionId": "A_DEADLINE",
+      "aircraft": "Hawk",
+      "reason": "notAfter deadline exceeded"
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756714500000,
+      "inductionId": "M_OVERFLOW",
+      "hangar": "OverflowHangar",
+      "bays": [
+        "OB1"
+      ]
+    },
+    {
+      "kind": "RETRY_PLACED",
+      "time": 1756714500000,
+      "inductionId": "A_FALLBACK",
+      "aircraft": "Hawk",
+      "hangar": "OverflowHangar",
+      "bays": [
+        "OB1"
+      ],
+      "door": "OverflowDoor"
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756715400000,
+      "inductionId": "M_DIAG_D1",
+      "hangar": "DiagonalHangar",
+      "bays": [
+        "D1"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756715400000,
+      "inductionId": "M_DIAG_D4",
+      "hangar": "DiagonalHangar",
+      "bays": [
+        "D4"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756715400000,
+      "inductionId": "M_EARLY",
+      "hangar": "MainHangar",
+      "bays": [
+        "A2"
+      ]
+    },
+    {
+      "kind": "RETRY_PLACED",
+      "time": 1756715400000,
+      "inductionId": "A_FALCON_DIAG",
+      "aircraft": "Falcon",
+      "hangar": "DiagonalHangar",
+      "bays": [
+        "D1",
+        "D4"
+      ],
+      "door": "DiagDoor"
+    },
+    {
+      "kind": "RETRY_PLACED",
+      "time": 1756715400000,
+      "inductionId": "A_HAWK_LONGWAIT",
+      "aircraft": "Hawk",
+      "hangar": "MainHangar",
+      "bays": [
+        "A2"
+      ],
+      "door": "MainDoor"
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756717200000,
+      "inductionId": "M_ANCHOR",
+      "hangar": "MainHangar",
+      "bays": [
+        "A1"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756717200000,
+      "inductionId": "M_DIAG_D2",
+      "hangar": "DiagonalHangar",
+      "bays": [
+        "D2"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756717200000,
+      "inductionId": "M_DIAG_D3",
+      "hangar": "DiagonalHangar",
+      "bays": [
+        "D3"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756717200000,
+      "inductionId": "M_NARROW_N2",
+      "hangar": "NarrowHangar",
+      "bays": [
+        "N2"
+      ]
+    },
+    {
+      "kind": "RETRY_PLACED",
+      "time": 1756717200000,
+      "inductionId": "A_HAWK_NARROW",
+      "aircraft": "Hawk",
+      "hangar": "NarrowHangar",
+      "bays": [
+        "N2"
+      ],
+      "door": "NarrowDoor"
+    },
+    {
+      "kind": "RETRY_PLACED",
+      "time": 1756717200000,
+      "inductionId": "A_HAWK_QUICK",
+      "aircraft": "Hawk",
+      "hangar": "MainHangar",
+      "bays": [
+        "A1"
+      ],
+      "door": "MainDoor"
+    },
+    {
+      "kind": "RETRY_PLACED",
+      "time": 1756717200000,
+      "inductionId": "A_TUCANO_CORRIDOR",
+      "aircraft": "Tucano",
+      "hangar": "DiagonalHangar",
+      "bays": [
+        "D2"
+      ],
+      "door": "DiagDoor"
+    },
+    {
+      "kind": "ARRIVAL_PLACED",
+      "time": 1756717200000,
+      "inductionId": "A_HAWK_CHAIN1",
+      "aircraft": "Hawk",
+      "hangar": "DiagonalHangar",
+      "bays": [
+        "D3"
+      ],
+      "door": "DiagDoor"
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756718100000,
+      "inductionId": "A_FALLBACK",
+      "hangar": "OverflowHangar",
+      "bays": [
+        "OB1"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756719000000,
+      "inductionId": "A_HAWK_LONGWAIT",
+      "hangar": "MainHangar",
+      "bays": [
+        "A2"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756720800000,
+      "inductionId": "A_FALCON_DIAG",
+      "hangar": "DiagonalHangar",
+      "bays": [
+        "D1",
+        "D4"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756720800000,
+      "inductionId": "A_HAWK_CHAIN1",
+      "hangar": "DiagonalHangar",
+      "bays": [
+        "D3"
+      ]
+    },
+    {
+      "kind": "DEPENDENCY_UNLOCKED",
+      "time": 1756720800000,
+      "inductionId": "A_HAWK_CHAIN2",
+      "reason": "Dependency A_HAWK_CHAIN1 departed"
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756720800000,
+      "inductionId": "A_HAWK_QUICK",
+      "hangar": "MainHangar",
+      "bays": [
+        "A1"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756720800000,
+      "inductionId": "A_TUCANO_CORRIDOR",
+      "hangar": "DiagonalHangar",
+      "bays": [
+        "D2"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756720800000,
+      "inductionId": "M_HOLD_A4",
+      "hangar": "MainHangar",
+      "bays": [
+        "A4"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756720800000,
+      "inductionId": "M_HOLD_A5",
+      "hangar": "MainHangar",
+      "bays": [
+        "A5"
+      ]
+    },
+    {
+      "kind": "ARRIVAL_PLACED",
+      "time": 1756720800000,
+      "inductionId": "A_HAWK_CHAIN2",
+      "aircraft": "Hawk",
+      "hangar": "MainHangar",
+      "bays": [
+        "A1"
+      ],
+      "door": "MainDoor"
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756722600000,
+      "inductionId": "A_HAWK_NARROW",
+      "hangar": "NarrowHangar",
+      "bays": [
+        "N2"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756724400000,
+      "inductionId": "A_HAWK_CHAIN2",
+      "hangar": "MainHangar",
+      "bays": [
+        "A1"
+      ]
+    },
+    {
+      "kind": "DEPENDENCY_UNLOCKED",
+      "time": 1756724400000,
+      "inductionId": "A_HAWK_CHAIN3",
+      "reason": "Dependency A_HAWK_CHAIN2 departed"
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756724400000,
+      "inductionId": "M_BLOCK_N1",
+      "hangar": "NarrowHangar",
+      "bays": [
+        "N1"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756724400000,
+      "inductionId": "M_HOLD_A3",
+      "hangar": "MainHangar",
+      "bays": [
+        "A3"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756724400000,
+      "inductionId": "M_HOLD_A6",
+      "hangar": "MainHangar",
+      "bays": [
+        "A6"
+      ]
+    },
+    {
+      "kind": "ARRIVAL_PLACED",
+      "time": 1756724400000,
+      "inductionId": "A_HAWK_CHAIN3",
+      "aircraft": "Hawk",
+      "hangar": "MainHangar",
+      "bays": [
+        "A1"
+      ],
+      "door": "MainDoor"
+    },
+    {
+      "kind": "ARRIVAL_PLACED",
+      "time": 1756724400000,
+      "inductionId": "A_HERCULES_MULTI",
+      "aircraft": "Hercules",
+      "hangar": "MainHangar",
+      "bays": [
+        "A2",
+        "A5",
+        "A3"
+      ],
+      "door": "MainDoor"
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756728000000,
+      "inductionId": "A_HAWK_CHAIN3",
+      "hangar": "MainHangar",
+      "bays": [
+        "A1"
+      ]
+    },
+    {
+      "kind": "DEPARTURE_CLEARED",
+      "time": 1756731600000,
+      "inductionId": "A_HERCULES_MULTI",
+      "hangar": "MainHangar",
+      "bays": [
+        "A2",
+        "A5",
+        "A3"
+      ]
+    },
+    {
+      "kind": "DEADLINE_EXPIRED",
+      "time": 1756731600000,
+      "inductionId": "A_GLOBE",
+      "aircraft": "Globemaster",
+      "reason": "Still in queue at simulation end"
+    }
+  ],
+  "simulationStats": {
+    "simulatedDuration": 21600000,
+    "totalEvents": 58,
+    "totalAutoInductions": 12,
+    "placedCount": 10,
+    "failedCount": 2,
+    "maxQueueDepth": 8,
+    "maxQueueDepthTime": 1756710000000,
+    "totalWaitTime": 36900000,
+    "totalDepartureDelay": 0,
+    "maxWaitTime": 7200000,
+    "maxWaitInduction": "A_HAWK_QUICK",
+    "deadlockCount": 0,
+    "avgUtilisation": 0,
+    "peakOccupancy": 13,
+    "peakOccupancyTime": 1756710000000,
+    "utilisationByHangar": {},
+    "windowStart": 1756710000000,
+    "windowEnd": 1756731600000
+  },
+  "langiumDiagnostics": [
+    {
+      "message": "[SFR_REACHABILITY_SKIPPED] Hangar 'OverflowHangar' has no access path defined — reachability analysis was not performed. Define an accessPath to enable bay-blocking checks.",
+      "severity": 4,
+      "line": 354,
+      "column": 11,
+      "endLine": 354,
+      "endColumn": 25
+    }
+  ]
+}

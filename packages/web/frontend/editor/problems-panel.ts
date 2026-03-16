@@ -1,5 +1,6 @@
 import type { DiagnosticItem } from './diagnostics';
 import type { AnalysisResult } from '../services/api';
+import type { SimulationEventRecord, ExportedInduction, ExportedUnscheduledAuto } from '../types/api';
 
 // Minimal editor interface — avoids importing all of monaco-editor here.
 interface EditorLike {
@@ -52,6 +53,36 @@ function severityIcon(severity: number): string {
 function formatTime(iso: string): string {
   const m = iso.match(/T(\d{2}:\d{2})/);
   return m ? m[1] : iso;
+}
+
+function formatEpoch(epochMs: number): string {
+  const d = new Date(epochMs);
+  const mo = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const da = String(d.getUTCDate()).padStart(2, '0');
+  const hh = String(d.getUTCHours()).padStart(2, '0');
+  const mm = String(d.getUTCMinutes()).padStart(2, '0');
+  return `${mo}-${da} ${hh}:${mm}`;
+}
+
+function formatDuration(ms: number): string {
+  if (ms <= 0) return '0m';
+  const totalMinutes = Math.round(ms / 60_000);
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+function humanizeFailureReason(ruleId: string): string {
+  switch (ruleId) {
+    case 'STRUCTURALLY_INFEASIBLE': return 'No bay set large enough';
+    case 'SIM_DEADLINE_EXCEEDED':   return 'Exceeded time window while waiting';
+    case 'SIM_NEVER_PLACED':        return 'Never placed (simulation ended)';
+    case 'SIM_EVENT_LIMIT':         return 'Simulation event limit reached';
+    case 'DEPENDENCY_NEVER_PLACED': return 'Dependency was never placed';
+    case 'SCHED_FAILED':            return 'Scheduling failed';
+    default:                        return ruleId;
+  }
 }
 
 // ── Main factory ──────────────────────────────────────────────────────────────
@@ -231,82 +262,231 @@ export function setupProblemsPanel(editor: EditorLike): PanelController {
 
   // ── Schedule results update ────────────────────────────────────────────────
 
+  let timelineExpanded = false;
+
   function updateScheduleResults(result: AnalysisResult) {
     activateTab('schedule');
     if (!schedContent) return;
 
-    const { report, exportModel } = result;
-    const manual      = exportModel.inductions;
+    const { report, exportModel, simulationLog, simulationStats } = result;
+    const manual      = exportModel.inductions.filter(i => i.kind === 'manual');
     const scheduled   = exportModel.autoSchedule?.scheduled   ?? [];
     const unscheduled = exportModel.autoSchedule?.unscheduled ?? [];
 
     const errCount  = report.summary.bySeverity.errors;
     const warnCount = report.summary.bySeverity.warnings;
 
-    let html = `
+    let html = '';
+
+    // ── Validation summary bar ──────────────────────────────────────────
+    html += `
       <div class="flex items-center gap-3 px-3 py-1.5 border-b border-slate-800/60 text-xs bg-slate-800/20">
         <span class="text-slate-400 font-medium">Validation:</span>
         ${errCount  > 0 ? `<span class="text-red-400">${errCount} error${errCount !== 1 ? 's' : ''}</span>` : ''}
         ${warnCount > 0 ? `<span class="text-amber-400">${warnCount} warning${warnCount !== 1 ? 's' : ''}</span>` : ''}
         ${errCount === 0 && warnCount === 0
           ? `<span class="text-emerald-400">No violations</span>`
+          : ''}`;
+
+    // Simulation summary stats (inline with validation)
+    if (simulationStats) {
+      html += `
+        <span class="text-slate-600 mx-1">|</span>
+        <span class="text-slate-400 font-medium">Sim:</span>
+        <span class="text-cyan-400">${simulationStats.placedCount} placed</span>
+        ${simulationStats.failedCount > 0
+          ? `<span class="text-red-400">${simulationStats.failedCount} failed</span>`
           : ''}
+        <span class="text-slate-500">peak ${simulationStats.peakOccupancy} bays</span>
+        ${simulationStats.maxQueueDepth > 0
+          ? `<span class="text-amber-400">queue ${simulationStats.maxQueueDepth}</span>`
+          : ''}`;
+    }
+    html += `</div>`;
+
+    // ── Timeline section ────────────────────────────────────────────────
+    if (simulationLog && simulationLog.length > 0) {
+      const TIMELINE_LIMIT = 50;
+      const hasMore = simulationLog.length > TIMELINE_LIMIT;
+      const visibleEvents = timelineExpanded ? simulationLog : simulationLog.slice(0, TIMELINE_LIMIT);
+
+      html += `<div class="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wide bg-slate-800/30 border-b border-slate-800/60 flex items-center justify-between">
+        <span>Event Timeline (${simulationLog.length})</span>
+        ${hasMore ? `<button id="sched-timeline-toggle" class="text-cyan-400 hover:text-cyan-300 normal-case font-normal">${timelineExpanded ? 'Show less' : 'Show all'}</button>` : ''}
       </div>`;
 
-    if (manual.length > 0) {
-      html += `<div class="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wide bg-slate-800/30 border-b border-slate-800/60">
-        Manual Inductions (${manual.length})</div>`;
-      html += manual.map(ind => `
-        <div class="flex items-center gap-2 px-3 py-1.5 border-b border-slate-800/30 text-xs hover:bg-slate-800/30">
-          <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-          </svg>
-          <span class="text-slate-200 font-medium">${esc(ind.aircraft)}</span>
-          <span class="text-slate-400">→ ${esc(ind.hangar)}</span>
-          <span class="text-slate-500">[${ind.bays.map(esc).join(', ')}]</span>
-          <span class="ml-auto text-slate-500 shrink-0 font-mono">${formatTime(ind.start)}–${formatTime(ind.end)}</span>
-        </div>`).join('');
+      html += visibleEvents.map(evt => renderTimelineEvent(evt)).join('');
     }
 
-    if (scheduled.length > 0) {
+    // ── Scheduled inductions table ──────────────────────────────────────
+    const allScheduled = [...manual, ...scheduled];
+    if (allScheduled.length > 0) {
       html += `<div class="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wide bg-slate-800/30 border-b border-slate-800/60">
-        Auto-Scheduled (${scheduled.length})</div>`;
-      html += scheduled.map(ind => `
-        <div class="flex items-center gap-2 px-3 py-1.5 border-b border-slate-800/30 text-xs hover:bg-slate-800/30">
-          <svg class="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          <span class="text-slate-200 font-medium">${esc(ind.aircraft)}</span>
-          <span class="text-slate-400">→ ${esc(ind.hangar)}</span>
-          <span class="text-slate-500">[${ind.bays.map(esc).join(', ')}]</span>
-          <span class="ml-auto text-slate-500 shrink-0 font-mono">${formatTime(ind.start)}–${formatTime(ind.end)}</span>
-        </div>`).join('');
+        Scheduled Inductions (${allScheduled.length})</div>`;
+
+      // Header row
+      html += `<div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_80px_80px_60px_60px] gap-1 px-3 py-1 border-b border-slate-800/60 text-xs text-slate-500 font-medium bg-slate-800/10">
+        <span>ID</span><span>Aircraft</span><span>Hangar</span><span>Bays</span><span>Start</span><span>End</span><span>Wait</span><span>Delay</span>
+      </div>`;
+
+      html += allScheduled.map(ind => renderScheduledRow(ind)).join('');
     }
 
+    // ── Failed inductions ───────────────────────────────────────────────
     if (unscheduled.length > 0) {
       html += `<div class="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wide bg-slate-800/30 border-b border-slate-800/60">
         Failed to Schedule (${unscheduled.length})</div>`;
-      html += unscheduled.map(ind => `
-        <div class="flex items-start gap-2 px-3 py-1.5 border-b border-slate-800/30 text-xs hover:bg-slate-800/30">
-          <svg class="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-          <div>
-            <span class="text-slate-200 font-medium">${esc(ind.aircraft)}</span>
-            ${ind.preferredHangar ? `<span class="text-slate-400"> (pref: ${esc(ind.preferredHangar)})</span>` : ''}
-            <div class="text-red-400 mt-0.5 font-mono">${esc(ind.reasonRuleId)}</div>
-          </div>
-        </div>`).join('');
+
+      // Header row
+      html += `<div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)] gap-1 px-3 py-1 border-b border-slate-800/60 text-xs text-slate-500 font-medium bg-slate-800/10">
+        <span>ID</span><span>Aircraft</span><span>Reason</span>
+      </div>`;
+
+      html += unscheduled.map(ind => renderFailedRow(ind)).join('');
     }
 
-    if (manual.length === 0 && scheduled.length === 0 && unscheduled.length === 0) {
+    if (allScheduled.length === 0 && unscheduled.length === 0 && (!simulationLog || simulationLog.length === 0)) {
       html += `<div class="flex items-center justify-center h-12 text-slate-500 text-xs">No inductions found</div>`;
     }
 
     schedContent.innerHTML = html;
 
+    // Wire up "Show all" / "Show less" toggle
+    document.getElementById('sched-timeline-toggle')?.addEventListener('click', () => {
+      timelineExpanded = !timelineExpanded;
+      updateScheduleResults(result);
+    });
+
+    // ── Cross-panel highlight on click ────────────────────────────────
+    wireInductionHighlighting(schedContent);
+
     // Expand panel if it was collapsed
     if (panelCollapsed) setCollapsed(false);
+  }
+
+  // ── Timeline event renderer ────────────────────────────────────────────────
+
+  function renderTimelineEvent(evt: SimulationEventRecord): string {
+    const ts = formatEpoch(evt.time);
+    const { icon, color, description } = describeEvent(evt);
+
+    return `
+      <div class="ind-timeline flex items-start gap-2 px-3 py-1 border-b border-slate-800/30 text-xs hover:bg-slate-800/30 cursor-pointer" data-induction-id="${esc(evt.inductionId)}">
+        <span class="text-slate-600 font-mono shrink-0 w-[90px]">${ts}</span>
+        <span class="${color} shrink-0 w-4 text-center">${icon}</span>
+        <span class="text-slate-300 min-w-0">${description}</span>
+      </div>`;
+  }
+
+  function describeEvent(evt: SimulationEventRecord): { icon: string; color: string; description: string } {
+    const id = esc(evt.inductionId);
+    const ac = evt.aircraft ? esc(evt.aircraft) : '';
+    const bays = evt.bays?.map(esc).join(', ') ?? '';
+    const door = evt.door ? esc(evt.door) : '';
+
+    switch (evt.kind) {
+      case 'ARRIVAL_PLACED':
+        return { icon: '&#9654;', color: 'text-emerald-400', description: `<span class="text-slate-200 font-medium">${id}</span> — ${ac} placed in ${bays}${door ? ` via ${door}` : ''}` };
+      case 'ARRIVAL_QUEUED':
+        return { icon: '&#9202;', color: 'text-amber-400', description: `<span class="text-slate-200 font-medium">${id}</span> — ${ac} queued (no available bay set)` };
+      case 'DEPARTURE_CLEARED':
+        return { icon: '&#10003;', color: 'text-cyan-400', description: `<span class="text-slate-200 font-medium">${id}</span> — ${ac} departed${door ? ` via ${door}` : ''}` };
+      case 'DEPARTURE_BLOCKED':
+        return { icon: '&#9888;', color: 'text-amber-400', description: `<span class="text-slate-200 font-medium">${id}</span> — departure delayed${evt.blockedBy ? ` (blocked by ${evt.blockedBy.map(esc).join(', ')})` : ''}` };
+      case 'RETRY_PLACED':
+        return { icon: '&#8635;', color: 'text-emerald-400', description: `<span class="text-slate-200 font-medium">${id}</span> — ${ac} placed on retry in ${bays}` };
+      case 'DEADLINE_EXPIRED':
+        return { icon: '&#10007;', color: 'text-red-400', description: `<span class="text-slate-200 font-medium">${id}</span> — could not place within time window` };
+      case 'DEPENDENCY_UNLOCKED':
+        return { icon: '&#128275;', color: 'text-blue-400', description: `<span class="text-slate-200 font-medium">${id}</span> — dependencies met, ready for placement` };
+      case 'STRUCTURALLY_INFEASIBLE':
+        return { icon: '&#10007;', color: 'text-red-400', description: `<span class="text-slate-200 font-medium">${id}</span> — structurally infeasible${evt.reason ? `: ${esc(evt.reason)}` : ''}` };
+      case 'DEADLOCK_DETECTED':
+        return { icon: '&#128274;', color: 'text-red-400', description: `<span class="text-slate-200 font-medium">${id}</span> — deadlock detected` };
+      case 'SIM_EVENT_LIMIT':
+        return { icon: '&#9940;', color: 'text-red-400', description: `<span class="text-slate-200 font-medium">${id}</span> — simulation event limit reached` };
+      default:
+        return { icon: '?', color: 'text-slate-500', description: `<span class="text-slate-200 font-medium">${id}</span> — ${evt.kind}` };
+    }
+  }
+
+  // ── Scheduled induction row ──────────────────────────────────────────────
+
+  function renderScheduledRow(ind: ExportedInduction): string {
+    const wait = ind.waitTime ?? 0;
+    const delay = ind.departureDelay ?? 0;
+    const rowColor = delay > 0
+      ? 'bg-red-500/5'
+      : wait > 0
+        ? 'bg-amber-500/5'
+        : '';
+    const kindBadge = ind.kind === 'manual'
+      ? `<span class="px-1 py-0.5 rounded bg-slate-700/60 text-slate-400 text-[9px] leading-none uppercase">man</span>`
+      : `<span class="px-1 py-0.5 rounded bg-cyan-900/40 text-cyan-400 text-[9px] leading-none uppercase">auto</span>`;
+
+    return `
+      <div class="ind-card grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_80px_80px_60px_60px] gap-1 px-3 py-1 border-b border-slate-800/30 text-xs hover:bg-slate-800/30 cursor-pointer ${rowColor}" data-induction-id="${esc(ind.id)}">
+        <span class="text-slate-200 font-medium truncate flex items-center gap-1">${kindBadge} ${esc(ind.id)}</span>
+        <span class="text-slate-300 truncate">${esc(ind.aircraft)}</span>
+        <span class="text-slate-400 truncate">${esc(ind.hangar)}</span>
+        <span class="text-slate-500 truncate">${ind.bays.map(esc).join(', ')}</span>
+        <span class="text-slate-500 font-mono">${formatTime(ind.start)}</span>
+        <span class="text-slate-500 font-mono">${formatTime(ind.end)}</span>
+        <span class="${wait > 0 ? 'text-amber-400' : 'text-slate-600'} font-mono">${formatDuration(wait)}</span>
+        <span class="${delay > 0 ? 'text-red-400' : 'text-slate-600'} font-mono">${formatDuration(delay)}</span>
+      </div>`;
+  }
+
+  // ── Failed induction row ─────────────────────────────────────────────────
+
+  function renderFailedRow(ind: ExportedUnscheduledAuto): string {
+    return `
+      <div class="ind-card grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)] gap-1 px-3 py-1.5 border-b border-slate-800/30 text-xs hover:bg-slate-800/30 cursor-pointer" data-induction-id="${esc(ind.id)}">
+        <span class="text-slate-200 font-medium truncate">${esc(ind.id)}</span>
+        <span class="text-slate-300 truncate">${esc(ind.aircraft)}</span>
+        <span class="text-red-400">${esc(humanizeFailureReason(ind.reasonRuleId))}</span>
+      </div>`;
+  }
+
+  // ── Cross-panel induction highlighting ─────────────────────────────────────
+
+  let highlightTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearHighlights() {
+    document.querySelectorAll('.ind-highlighted').forEach(el =>
+      el.classList.remove('ind-highlighted'),
+    );
+    if (highlightTimer) { clearTimeout(highlightTimer); highlightTimer = null; }
+  }
+
+  function highlightInduction(inductionId: string) {
+    clearHighlights();
+
+    const matches = schedContent!.querySelectorAll<HTMLElement>(
+      `[data-induction-id="${CSS.escape(inductionId)}"]`,
+    );
+    matches.forEach(el => el.classList.add('ind-highlighted'));
+
+    // Scroll to first matching card and first matching timeline entry
+    const firstCard = schedContent!.querySelector<HTMLElement>(
+      `.ind-card[data-induction-id="${CSS.escape(inductionId)}"]`,
+    );
+    const firstTimeline = schedContent!.querySelector<HTMLElement>(
+      `.ind-timeline[data-induction-id="${CSS.escape(inductionId)}"]`,
+    );
+    firstCard?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    firstTimeline?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    highlightTimer = setTimeout(clearHighlights, 3000);
+  }
+
+  function wireInductionHighlighting(container: HTMLElement) {
+    container.addEventListener('click', (e) => {
+      const target = (e.target as HTMLElement).closest<HTMLElement>('[data-induction-id]');
+      if (!target) return;
+      const id = target.dataset['inductionId'];
+      if (id) highlightInduction(id);
+    });
   }
 
   // ── Dispose ────────────────────────────────────────────────────────────────
@@ -318,6 +498,7 @@ export function setupProblemsPanel(editor: EditorLike): PanelController {
       divider?.removeEventListener('mousedown', onDividerMouseDown);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup',   onMouseUp);
+      clearHighlights();
     },
   };
 }

@@ -1,12 +1,12 @@
 import './style.css';
 import { router } from './router';
 import { createHomePage } from './components/home-page';
-import { createResultsPage } from './components/results-page';
+import { createResultsPage, attachResultsPageListeners } from './components/results-page';
 import { createLoginPage, attachLoginPageListeners } from './components/login-page';
 import { createDashboardPage, attachDashboardPageListeners } from './components/dashboard-page';
 import { createAircraftListPage, createAircraftFormPage, attachAircraftListListeners, attachAircraftFormListeners } from './components/aircraft-page';
 import { createHangarsListPage, createHangarFormPage, attachHangarsListListeners, attachHangarFormListeners } from './components/hangars-page';
-import { createSchedulePage, attachSchedulePageListeners, cleanupSchedulePage } from './components/schedule-page';
+import { createSchedulePage, attachSchedulePageListeners } from './components/schedule-page';
 import { createTimelinePage, attachTimelinePageListeners } from './components/timeline-page';
 import { attachNavbarListeners } from './components/navbar';
 import { isLoggedIn } from './services/auth';
@@ -33,11 +33,6 @@ function renderRoute(route: string, data?: any) {
   // Dispose Monaco when navigating away from editor
   if (route !== 'editor' && isEditorActive()) {
     disposeEditor();
-  }
-
-  // Unmount the React schedule app when navigating away
-  if (route !== 'schedule') {
-    cleanupSchedulePage();
   }
 
   // Protected routes check
@@ -107,6 +102,7 @@ function renderResultsPage(data: AnalysisResult) {
 
   app.innerHTML = createResultsPage(data);
   attachNavbarListeners();
+  attachResultsPageListeners();
 
   document.getElementById('back-btn')?.addEventListener('click', () => {
     router.navigate('editor');

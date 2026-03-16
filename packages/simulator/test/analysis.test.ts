@@ -2,9 +2,10 @@
  * Unit tests for analyzeAndSchedule() — the top-level analysis pipeline.
  *
  * analyzeAndSchedule() orchestrates:
- *   1. AutoScheduler.schedule()   (if autoInductions exist)
- *   2. buildValidationReport()
- *   3. buildExportModel()
+ *   1. DiscreteEventSimulator.run()   (if autoInductions exist)
+ *   2. toScheduleResult()             (backwards-compat adapter)
+ *   3. buildValidationReport()
+ *   4. buildExportModel()
  *
  * Both builders access aircraft dimensions, bay geometry, and adjacency data,
  * so fixtures must include the full structural mock (aircraft wingspan/length/
@@ -297,5 +298,209 @@ describe('analyzeAndSchedule — span direction threaded into baysRequired', () 
         const { exportModel } = analyzeAndSchedule(model);
 
         expect(exportModel.inductions[0].derived.baysRequired).toBe(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Two-bay hangar for wait / contention scenarios
+// ---------------------------------------------------------------------------
+
+const BAY2 = mkBay('Bay2', 12, 10, 3, 0, 1);
+const TWO_BAY_HANGAR = mkHangar('TwoBay', [MAIN_DOOR], [BAY1, BAY2], 1, 2);
+
+// ---------------------------------------------------------------------------
+// Tests: simulation metadata
+// ---------------------------------------------------------------------------
+
+describe('analyzeAndSchedule — simulation metadata', () => {
+    test('simulationLog is undefined when no auto-inductions', () => {
+        const model = mkModel([ALPHA_HANGAR], [], []);
+        const result = analyzeAndSchedule(model);
+
+        expect(result.simulationLog).toBeUndefined();
+        expect(result.simulationStats).toBeUndefined();
+    });
+
+    test('simulationLog is present when auto-inductions exist', () => {
+        const autoA = mkAutoInduction('A', CESSNA, ALPHA_HANGAR, 60);
+        const model = mkModel([ALPHA_HANGAR], [], [autoA]);
+        const result = analyzeAndSchedule(model);
+
+        expect(result.simulationLog).toBeDefined();
+        expect(Array.isArray(result.simulationLog)).toBe(true);
+        expect(result.simulationLog!.length).toBeGreaterThan(0);
+    });
+
+    test('simulationStats has expected shape when auto-inductions exist', () => {
+        const autoA = mkAutoInduction('A', CESSNA, ALPHA_HANGAR, 60);
+        const model = mkModel([ALPHA_HANGAR], [], [autoA]);
+        const result = analyzeAndSchedule(model);
+
+        expect(result.simulationStats).toBeDefined();
+        expect(result.simulationStats!.totalAutoInductions).toBe(1);
+        expect(result.simulationStats!.placedCount).toBe(1);
+        expect(result.simulationStats!.failedCount).toBe(0);
+        expect(result.simulationStats!.totalEvents).toBeGreaterThan(0);
+    });
+
+    test('simulationStats reflects failed inductions', () => {
+        const autoA = mkAutoInduction('WIDE-001', WIDE_AIRCRAFT, ALPHA_HANGAR, 60);
+        const model = mkModel([ALPHA_HANGAR], [], [autoA]);
+        const result = analyzeAndSchedule(model);
+
+        expect(result.simulationStats).toBeDefined();
+        expect(result.simulationStats!.totalAutoInductions).toBe(1);
+        expect(result.simulationStats!.placedCount).toBe(0);
+        expect(result.simulationStats!.failedCount).toBe(1);
+    });
+
+    test('simulationLog contains ARRIVAL_PLACED for successful scheduling', () => {
+        const autoA = mkAutoInduction('A', CESSNA, ALPHA_HANGAR, 60);
+        const model = mkModel([ALPHA_HANGAR], [], [autoA]);
+        const result = analyzeAndSchedule(model);
+
+        const placed = result.simulationLog!.find(
+            e => e.kind === 'ARRIVAL_PLACED' && e.inductionId === 'A',
+        );
+        expect(placed).toBeDefined();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: waitTime and departureDelay in export model
+// ---------------------------------------------------------------------------
+
+describe('analyzeAndSchedule — waitTime and departureDelay enrichment', () => {
+    test('scheduled auto-induction with no contention has waitTime=0 and departureDelay=0', () => {
+        const autoA = mkAutoInduction('A', CESSNA, ALPHA_HANGAR, 60);
+        const model = mkModel([ALPHA_HANGAR], [], [autoA]);
+        const { exportModel } = analyzeAndSchedule(model);
+
+        const scheduled = exportModel.autoSchedule!.scheduled[0];
+        expect(scheduled.waitTime).toBe(0);
+        expect(scheduled.departureDelay).toBe(0);
+    });
+
+    test('waitTime and departureDelay also appear on the merged inductions array', () => {
+        const autoA = mkAutoInduction('A', CESSNA, ALPHA_HANGAR, 60);
+        const model = mkModel([ALPHA_HANGAR], [], [autoA]);
+        const { exportModel } = analyzeAndSchedule(model);
+
+        const autoEntry = exportModel.inductions.find(i => i.id === 'A');
+        expect(autoEntry).toBeDefined();
+        expect(autoEntry!.waitTime).toBe(0);
+        expect(autoEntry!.departureDelay).toBe(0);
+    });
+
+    test('manual inductions do not have waitTime/departureDelay', () => {
+        const ind = mkManualInduction(
+            'M1', CESSNA, ALPHA_HANGAR, [BAY1], MAIN_DOOR,
+            '2024-06-01T08:00', '2024-06-01T10:00'
+        );
+        const model = mkModel([ALPHA_HANGAR], [ind], []);
+        const { exportModel } = analyzeAndSchedule(model);
+
+        expect(exportModel.inductions[0].waitTime).toBeUndefined();
+        expect(exportModel.inductions[0].departureDelay).toBeUndefined();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: ExportModel.simulation summary
+// ---------------------------------------------------------------------------
+
+describe('analyzeAndSchedule — exportModel.simulation summary', () => {
+    test('simulation summary absent when no auto-inductions', () => {
+        const model = mkModel([ALPHA_HANGAR], [], []);
+        const { exportModel } = analyzeAndSchedule(model);
+
+        expect(exportModel.simulation).toBeUndefined();
+    });
+
+    test('simulation summary present when auto-inductions exist', () => {
+        const autoA = mkAutoInduction('A', CESSNA, ALPHA_HANGAR, 60);
+        const model = mkModel([ALPHA_HANGAR], [], [autoA]);
+        const { exportModel } = analyzeAndSchedule(model);
+
+        expect(exportModel.simulation).toBeDefined();
+        expect(exportModel.simulation!.placedCount).toBe(1);
+        expect(exportModel.simulation!.failedCount).toBe(0);
+        expect(exportModel.simulation!.totalEvents).toBeGreaterThan(0);
+        expect(exportModel.simulation!.peakOccupancy).toBeGreaterThanOrEqual(1);
+    });
+
+    test('simulation summary reflects failures', () => {
+        const autoA = mkAutoInduction('WIDE-001', WIDE_AIRCRAFT, ALPHA_HANGAR, 60);
+        const model = mkModel([ALPHA_HANGAR], [], [autoA]);
+        const { exportModel } = analyzeAndSchedule(model);
+
+        expect(exportModel.simulation).toBeDefined();
+        expect(exportModel.simulation!.placedCount).toBe(0);
+        expect(exportModel.simulation!.failedCount).toBe(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: waiting scenario — more auto-inductions than available bays
+// ---------------------------------------------------------------------------
+
+describe('analyzeAndSchedule — waiting scenario (contention)', () => {
+    test('two autos compete for one bay — both eventually scheduled sequentially', () => {
+        // ALPHA_HANGAR has 1 bay. Two 60-min autos arrive at same time.
+        // First gets placed immediately; second waits and gets placed when first departs.
+        const autoA = mkAutoInduction('A', CESSNA, ALPHA_HANGAR, 60);
+        const autoB = mkAutoInduction('B', CESSNA, ALPHA_HANGAR, 60);
+        const model = mkModel([ALPHA_HANGAR], [], [autoA, autoB]);
+        const result = analyzeAndSchedule(model);
+
+        // Both should be scheduled
+        expect(result.exportModel.autoSchedule!.scheduled).toHaveLength(2);
+        expect(result.exportModel.autoSchedule!.unscheduled).toHaveLength(0);
+
+        // The second should have a non-zero wait time or later start
+        const schedA = result.exportModel.autoSchedule!.scheduled.find(s => s.id === 'A')!;
+        const schedB = result.exportModel.autoSchedule!.scheduled.find(s => s.id === 'B')!;
+        // One starts after the other ends (no overlap on same bay)
+        const startA = new Date(schedA.start).getTime();
+        const endA   = new Date(schedA.end).getTime();
+        const startB = new Date(schedB.start).getTime();
+        const endB   = new Date(schedB.end).getTime();
+        // They must not overlap: either A ends ≤ B starts, or B ends ≤ A starts
+        const sequential = endA <= startB || endB <= startA;
+        expect(sequential).toBe(true);
+    });
+
+    test('three autos for two bays — all scheduled, third waits for a bay to free', () => {
+        // TWO_BAY_HANGAR has 2 bays. Three 60-min autos: first two placed, third waits.
+        const autoA = mkAutoInduction('A', CESSNA, TWO_BAY_HANGAR, 60);
+        const autoB = mkAutoInduction('B', CESSNA, TWO_BAY_HANGAR, 60);
+        const autoC = mkAutoInduction('C', CESSNA, TWO_BAY_HANGAR, 60);
+        const model = mkModel([TWO_BAY_HANGAR], [], [autoA, autoB, autoC]);
+        const result = analyzeAndSchedule(model);
+
+        expect(result.exportModel.autoSchedule!.scheduled).toHaveLength(3);
+        expect(result.exportModel.autoSchedule!.unscheduled).toHaveLength(0);
+
+        // The simulation log should contain an ARRIVAL_QUEUED for the third
+        const queued = result.simulationLog!.filter(e => e.kind === 'ARRIVAL_QUEUED');
+        expect(queued.length).toBeGreaterThanOrEqual(1);
+
+        // And a RETRY_PLACED when it gets placed after a bay frees
+        const retryPlaced = result.simulationLog!.filter(e => e.kind === 'RETRY_PLACED');
+        expect(retryPlaced.length).toBeGreaterThanOrEqual(1);
+
+        // simulationStats should show maxQueueDepth >= 1
+        expect(result.simulationStats!.maxQueueDepth).toBeGreaterThanOrEqual(1);
+    });
+
+    test('waiting scenario populates simulation summary with queue depth', () => {
+        const autoA = mkAutoInduction('A', CESSNA, ALPHA_HANGAR, 60);
+        const autoB = mkAutoInduction('B', CESSNA, ALPHA_HANGAR, 60);
+        const model = mkModel([ALPHA_HANGAR], [], [autoA, autoB]);
+        const { exportModel } = analyzeAndSchedule(model);
+
+        expect(exportModel.simulation).toBeDefined();
+        expect(exportModel.simulation!.maxQueueDepth).toBeGreaterThanOrEqual(1);
+        expect(exportModel.simulation!.placedCount).toBe(2);
     });
 });

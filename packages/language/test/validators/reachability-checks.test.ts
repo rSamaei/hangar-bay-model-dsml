@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { EmptyFileSystem, type LangiumDocument } from 'langium';
-import { setupServices, services, parse, validate } from '../helpers/setup.js';
+import { type LangiumDocument } from 'langium';
+import { setupServices, parse, validate } from '../helpers/setup.js';
 import { isModel } from 'airfield-language';
 
 setupServices();

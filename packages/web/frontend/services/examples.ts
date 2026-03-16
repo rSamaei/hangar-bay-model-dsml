@@ -34,6 +34,13 @@ export const examples: Example[] = [
     description: 'Three fixable errors (wingspan fit, contiguity gap, bay count) — press Ctrl+. on any squiggle to auto-fix',
     file: '/examples/04-quick-fixes-showcase.air',
     category: 'validation'
+  },
+  {
+    id: 'simulation',
+    name: 'Simulation Showcase',
+    description: 'Discrete-event simulation: bay contention, deadline expiry, hangar fallback, dependency chains',
+    file: '/examples/05-simulation-showcase.air',
+    category: 'auto-scheduling'
   }
 ];
 

@@ -47,6 +47,11 @@ export function findOrCreateUser(username: string): User {
   if (!user) {
     const result = db.prepare('INSERT INTO users (username) VALUES (?)').run(username);
     user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid) as User;
+    try {
+      seedNewUser(user.id);
+    } catch (e) {
+      console.error('Failed to seed data for new user:', e);
+    }
   }
 
   return user;
@@ -55,6 +60,55 @@ export function findOrCreateUser(username: string): User {
 export function getUserById(id: number): User | undefined {
   const db = getDatabase();
   return db.prepare('SELECT * FROM users WHERE id = ?').get(id) as User | undefined;
+}
+
+function seedNewUser(userId: number): void {
+  const db = getDatabase();
+
+  const insertAircraft = db.prepare(`
+    INSERT INTO aircraft (user_id, name, wingspan, length, height, tail_height)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+
+  const seedAircraft = [
+    { name: 'Eurofighter Typhoon', wingspan: 10.95, length: 15.96, height: 5.28, tail_height: 5.28 },
+    { name: 'BAE Hawk T2',        wingspan: 9.94,  length: 12.43, height: 3.98, tail_height: 3.98 },
+    { name: 'C-130J Hercules',    wingspan: 40.41, length: 29.79, height: 11.84, tail_height: 11.84 },
+    { name: 'CH-47 Chinook',      wingspan: 18.29, length: 15.87, height: 5.77, tail_height: 5.77 },
+  ];
+
+  for (const a of seedAircraft) {
+    insertAircraft.run(userId, a.name, a.wingspan, a.length, a.height, a.tail_height);
+  }
+
+  const insertHangar = db.prepare('INSERT INTO hangars (user_id, name) VALUES (?, ?)');
+  const insertBay = db.prepare(`
+    INSERT INTO hangar_bays (hangar_id, name, width, depth, height)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+
+  // Fighter Hangar: 4 bays sized for Typhoon/Hawk
+  const h1 = insertHangar.run(userId, 'Fighter Hangar');
+  const h1Id = h1.lastInsertRowid as number;
+  for (const b of [
+    { name: 'Bay1', width: 14, depth: 20, height: 8 },
+    { name: 'Bay2', width: 14, depth: 20, height: 8 },
+    { name: 'Bay3', width: 14, depth: 20, height: 8 },
+    { name: 'Bay4', width: 14, depth: 20, height: 8 },
+  ]) {
+    insertBay.run(h1Id, b.name, b.width, b.depth, b.height);
+  }
+
+  // Transport Hangar: 3 larger bays for C-130/Chinook
+  const h2 = insertHangar.run(userId, 'Transport Hangar');
+  const h2Id = h2.lastInsertRowid as number;
+  for (const b of [
+    { name: 'BayA', width: 22, depth: 35, height: 14 },
+    { name: 'BayB', width: 22, depth: 35, height: 14 },
+    { name: 'BayC', width: 22, depth: 35, height: 14 },
+  ]) {
+    insertBay.run(h2Id, b.name, b.width, b.depth, b.height);
+  }
 }
 
 // Session operations

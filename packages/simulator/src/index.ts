@@ -17,7 +17,7 @@ export { buildExportModel } from './builders/export-model.js';
 
 // Types — validation & export
 export type { ValidationViolation, ValidationReport } from './types/validation.js';
-export type { ExportedInduction, ExportModel, ExportedUnscheduledAuto } from './types/export.js';
+export type { ExportedInduction, ExportModel, ExportedUnscheduledAuto, HangarStatistic, GlobalSimulationStatistics } from './types/export.js';
 export type { EffectiveDimensions } from './types/dimensions.js';
 export type { InductionInfo, ConflictInfo } from './types/conflict.js';
 export type { ScheduledInduction } from './types/simulation.js';

@@ -27,7 +27,7 @@ export function createTimelinePage(): string {
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
               </svg>
-              Back to Schedule
+              Back to Dashboard
             </button>
             <button id="refresh-timeline" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,14 +161,14 @@ function renderTimelineView(): void {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
         <p class="text-slate-400 mb-4">No scheduled aircraft to display</p>
-        <button id="go-to-schedule" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors">
-          Go to Schedule Page
+        <button id="go-to-dashboard" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors">
+          Go to Dashboard
         </button>
       </div>
     `;
 
-    document.getElementById('go-to-schedule')?.addEventListener('click', () => {
-      router.navigate('schedule');
+    document.getElementById('go-to-dashboard')?.addEventListener('click', () => {
+      router.navigate('dashboard');
     });
     return;
   }
@@ -229,7 +229,7 @@ async function loadData(): Promise<void> {
 
 export async function attachTimelinePageListeners(): Promise<void> {
   document.getElementById('back-to-schedule')?.addEventListener('click', () => {
-    router.navigate('schedule');
+    router.navigate('dashboard');
   });
 
   document.getElementById('refresh-timeline')?.addEventListener('click', async () => {

@@ -50,6 +50,38 @@ airfield AnalyzeField {
 
 const SYNTAX_ERROR_DSL = `airfield { }`;
 
+/**
+ * Two auto-inductions compete for one bay. The second must wait for
+ * the first to depart before it can be placed.
+ */
+const WAITING_DSL = `
+airfield WaitField {
+    aircraft Cessna {
+        wingspan 11.0 m
+        length    8.3 m
+        height    2.7 m
+    }
+    hangar AlphaHangar {
+        doors {
+            door MainDoor { width 15.0 m height 5.0 m }
+        }
+        grid baygrid {
+            bay Bay1 { width 12.0 m depth 10.0 m height 5.0 m }
+        }
+    }
+    auto-induct id "AUTO_A" Cessna
+        duration 60 minutes
+        prefer AlphaHangar
+        notBefore 2030-06-01T08:00
+        notAfter  2030-06-10T18:00;
+    auto-induct id "AUTO_B" Cessna
+        duration 60 minutes
+        prefer AlphaHangar
+        notBefore 2030-06-01T08:00
+        notAfter  2030-06-10T18:00;
+}
+`;
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -89,5 +121,92 @@ describe('POST /api/analyse — valid clean DSL', () => {
     test('exportModel carries the correct airfield name', async () => {
         const res = await agent.post('/api/analyse').send({ dslCode: CLEAN_DSL });
         expect(res.body.exportModel?.airfieldName).toBe('AnalyzeField');
+    });
+});
+
+describe('POST /api/analyse — simulation enrichment fields', () => {
+    test('auto-inductions have per-induction simulation fields', async () => {
+        const res = await agent.post('/api/analyse').send({ dslCode: WAITING_DSL });
+        expect(res.status).toBe(200);
+
+        const scheduled = res.body.exportModel?.autoSchedule?.scheduled;
+        expect(scheduled).toBeDefined();
+        expect(scheduled.length).toBe(2);
+
+        // First induction placed immediately
+        const first = scheduled.find((s: any) => s.id === 'AUTO_A');
+        expect(first).toBeDefined();
+        expect(first).toHaveProperty('requestedStart');
+        expect(first).toHaveProperty('actualStart');
+        expect(first).toHaveProperty('scheduledEnd');
+        expect(first).toHaveProperty('actualEnd');
+        expect(typeof first.waitTime).toBe('number');
+        expect(typeof first.departureDelay).toBe('number');
+        expect(typeof first.placementAttempts).toBe('number');
+        expect(first.placementAttempts).toBeGreaterThanOrEqual(1);
+        // waitReason and queuePosition may be null if placed immediately
+        expect(first).toHaveProperty('waitReason');
+        expect(first).toHaveProperty('queuePosition');
+    });
+
+    test('waiting induction has non-zero waitTime and waitReason', async () => {
+        const res = await agent.post('/api/analyse').send({ dslCode: WAITING_DSL });
+        const scheduled = res.body.exportModel?.autoSchedule?.scheduled;
+
+        // Second induction should have waited (only 1 bay for 2 autos)
+        const second = scheduled.find((s: any) => s.id === 'AUTO_B');
+        expect(second).toBeDefined();
+        expect(second.waitTime).toBeGreaterThan(0);
+        expect(second.waitReason).toBeTruthy();
+        expect(typeof second.waitReason).toBe('string');
+        expect(second.placementAttempts).toBeGreaterThan(1);
+        expect(second.queuePosition).toBeGreaterThanOrEqual(0);
+    });
+
+    test('response includes hangarStatistics', async () => {
+        const res = await agent.post('/api/analyse').send({ dslCode: WAITING_DSL });
+        const hangarStats = res.body.exportModel?.hangarStatistics;
+        expect(hangarStats).toBeDefined();
+        expect(hangarStats).toHaveProperty('AlphaHangar');
+
+        const alpha = hangarStats.AlphaHangar;
+        expect(alpha.totalBays).toBe(1);
+        expect(alpha.inductionsServed).toBeGreaterThanOrEqual(2);
+        expect(alpha.peakOccupancy).toBeGreaterThanOrEqual(1);
+        expect(alpha.peakOccupancyTime).toBeTruthy();
+    });
+
+    test('response includes simulationStatistics', async () => {
+        const res = await agent.post('/api/analyse').send({ dslCode: WAITING_DSL });
+        const simStats = res.body.exportModel?.simulationStatistics;
+        expect(simStats).toBeDefined();
+
+        expect(simStats).toHaveProperty('simulationWindow');
+        expect(simStats.simulationWindow).toHaveProperty('start');
+        expect(simStats.simulationWindow).toHaveProperty('end');
+        expect(typeof simStats.totalAircraftProcessed).toBe('number');
+        expect(simStats.totalAircraftProcessed).toBe(2);
+        expect(typeof simStats.totalWaitTime).toBe('number');
+        expect(simStats.totalWaitTime).toBeGreaterThan(0);
+        expect(typeof simStats.avgWaitTime).toBe('number');
+        expect(typeof simStats.maxWaitTime).toBe('number');
+        expect(simStats.maxWaitInduction).toBe('AUTO_B');
+        expect(simStats.failedInductions).toBe(0);
+        expect(typeof simStats.maxQueueDepth).toBe('number');
+    });
+
+    test('merged inductions array also has simulation fields', async () => {
+        const res = await agent.post('/api/analyse').send({ dslCode: WAITING_DSL });
+        const inductions = res.body.exportModel?.inductions;
+        const autoInds = inductions.filter((i: any) => i.kind === 'auto');
+
+        expect(autoInds.length).toBe(2);
+        for (const ind of autoInds) {
+            expect(ind).toHaveProperty('requestedStart');
+            expect(ind).toHaveProperty('actualStart');
+            expect(ind).toHaveProperty('scheduledEnd');
+            expect(ind).toHaveProperty('actualEnd');
+            expect(typeof ind.placementAttempts).toBe('number');
+        }
     });
 });

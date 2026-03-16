@@ -48,7 +48,7 @@ export function createDashboardPage(): string {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           ${createActionCard('Add Aircraft', 'Define a new aircraft with dimensions', 'aircraft-form', 'cyan', 'M12 6v6m0 0v6m0-6h6m-6 0H6')}
           ${createActionCard('Add Hangar', 'Create a hangar with bays', 'hangar-form', 'blue', 'M12 6v6m0 0v6m0-6h6m-6 0H6')}
-          ${createActionCard('Schedule', 'Plan aircraft storage', 'schedule', 'indigo', 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z')}
+          ${createActionCard('Schedule', 'Manage induction schedule', 'schedule', 'indigo', 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z')}
         </div>
 
         <!-- Management Sections -->

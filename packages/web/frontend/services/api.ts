@@ -2,15 +2,33 @@ import type {
     ValidationReport,
     ExportModel,
     ParseResult,
-    LegacySimulationResult
+    LegacySimulationResult,
+    SimulationEventRecord,
 } from '../types/api';
 
 const API_BASE = 'http://localhost:3000/api';
 
+export interface SimulationStats {
+    simulatedDuration: number;
+    totalEvents: number;
+    totalAutoInductions: number;
+    placedCount: number;
+    failedCount: number;
+    maxQueueDepth: number;
+    totalWaitTime: number;
+    totalDepartureDelay: number;
+    deadlockCount: number;
+    avgUtilisation: number;
+    peakOccupancy: number;
+    utilisationByHangar: Record<string, number>;
+}
+
 export interface AnalysisResult {
     report: ValidationReport;
     exportModel: ExportModel;
-    langiumDiagnostics?: ParseError[];  // Langium validation diagnostics (non-fatal)
+    langiumDiagnostics?: ParseError[];
+    simulationLog?: SimulationEventRecord[];
+    simulationStats?: SimulationStats;
 }
 
 export interface ParseError {

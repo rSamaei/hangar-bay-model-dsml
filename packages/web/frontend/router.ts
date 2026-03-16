@@ -45,7 +45,6 @@ class Router {
     };
   }
 
-  // Initialize from URL hash
   initFromHash(): void {
     const hash = window.location.hash.slice(1) || 'home';
     const validRoutes: Route[] = ['home', 'login', 'dashboard', 'aircraft', 'aircraft-form', 'hangars', 'hangar-form', 'schedule', 'timeline', 'editor', 'results'];
