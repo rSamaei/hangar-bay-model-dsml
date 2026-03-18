@@ -3,6 +3,7 @@ import {
   getAircraft, createAircraft, updateAircraft, deleteAircraft,
   type Aircraft, type CreateAircraftData,
 } from '../services/aircraft-api';
+import { useNotification } from '../context/NotificationContext';
 
 type View = 'list' | 'form';
 
@@ -129,6 +130,7 @@ function AircraftForm({
 }
 
 export function AircraftPage() {
+  const { showToast } = useNotification();
   const [view, setView] = useState<View>('list');
   const [editing, setEditing] = useState<Aircraft | null>(null);
   const [list, setList] = useState<Aircraft[]>([]);
@@ -137,8 +139,8 @@ export function AircraftPage() {
   async function load() {
     try {
       setList(await getAircraft());
-    } catch (err) {
-      console.error('Failed to load aircraft:', err);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to load aircraft', 'error');
     } finally {
       setLoading(false);
     }
@@ -157,7 +159,7 @@ export function AircraftPage() {
       await deleteAircraft(id);
       setList(l => l.filter(a => a.id !== id));
     } catch (err: any) {
-      alert(err.message || 'Failed to delete aircraft');
+      showToast(err.message || 'Failed to delete aircraft', 'error');
     }
   }
 

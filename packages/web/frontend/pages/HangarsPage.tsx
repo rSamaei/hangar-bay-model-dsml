@@ -3,6 +3,7 @@ import {
   getHangars, createHangar, updateHangar, deleteHangar,
   type Hangar, type CreateHangarData, type CreateBayData,
 } from '../services/hangars-api';
+import { useNotification } from '../context/NotificationContext';
 
 type View = 'list' | 'form';
 
@@ -169,6 +170,7 @@ function HangarForm({
 }
 
 export function HangarsPage() {
+  const { showToast } = useNotification();
   const [view, setView] = useState<View>('list');
   const [editing, setEditing] = useState<Hangar | null>(null);
   const [list, setList] = useState<Hangar[]>([]);
@@ -177,8 +179,8 @@ export function HangarsPage() {
   async function load() {
     try {
       setList(await getHangars());
-    } catch (err) {
-      console.error('Failed to load hangars:', err);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to load hangars', 'error');
     } finally {
       setLoading(false);
     }
@@ -197,7 +199,7 @@ export function HangarsPage() {
       await deleteHangar(id);
       setList(l => l.filter(h => h.id !== id));
     } catch (err: any) {
-      alert(err.message || 'Failed to delete hangar');
+      showToast(err.message || 'Failed to delete hangar', 'error');
     }
   }
 

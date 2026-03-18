@@ -1,4 +1,6 @@
 import type { DiagnosticItem } from './useValidation';
+import type { AnalysisResult } from '../../services/api';
+import { ScheduleTab } from './ScheduleTab';
 
 const SEVERITY_ICON: Record<number, { path: string; color: string; label: string }> = {
   1: { path: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-red-400',   label: 'Error' },
@@ -21,8 +23,9 @@ interface Props {
   activeTab: 'problems' | 'schedule';
   onTabChange: (tab: 'problems' | 'schedule') => void;
   onDiagnosticClick: (line: number) => void;
-  onAnalyze: () => void;
-  analyzing: boolean;
+  onPanelAnalyze: () => void;
+  panelAnalyzing: boolean;
+  scheduleResult: AnalysisResult | null;
 }
 
 export function ProblemsPanel({
@@ -32,8 +35,9 @@ export function ProblemsPanel({
   activeTab,
   onTabChange,
   onDiagnosticClick,
-  onAnalyze,
-  analyzing,
+  onPanelAnalyze,
+  panelAnalyzing,
+  scheduleResult,
 }: Props) {
   const errors   = diagnostics.filter(d => d.severity === 1).length;
   const warnings = diagnostics.filter(d => d.severity === 2).length;
@@ -81,20 +85,23 @@ export function ProblemsPanel({
             }`}
           >
             Schedule Results
+            {scheduleResult && (
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 flex-shrink-0" />
+            )}
           </button>
         </div>
 
-        {/* Analyze button */}
+        {/* Inline analyze button */}
         <button
-          onClick={onAnalyze}
-          disabled={analyzing}
+          onClick={onPanelAnalyze}
+          disabled={panelAnalyzing}
           className="px-3 py-1.5 text-xs font-semibold text-white rounded-lg bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 hover:from-cyan-400 hover:via-blue-400 hover:to-indigo-400 transition-all shadow-sm shadow-cyan-500/20 flex items-center gap-1.5 disabled:opacity-50"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          {analyzing ? 'Analyzing…' : 'Analyze'}
+          {panelAnalyzing ? 'Analyzing…' : 'Analyze'}
         </button>
       </div>
 
@@ -134,10 +141,13 @@ export function ProblemsPanel({
             </div>
           )
         ) : (
-          <div className="flex items-center justify-center h-full text-slate-500 text-xs p-4 text-center">
-            Click <strong className="text-slate-400 mx-1">Analyze</strong> in the panel or use the button below to see schedule results.
-            <br />Full schedule display will be added in Phase 4.
-          </div>
+          scheduleResult ? (
+            <ScheduleTab result={scheduleResult} />
+          ) : (
+            <div className="flex items-center justify-center h-full text-slate-500 text-xs p-4 text-center">
+              Click <strong className="text-slate-400 mx-1">Analyze</strong> in the panel above to see schedule results.
+            </div>
+          )
         )}
       </div>
     </div>

@@ -1,15 +1,15 @@
 import { Routes, Route } from 'react-router-dom';
-import { Layout } from './react-components/Layout';
-import { ProtectedRoute } from './react-components/ProtectedRoute';
-import { HomePage } from './react-pages/HomePage';
-import { LoginPage } from './react-pages/LoginPage';
-import { DashboardPage } from './react-pages/DashboardPage';
-import { AircraftPage } from './react-pages/AircraftPage';
-import { HangarsPage } from './react-pages/HangarsPage';
-import { SchedulePage } from './react-pages/SchedulePage';
-import { TimelinePage } from './react-pages/TimelinePage';
-import { EditorPage } from './react-pages/EditorPage';
-import { ResultsPage } from './react-pages/ResultsPage';
+import { Layout } from './components/Layout';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { HomePage } from './pages/HomePage';
+import { LoginPage } from './pages/LoginPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { AircraftPage } from './pages/AircraftPage';
+import { HangarsPage } from './pages/HangarsPage';
+import { SchedulePage } from './pages/SchedulePage';
+import { TimelinePage } from './pages/TimelinePage';
+import { EditorPage } from './pages/EditorPage';
+import { ResultsPage } from './pages/ResultsPage';
 
 export function App() {
   return (
