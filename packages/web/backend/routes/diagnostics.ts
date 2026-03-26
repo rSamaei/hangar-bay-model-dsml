@@ -51,6 +51,7 @@ router.post('/diagnostics', async (req, res) => {
       endLine:     e.endLine ?? e.line ?? 1,
       endColumn:   e.endColumn !== undefined ? e.endColumn : (e.column ?? 0) + 1,
       source: 'validator' as const,
+      data:        e.data,
     }));
 
     res.json({ diagnostics: [...parseItems, ...validateItems] });

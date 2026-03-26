@@ -48,7 +48,7 @@ interface ScheduleResult {
   schedulerDiagnostics?: SchedulerDiagnosticItem[];
 }
 
-function findAutoInductLine(dslCode: string, entryId: number): number {
+export function findAutoInductLine(dslCode: string, entryId: number): number {
   const lines = dslCode.split('\n');
   for (let i = 0; i < lines.length; i++) {
     if (lines[i].includes(`auto-induct id "entry_${entryId}"`)) return i + 1;
@@ -56,7 +56,7 @@ function findAutoInductLine(dslCode: string, entryId: number): number {
   return 1;
 }
 
-function formatSchedulerReason(aircraftName: string, reasonRuleId: string): string {
+export function formatSchedulerReason(aircraftName: string, reasonRuleId: string): string {
   switch (reasonRuleId) {
     case 'NO_SUITABLE_BAY_SET':
       return `SCHED_NO_BAY: Cannot schedule ${aircraftName} — no bay combination fits the aircraft dimensions`;
@@ -414,7 +414,7 @@ async function computeSchedule(userId: number): Promise<ScheduleResult> {
 }
 
 // Extract placements from the scheduler result
-function extractPlacements(entries: ScheduleEntryWithDetails[], exportModel: ExportModel): ScheduledPlacement[] {
+export function extractPlacements(entries: ScheduleEntryWithDetails[], exportModel: ExportModel): ScheduledPlacement[] {
   const scheduled = exportModel.autoSchedule?.scheduled ?? [];
   const unscheduled = exportModel.autoSchedule?.unscheduled ?? [];
 

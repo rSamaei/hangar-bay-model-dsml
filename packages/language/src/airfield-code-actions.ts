@@ -35,16 +35,18 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         diagnostic: Diagnostic,
         document: LangiumDocument
     ): CodeAction[] {
+        const data = diagnostic.data as { ruleId?: string; evidence?: any } | undefined;
+        const ruleId = data?.ruleId;
+
+        if (ruleId === 'SFR12_BAY_FIT') return this.createBayFitWidthFix(diagnostic, document, data?.evidence);
+        if (ruleId === 'SFR13_CONTIGUITY') return this.createContiguityFix(diagnostic, document, data?.evidence);
+        if (ruleId === 'SFR25_BAY_COUNT') return this.createBayCountFix(diagnostic, document, data?.evidence);
+
+        // Legacy fallback: substring match on message (backward compatibility)
         const msg = diagnostic.message;
-        if (msg.includes('SFR13_CONTIGUITY')) {
-            return this.createContiguityFix(diagnostic, document);
-        }
-        if (msg.includes('SFR25_BAY_COUNT')) {
-            return this.createBayCountFix(diagnostic, document);
-        }
-        if (msg.includes('SFR12_BAY_FIT')) {
-            return this.createBayFitWidthFix(diagnostic, document);
-        }
+        if (msg.includes('SFR13_CONTIGUITY')) return this.createContiguityFix(diagnostic, document);
+        if (msg.includes('SFR25_BAY_COUNT')) return this.createBayCountFix(diagnostic, document);
+        if (msg.includes('SFR12_BAY_FIT')) return this.createBayFitWidthFix(diagnostic, document);
         return [];
     }
 
@@ -52,7 +54,7 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
     // SFR13: Contiguity fix
     // -------------------------------------------------------------------------
 
-    private createContiguityFix(diagnostic: Diagnostic, document: LangiumDocument): CodeAction[] {
+    private createContiguityFix(diagnostic: Diagnostic, document: LangiumDocument, _evidence?: any): CodeAction[] {
         const induction = this.findInductionAtDiagnostic(document, diagnostic);
         if (!induction) return [];
 
@@ -98,10 +100,27 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
      * Height and depth violations cannot be resolved by adding bays, so only
      * wingspan failures get a fix.
      */
-    private createBayFitWidthFix(diagnostic: Diagnostic, document: LangiumDocument): CodeAction[] {
+    private createBayFitWidthFix(
+        diagnostic: Diagnostic,
+        document: LangiumDocument,
+        evidence?: { effectiveWingspan?: number; bayWidth?: number; widthFits?: boolean; [key: string]: any }
+    ): CodeAction[] {
         // Only fix wingspan (width) violations — height/depth can't be resolved by adding bays
-        const wingspanMatch = diagnostic.message.match(/wingspan:\s*([\d.]+)m\s*>\s*([\d.]+)m/);
-        if (!wingspanMatch) return [];
+        let effectiveWingspan: number;
+        let bayWidth: number;
+
+        if (evidence !== undefined && evidence.effectiveWingspan !== undefined && evidence.bayWidth !== undefined) {
+            // Evidence-based path: check widthFits flag directly
+            if (evidence.widthFits !== false) return [];
+            effectiveWingspan = evidence.effectiveWingspan;
+            bayWidth = evidence.bayWidth;
+        } else {
+            // Legacy regex fallback
+            const wingspanMatch = diagnostic.message.match(/wingspan:\s*([\d.]+)m\s*>\s*([\d.]+)m/);
+            if (!wingspanMatch) return [];
+            effectiveWingspan = parseFloat(wingspanMatch[1]);
+            bayWidth = parseFloat(wingspanMatch[2]);
+        }
 
         const induction = this.findInductionAtDiagnostic(document, diagnostic);
         if (!induction) return [];
@@ -114,8 +133,6 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
             .filter((n): n is string => n !== undefined);
         if (assigned.length === 0) return [];
 
-        const effectiveWingspan = parseFloat(wingspanMatch[1]);
-        const bayWidth = parseFloat(wingspanMatch[2]);
         const needed = Math.ceil(effectiveWingspan / bayWidth) - assigned.length;
         if (needed <= 0) return [];
 
@@ -152,17 +169,27 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
     // SFR25: Bay count fix
     // -------------------------------------------------------------------------
 
-    private createBayCountFix(diagnostic: Diagnostic, document: LangiumDocument): CodeAction[] {
+    private createBayCountFix(
+        diagnostic: Diagnostic,
+        document: LangiumDocument,
+        evidence?: { effectiveMin?: number; assignedCount?: number; [key: string]: any }
+    ): CodeAction[] {
         const induction = this.findInductionAtDiagnostic(document, diagnostic);
         if (!induction) return [];
 
         const hangar = induction.hangar?.ref;
         if (!hangar) return [];
 
-        // Parse "requires at least N bays … but only M is/are assigned"
-        const match = diagnostic.message.match(/requires at least (\d+) bays.*?only (\d+)/);
-        if (!match) return [];
-        const needed = parseInt(match[1], 10) - parseInt(match[2], 10);
+        let needed: number;
+        if (evidence !== undefined && evidence.effectiveMin !== undefined && evidence.assignedCount !== undefined) {
+            // Evidence-based path: read values directly
+            needed = evidence.effectiveMin - evidence.assignedCount;
+        } else {
+            // Legacy regex fallback: parse "requires at least N bays … but only M is/are assigned"
+            const match = diagnostic.message.match(/requires at least (\d+) bays.*?only (\d+)/);
+            if (!match) return [];
+            needed = parseInt(match[1], 10) - parseInt(match[2], 10);
+        }
         if (needed <= 0) return [];
 
         const assigned = induction.bays

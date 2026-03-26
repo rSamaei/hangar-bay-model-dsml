@@ -333,6 +333,7 @@ function registerAirfieldLanguage(): void {
         message:     `[${m.code as string}] ${m.message}`,
         startLine:   m.startLineNumber,        // 1-based
         startColumn: m.startColumn - 1,        // Monaco 1-based → 0-based
+        data:        (m as any).data,          // LSP Diagnostic.data round-trip
       }));
 
       try {

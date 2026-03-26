@@ -47,7 +47,7 @@ router.post('/code-actions', async (req, res) => {
         textDocument: { uri: docUri },
         range: lspRange,
         context: {
-          diagnostics: [{ message: diag.message, severity: 1, range: lspRange }],
+          diagnostics: [{ message: diag.message, severity: 1, range: lspRange, data: diag.data }],
           only: undefined,
         },
       };

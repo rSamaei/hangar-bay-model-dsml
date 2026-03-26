@@ -27,26 +27,17 @@ export interface AnalysisResult {
  * The webapp should call ONLY this function.
  */
 export function analyseAndSchedule(model: Model): AnalysisResult {
-    console.log(`[analyseAndSchedule] Starting analysis for airfield: ${model.name}`);
-    console.log(`[analyseAndSchedule] Manual inductions: ${model.inductions.length}`);
-    console.log(`[analyseAndSchedule] Auto inductions: ${model.autoInductions.length}`);
-
     // Step 1: Run simulation if there are auto-inductions
     let scheduleResult = undefined;
     let simResult: SimulationResult | undefined;
     if (model.autoInductions.length > 0) {
-        console.log('[analyseAndSchedule] Running discrete-event simulation...');
         const simulator = new DiscreteEventSimulator(model);
         simResult = simulator.run();
 
         // Convert SimulationResult → legacy ScheduleResult for existing builders
         scheduleResult = toScheduleResult(simResult, model.autoInductions);
 
-        console.log(`[analyseAndSchedule] Scheduled: ${scheduleResult.scheduled.length}`);
-        console.log(`[analyseAndSchedule] Unscheduled: ${scheduleResult.unscheduled.length}`);
-
         if (scheduleResult.unscheduled.length > 0) {
-            console.log('[analyseAndSchedule] Unscheduled reasons:');
             for (const [id, reasons] of scheduleResult.rejectionReasons.entries()) {
                 console.log(`  - ${id}: ${reasons.map(r => r.ruleId).join(', ')}`);
             }
@@ -54,26 +45,15 @@ export function analyseAndSchedule(model: Model): AnalysisResult {
     }
 
     // Step 2: Build validation report (includes manual + scheduled autos + unscheduled failures)
-    console.log('[analyseAndSchedule] Building validation report...');
     const report = buildValidationReport(model, scheduleResult);
-    console.log(`[analyseAndSchedule] Total violations: ${report.summary.totalViolations}`);
-    console.log(`[analyseAndSchedule] Errors: ${report.summary.bySeverity.errors}, Warnings: ${report.summary.bySeverity.warnings}`);
 
     // Step 3: Build export model with all derived properties
-    console.log('[analyseAndSchedule] Building export model...');
     const exportModel = buildExportModel(model, scheduleResult);
-    console.log(`[analyseAndSchedule] Total inductions in export: ${exportModel.inductions.length}`);
-
-    if (exportModel.autoSchedule) {
-        console.log(`[analyseAndSchedule] Auto-schedule: ${exportModel.autoSchedule.scheduled.length} scheduled, ${exportModel.autoSchedule.unscheduled.length} unscheduled`);
-    }
 
     // Step 4: Enrich export model with simulation data (wait times, delays, summary)
     if (simResult) {
         enrichExportModelWithSimulation(exportModel, simResult, model);
     }
-
-    console.log('[analyseAndSchedule] Analysis complete');
 
     const result: AnalysisResult = {
         report,

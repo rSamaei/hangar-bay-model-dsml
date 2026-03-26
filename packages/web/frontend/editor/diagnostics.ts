@@ -16,6 +16,7 @@ export interface DiagnosticItem {
   endLine: number;     // 1-based
   endColumn: number;   // 0-based
   source: 'parser' | 'validator';
+  data?: unknown;      // LSP Diagnostic.data — passed through for code-action round-trip
 }
 
 interface DiagnosticsResponse {
@@ -46,7 +47,7 @@ function toMarker(d: DiagnosticItem): monaco.editor.IMarkerData {
   const code    = prefixMatch?.[1];
   const message = prefixMatch ? d.message.slice(prefixMatch[0].length) : d.message;
 
-  return {
+  const marker: monaco.editor.IMarkerData = {
     severity:        toMonacoSeverity(d.severity),
     message:         message.trim(),
     startLineNumber: d.startLine,
@@ -56,6 +57,10 @@ function toMarker(d: DiagnosticItem): monaco.editor.IMarkerData {
     code,
     source: d.source === 'parser' ? 'Airfield (parser)' : 'Airfield (validator)',
   };
+  if (d.data !== undefined) {
+    (marker as any).data = d.data;
+  }
+  return marker;
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────

@@ -97,6 +97,12 @@ describe('Code action: SFR12_BAY_FIT bay fit width fix', () => {
         const bayFitDiag = diagnostics.find(d => d.message.includes('SFR12_BAY_FIT'));
         expect(bayFitDiag).toBeDefined();
 
+        // Verify structured evidence is attached to the diagnostic
+        const diagData = bayFitDiag!.data as { ruleId?: string; evidence?: any } | undefined;
+        expect(diagData?.ruleId).toBe('SFR12_BAY_FIT');
+        expect(typeof diagData?.evidence?.effectiveWingspan).toBe('number');
+        expect(diagData?.evidence?.widthFits).toBe(false);
+
         const actions = getCodeActions(document, bayFitDiag!);
         expect(actions.length).toBeGreaterThanOrEqual(1);
 

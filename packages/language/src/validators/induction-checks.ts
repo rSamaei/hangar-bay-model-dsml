@@ -66,9 +66,12 @@ export function checkInductionFeasibility(induction: Induction, accept: Validati
                     { node: induction, property: 'bays' }
                 );
             } else {
+                const diagData = (result.ruleId === 'SFR12_BAY_FIT' || result.ruleId === 'SFR13_CONTIGUITY')
+                    ? { ruleId: result.ruleId, evidence: result.evidence }
+                    : undefined;
                 accept('error',
                     `[${result.ruleId}] ${result.message}`,
-                    { node: induction, property: getPropertyForRule(result.ruleId) }
+                    { node: induction, property: getPropertyForRule(result.ruleId), data: diagData }
                 );
             }
         }
@@ -214,7 +217,7 @@ export function checkBayCountSufficiency(induction: Induction, accept: Validatio
                 `[SFR25_BAY_COUNT] Aircraft '${aircraft.name}' requires at least ${effectiveMin} bays (longitudinal span)` +
                 ` (depths [${bayDepthsUsed.map(d => d.toFixed(2)).join(', ')}]m cover effective length ${effectiveLength.toFixed(2)}m)` +
                 ` but only ${bays.length} ${bays.length === 1 ? 'is' : 'are'} assigned`,
-                { node: induction, property: 'bays' }
+                { node: induction, property: 'bays', data: { ruleId: 'SFR25_BAY_COUNT', evidence: { effectiveMin, baysRequired, assignedCount: induction.bays.length, bayDepthsUsed } } }
             );
         }
     } else {
@@ -240,7 +243,7 @@ export function checkBayCountSufficiency(induction: Induction, accept: Validatio
                 `[SFR25_BAY_COUNT] Aircraft '${aircraft.name}' requires at least ${effectiveMin} bays` +
                 ` (widths [${bayWidthsUsed.map(w => w.toFixed(2)).join(', ')}]m cover effective wingspan ${effectiveWingspan.toFixed(2)}m)` +
                 ` but only ${bays.length} ${bays.length === 1 ? 'is' : 'are'} assigned`,
-                { node: induction, property: 'bays' }
+                { node: induction, property: 'bays', data: { ruleId: 'SFR25_BAY_COUNT', evidence: { effectiveMin, baysRequired, assignedCount: induction.bays.length, bayWidthsUsed } } }
             );
         }
     }

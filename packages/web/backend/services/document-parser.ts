@@ -10,6 +10,7 @@ export interface SerializedError {
   column?: number;
   endLine?: number;
   endColumn?: number;
+  data?: unknown;
 }
 
 export interface ParsedDocument {
@@ -65,7 +66,8 @@ export async function parseDocument(code: string): Promise<ParsedDocument> {
       line: diag.range?.start?.line !== undefined ? diag.range.start.line + 1 : undefined,
       column: diag.range?.start?.character,
       endLine: diag.range?.end?.line !== undefined ? diag.range.end.line + 1 : undefined,
-      endColumn: diag.range?.end?.character
+      endColumn: diag.range?.end?.character,
+      data: diag.data,
     });
   }
 

@@ -31,6 +31,7 @@ import {
 import { AirfieldGeneratedModule, AirfieldGeneratedSharedModule } from './generated/module.js';
 import { AirfieldValidator, registerValidationChecks } from './airfield-validator.js';
 import { AirfieldCodeActionProvider } from './airfield-code-actions.js';
+import { AirfieldHoverProvider } from './hover-provider.js';
 import { isModel, isAccessPath, isInduction } from './generated/ast.js';
 
 export type AirfieldAddedServices = {
@@ -49,7 +50,8 @@ export const AirfieldModule: Module<AirfieldServices, PartialLangiumServices & A
         ScopeProvider: (services) => new AirfieldScopeProvider(services)
     },
     lsp: {
-        CodeActionProvider: () => new AirfieldCodeActionProvider()
+        CodeActionProvider: () => new AirfieldCodeActionProvider(),
+        HoverProvider: (services) => new AirfieldHoverProvider(services)
     }
 };
 

@@ -450,6 +450,7 @@ export class DiscreteEventSimulator {
                 time: state.currentTime,
                 inductionId: event.inductionId,
                 aircraft: aircraft.name,
+                hangar: preferredHangar?.name,
                 reason: result.rejections.map(r => r.ruleId).join(', '),
             });
         }
