@@ -6,7 +6,7 @@
  */
 import { describe, expect, test, vi } from 'vitest';
 import type { ValidationAcceptor } from 'langium';
-import type { Induction, AutoInduction, HangarBay, Model } from '../../src/generated/ast.js';
+import type { Induction, HangarBay, Model } from '../../src/generated/ast.js';
 import {
     greedyBaysRequired,
     checkInductionTimeWindow,
