@@ -8,6 +8,7 @@ import {
   deleteAircraft,
   type Aircraft
 } from '../db/database.js';
+import { validateAircraftBody } from '../validators/aircraft-validator.js';
 
 const router = Router();
 
@@ -36,37 +37,17 @@ router.get('/aircraft/:id', requireAuth, (req: AuthenticatedRequest, res: Respon
 
 // POST /api/aircraft - Create new aircraft
 router.post('/aircraft', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const validation = validateAircraftBody(req.body, { requireAll: true });
+  if (!validation.valid) {
+    res.status(400).json({ error: validation.errors[0] });
+    return;
+  }
+
   const { name, wingspan, length, height, tailHeight } = req.body;
-
-  // Validation
-  if (!name || typeof name !== 'string' || name.trim().length === 0) {
-    res.status(400).json({ error: 'Aircraft name is required' });
-    return;
-  }
-
-  if (typeof wingspan !== 'number' || wingspan <= 0) {
-    res.status(400).json({ error: 'Wingspan must be a positive number' });
-    return;
-  }
-
-  if (typeof length !== 'number' || length <= 0) {
-    res.status(400).json({ error: 'Length must be a positive number' });
-    return;
-  }
-
-  if (typeof height !== 'number' || height <= 0) {
-    res.status(400).json({ error: 'Height must be a positive number' });
-    return;
-  }
-
-  if (typeof tailHeight !== 'number' || tailHeight <= 0) {
-    res.status(400).json({ error: 'Tail height must be a positive number' });
-    return;
-  }
 
   try {
     const aircraft = createAircraft(req.user!.id, {
-      name: name.trim(),
+      name: (name as string).trim(),
       wingspan,
       length,
       height,
@@ -91,49 +72,20 @@ router.put('/aircraft/:id', requireAuth, (req: AuthenticatedRequest, res: Respon
     return;
   }
 
-  const { name, wingspan, length, height, tailHeight } = req.body;
+  const validation = validateAircraftBody(req.body);
+  if (!validation.valid) {
+    res.status(400).json({ error: validation.errors[0] });
+    return;
+  }
 
+  const { name, wingspan, length, height, tailHeight } = req.body;
   const updates: Partial<Omit<Aircraft, 'id' | 'user_id' | 'created_at'>> = {};
 
-  if (name !== undefined) {
-    if (typeof name !== 'string' || name.trim().length === 0) {
-      res.status(400).json({ error: 'Aircraft name cannot be empty' });
-      return;
-    }
-    updates.name = name.trim();
-  }
-
-  if (wingspan !== undefined) {
-    if (typeof wingspan !== 'number' || wingspan <= 0) {
-      res.status(400).json({ error: 'Wingspan must be a positive number' });
-      return;
-    }
-    updates.wingspan = wingspan;
-  }
-
-  if (length !== undefined) {
-    if (typeof length !== 'number' || length <= 0) {
-      res.status(400).json({ error: 'Length must be a positive number' });
-      return;
-    }
-    updates.length = length;
-  }
-
-  if (height !== undefined) {
-    if (typeof height !== 'number' || height <= 0) {
-      res.status(400).json({ error: 'Height must be a positive number' });
-      return;
-    }
-    updates.height = height;
-  }
-
-  if (tailHeight !== undefined) {
-    if (typeof tailHeight !== 'number' || tailHeight <= 0) {
-      res.status(400).json({ error: 'Tail height must be a positive number' });
-      return;
-    }
-    updates.tail_height = tailHeight;
-  }
+  if (name !== undefined) updates.name = (name as string).trim();
+  if (wingspan !== undefined) updates.wingspan = wingspan;
+  if (length !== undefined) updates.length = length;
+  if (height !== undefined) updates.height = height;
+  if (tailHeight !== undefined) updates.tail_height = tailHeight;
 
   try {
     const aircraft = updateAircraft(id, req.user!.id, updates);

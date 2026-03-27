@@ -172,6 +172,21 @@ export function checkDoorFitPrecheck(induction: Induction, accept: ValidationAcc
 }
 
 /**
+ * Computes the minimum bays required for one axis and emits warnings if the
+ * induction under-declares. Extracted to eliminate lateral/longitudinal duplication.
+ */
+function computeAxisBaysRequired(
+    effectiveDim: number,
+    bayDims: number[],
+    label: string,          // 'lateral' | 'longitudinal' (for diagnostics)
+    dimLabel: string,       // 'widths' | 'depths'
+    dimUnit: string,        // 'wingspan' | 'length'
+): { min: number; axis: string; dimsUsed: number[] } {
+    const { count: min, used: dimsUsed } = greedyBaysRequired(bayDims, effectiveDim);
+    return { min, axis: label, dimsUsed };
+}
+
+/**
  * SFR25: Bay count sufficiency warning.
  *
  * Estimates the minimum number of bays required using a greedy approach:
@@ -194,58 +209,44 @@ export function checkBayCountSufficiency(induction: Induction, accept: Validatio
     const clearance = induction.clearance?.ref ?? aircraft.clearance?.ref;
     const isLongitudinal = induction.span === 'longitudinal';
 
-    if (isLongitudinal) {
-        const effectiveLength = aircraft.length + (clearance?.longitudinalMargin ?? 0);
-        if (effectiveLength <= 0) return;
+    // Axis-specific parameters
+    const effectiveDim = isLongitudinal
+        ? aircraft.length + (clearance?.longitudinalMargin ?? 0)
+        : aircraft.wingspan + (clearance?.lateralMargin ?? 0);
+    if (effectiveDim <= 0) return;
 
-        const { count: baysRequired, used: bayDepthsUsed } = greedyBaysRequired(
-            hangar.grid.bays.map(b => b.depth), effectiveLength
+    const bayDims = isLongitudinal
+        ? hangar.grid.bays.map(b => b.depth)
+        : hangar.grid.bays.map(b => b.width);
+    const dimLabel = isLongitudinal ? 'depths' : 'widths';
+    const dimUnit  = isLongitudinal ? 'length' : 'wingspan';
+    const axisLabel = isLongitudinal ? 'longitudinal span' : '';
+
+    const { min: baysRequired, dimsUsed } = computeAxisBaysRequired(
+        effectiveDim, bayDims, isLongitudinal ? 'longitudinal' : 'lateral', dimLabel, dimUnit,
+    );
+
+    const dimsStr = dimsUsed.map(d => d.toFixed(2)).join(', ');
+
+    if (induction.requires !== undefined && induction.requires < baysRequired) {
+        accept('warning',
+            `[SFR_BAY_COUNT_OVERRIDE] Aircraft '${aircraft.name}' requires at least ${baysRequired} bays` +
+            ` by geometry (${dimLabel} [${dimsStr}]m cover effective ${dimUnit} ${effectiveDim.toFixed(2)}m)` +
+            ` but 'requires ${induction.requires} bays' declares less. The geometric minimum will take precedence.`,
+            { node: induction, property: 'requires' }
         );
+    }
 
-        if (induction.requires !== undefined && induction.requires < baysRequired) {
-            accept('warning',
-                `[SFR_BAY_COUNT_OVERRIDE] Aircraft '${aircraft.name}' requires at least ${baysRequired} bays` +
-                ` by geometry (depths [${bayDepthsUsed.map(d => d.toFixed(2)).join(', ')}]m cover effective length ${effectiveLength.toFixed(2)}m)` +
-                ` but 'requires ${induction.requires} bays' declares less. The geometric minimum will take precedence.`,
-                { node: induction, property: 'requires' }
-            );
-        }
-
-        const effectiveMin = Math.max(baysRequired, induction.requires ?? 0);
-        if (bays.length < effectiveMin) {
-            accept('warning',
-                `[SFR25_BAY_COUNT] Aircraft '${aircraft.name}' requires at least ${effectiveMin} bays (longitudinal span)` +
-                ` (depths [${bayDepthsUsed.map(d => d.toFixed(2)).join(', ')}]m cover effective length ${effectiveLength.toFixed(2)}m)` +
-                ` but only ${bays.length} ${bays.length === 1 ? 'is' : 'are'} assigned`,
-                { node: induction, property: 'bays', data: { ruleId: 'SFR25_BAY_COUNT', evidence: { effectiveMin, baysRequired, assignedCount: induction.bays.length, bayDepthsUsed } } }
-            );
-        }
-    } else {
-        const effectiveWingspan = aircraft.wingspan + (clearance?.lateralMargin ?? 0);
-        if (effectiveWingspan <= 0) return;
-
-        const { count: baysRequired, used: bayWidthsUsed } = greedyBaysRequired(
-            hangar.grid.bays.map(b => b.width), effectiveWingspan
+    const effectiveMin = Math.max(baysRequired, induction.requires ?? 0);
+    if (bays.length < effectiveMin) {
+        const axisClause = axisLabel ? ` (${axisLabel})` : '';
+        const evidenceKey = isLongitudinal ? 'bayDepthsUsed' : 'bayWidthsUsed';
+        accept('warning',
+            `[SFR25_BAY_COUNT] Aircraft '${aircraft.name}' requires at least ${effectiveMin} bays${axisClause}` +
+            ` (${dimLabel} [${dimsStr}]m cover effective ${dimUnit} ${effectiveDim.toFixed(2)}m)` +
+            ` but only ${bays.length} ${bays.length === 1 ? 'is' : 'are'} assigned`,
+            { node: induction, property: 'bays', data: { ruleId: 'SFR25_BAY_COUNT', evidence: { effectiveMin, baysRequired, assignedCount: induction.bays.length, [evidenceKey]: dimsUsed } } }
         );
-
-        if (induction.requires !== undefined && induction.requires < baysRequired) {
-            accept('warning',
-                `[SFR_BAY_COUNT_OVERRIDE] Aircraft '${aircraft.name}' requires at least ${baysRequired} bays` +
-                ` by geometry (widths [${bayWidthsUsed.map(w => w.toFixed(2)).join(', ')}]m cover effective wingspan ${effectiveWingspan.toFixed(2)}m)` +
-                ` but 'requires ${induction.requires} bays' declares less. The geometric minimum will take precedence.`,
-                { node: induction, property: 'requires' }
-            );
-        }
-
-        const effectiveMin = Math.max(baysRequired, induction.requires ?? 0);
-        if (bays.length < effectiveMin) {
-            accept('warning',
-                `[SFR25_BAY_COUNT] Aircraft '${aircraft.name}' requires at least ${effectiveMin} bays` +
-                ` (widths [${bayWidthsUsed.map(w => w.toFixed(2)).join(', ')}]m cover effective wingspan ${effectiveWingspan.toFixed(2)}m)` +
-                ` but only ${bays.length} ${bays.length === 1 ? 'is' : 'are'} assigned`,
-                { node: induction, property: 'bays', data: { ruleId: 'SFR25_BAY_COUNT', evidence: { effectiveMin, baysRequired, assignedCount: induction.bays.length, bayWidthsUsed } } }
-            );
-        }
     }
 }
 

@@ -25,9 +25,10 @@ import {
     type AccessGraph,
 } from '../geometry/access.js';
 import type { EffectiveDimensions } from '../types/dimensions.js';
-import type {
-    SimulationState,
-    SimulationConfig,
+import {
+    bayKey,
+    type SimulationState,
+    type SimulationConfig,
     PlacementAttemptResult,
     PlacementRejection,
     DepartureAttemptResult,
@@ -276,7 +277,7 @@ export class PlacementEngine {
         state: SimulationState,
     ): boolean {
         for (const bayName of bayNames) {
-            const key = `${hangarName}::${bayName}`;
+            const key = bayKey(hangarName, bayName);
             const info = state.occupiedBays.get(key);
             if (info && info.endTime > start && info.startTime < end) {
                 return true;

@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
+import { validateScheduleEntry, validateScheduleEntries } from '../validators/schedule-validator.js';
 import {
   getScheduleEntriesByUser,
   createScheduleEntry,
@@ -10,25 +11,18 @@ import {
   getAircraftByUser,
   getHangarsByUser,
   getAircraftById,
-  type ScheduleEntryWithDetails
 } from '../db/database.js';
-import { parseDocument } from '../services/document-parser.js';
-import { analyseAndSchedule, type ExportModel } from '@airfield/simulator';
-import { generateDSLCode } from '../services/dsl-helpers.js';
+import {
+  generateDSLFromEntries,
+  computeSchedule as runSchedule,
+  extractPlacements as _extractPlacements,
+  type ScheduledPlacement,
+} from '../services/scheduling-service.js';
+
+// Re-export for backward compatibility with existing tests
+export { _extractPlacements as extractPlacements };
 
 const router = Router();
-
-// Type for scheduled placement result
-interface ScheduledPlacement {
-  entryId: number;
-  aircraftName: string;
-  hangar: string | null;
-  bays: string[];
-  start: string;
-  end: string;
-  status: 'scheduled' | 'failed';
-  failureReason?: string;
-}
 
 interface SchedulerDiagnosticItem {
   severity: number;
@@ -41,7 +35,7 @@ interface SchedulerDiagnosticItem {
 }
 
 interface ScheduleResult {
-  entries: ScheduleEntryWithDetails[];
+  entries: import('../db/database.js').ScheduleEntryWithDetails[];
   placements: ScheduledPlacement[];
   validationErrors: string[];
   dslCode?: string;
@@ -84,43 +78,15 @@ router.get('/schedule', requireAuth, async (req: AuthenticatedRequest, res: Resp
 
 // POST /api/schedule/entry - Add a single schedule entry
 router.post('/schedule/entry', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  const { aircraftId, startTime, endTime } = req.body;
   const userId = req.user!.id;
 
-  // Validation
-  if (typeof aircraftId !== 'number') {
-    res.status(400).json({ error: 'Aircraft ID is required' });
+  const validation = validateScheduleEntry(req.body);
+  if (!validation.valid) {
+    res.status(400).json({ error: validation.errors[0] });
     return;
   }
 
-  if (!startTime || typeof startTime !== 'string') {
-    res.status(400).json({ error: 'Start time is required' });
-    return;
-  }
-
-  if (!endTime || typeof endTime !== 'string') {
-    res.status(400).json({ error: 'End time is required' });
-    return;
-  }
-
-  // Validate dates
-  const start = new Date(startTime);
-  const end = new Date(endTime);
-
-  if (isNaN(start.getTime())) {
-    res.status(400).json({ error: 'Invalid start time format' });
-    return;
-  }
-
-  if (isNaN(end.getTime())) {
-    res.status(400).json({ error: 'Invalid end time format' });
-    return;
-  }
-
-  if (end <= start) {
-    res.status(400).json({ error: 'End time must be after start time' });
-    return;
-  }
+  const { aircraftId, startTime, endTime } = req.body;
 
   // Verify aircraft belongs to user
   const aircraft = getAircraftById(aircraftId, userId);
@@ -156,52 +122,21 @@ router.post('/schedule/entries', requireAuth, async (req: AuthenticatedRequest, 
     return;
   }
 
-  // Validate all entries
-  const validatedEntries: Array<{ aircraft_id: number; start_time: string; end_time: string }> = [];
+  const validation = validateScheduleEntries(entries);
+  if (!validation.valid) {
+    res.status(400).json({ error: validation.errors[0] });
+    return;
+  }
 
+  // Verify all aircraft belong to user and build DB records
+  const validatedEntries: Array<{ aircraft_id: number; start_time: string; end_time: string }> = [];
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
-
-    if (typeof entry.aircraftId !== 'number') {
-      res.status(400).json({ error: `Entry ${i + 1}: Aircraft ID is required` });
-      return;
-    }
-
-    if (!entry.startTime || typeof entry.startTime !== 'string') {
-      res.status(400).json({ error: `Entry ${i + 1}: Start time is required` });
-      return;
-    }
-
-    if (!entry.endTime || typeof entry.endTime !== 'string') {
-      res.status(400).json({ error: `Entry ${i + 1}: End time is required` });
-      return;
-    }
-
-    const start = new Date(entry.startTime);
-    const end = new Date(entry.endTime);
-
-    if (isNaN(start.getTime())) {
-      res.status(400).json({ error: `Entry ${i + 1}: Invalid start time format` });
-      return;
-    }
-
-    if (isNaN(end.getTime())) {
-      res.status(400).json({ error: `Entry ${i + 1}: Invalid end time format` });
-      return;
-    }
-
-    if (end <= start) {
-      res.status(400).json({ error: `Entry ${i + 1}: End time must be after start time` });
-      return;
-    }
-
-    // Verify aircraft belongs to user
     const aircraft = getAircraftById(entry.aircraftId, userId);
     if (!aircraft) {
       res.status(404).json({ error: `Entry ${i + 1}: Aircraft not found` });
       return;
     }
-
     validatedEntries.push({
       aircraft_id: entry.aircraftId,
       start_time: entry.startTime,
@@ -233,31 +168,11 @@ router.put('/schedule/entry/:id', requireAuth, async (req: AuthenticatedRequest,
     return;
   }
 
-  if (!startTime || typeof startTime !== 'string') {
-    res.status(400).json({ error: 'Start time is required' });
-    return;
-  }
-
-  if (!endTime || typeof endTime !== 'string') {
-    res.status(400).json({ error: 'End time is required' });
-    return;
-  }
-
-  const start = new Date(startTime);
-  const end   = new Date(endTime);
-
-  if (isNaN(start.getTime())) {
-    res.status(400).json({ error: 'Invalid start time format' });
-    return;
-  }
-
-  if (isNaN(end.getTime())) {
-    res.status(400).json({ error: 'Invalid end time format' });
-    return;
-  }
-
-  if (end <= start) {
-    res.status(400).json({ error: 'End time must be after start time' });
+  // Re-use validateScheduleEntry; supply dummy aircraftId=0 since PUT doesn't change aircraft
+  const timeValidation = validateScheduleEntry({ aircraftId: 0, startTime, endTime });
+  const timeErrors = timeValidation.errors.filter(e => !e.includes('Aircraft ID'));
+  if (timeErrors.length > 0) {
+    res.status(400).json({ error: timeErrors[0] });
     return;
   }
 
@@ -309,7 +224,7 @@ router.delete('/schedule/clear', requireAuth, (req: AuthenticatedRequest, res: R
   res.json({ entries: [], placements: [], validationErrors: [] });
 });
 
-// Core function: compute placements for all schedule entries
+// Core orchestrator: fetch DB records, call service, handle errors
 async function computeSchedule(userId: number): Promise<ScheduleResult> {
   const entries = getScheduleEntriesByUser(userId);
 
@@ -330,43 +245,28 @@ async function computeSchedule(userId: number): Promise<ScheduleResult> {
         start: e.start_time,
         end: e.end_time,
         status: 'failed' as const,
-        failureReason: 'No hangars defined'
+        failureReason: 'No hangars defined',
       })),
-      validationErrors: ['No hangars defined. Please add at least one hangar.']
+      validationErrors: ['No hangars defined. Please add at least one hangar.'],
     };
   }
 
   const aircraft = getAircraftByUser(userId);
-  const dslCode = generateDSLCode(userId, aircraft, hangars, entries);
+  const dslCode = generateDSLFromEntries(userId, aircraft, hangars, entries);
 
   try {
-    const parseResult = await parseDocument(dslCode);
+    const serviceResult = await runSchedule(dslCode, entries);
 
-    if (parseResult.hasParseErrors) {
+    if (serviceResult.parseErrors) {
       return {
         entries,
-        placements: entries.map(e => ({
-          entryId: e.id,
-          aircraftName: e.aircraft_name,
-          hangar: null,
-          bays: [],
-          start: e.start_time,
-          end: e.end_time,
-          status: 'failed' as const,
-          failureReason: 'DSL parse error'
-        })),
-        validationErrors: parseResult.parseErrors.map(e => e.message),
-        dslCode
+        placements: serviceResult.placements,
+        validationErrors: serviceResult.validationErrors,
+        dslCode,
       };
     }
 
-    // Run the scheduler
-    // model is non-null: hasParseErrors = (parseErrors.length > 0 || !model), so !hasParseErrors implies model is set
-    const analysisResult = analyseAndSchedule(parseResult.model!);
-
-    // Extract placements from the result
-    const placements = extractPlacements(entries, analysisResult.exportModel);
-    const validationErrors = analysisResult.report.violations.map(v => v.message);
+    const { placements, validationErrors } = serviceResult;
 
     // Build scheduler diagnostics for failed entries (pointing at their DSL lines)
     const failedPlacements = placements.filter(p => p.status === 'failed');
@@ -390,7 +290,7 @@ async function computeSchedule(userId: number): Promise<ScheduleResult> {
       entries: entries.filter(e => !failedEntryIds.has(e.id)),
       placements: placements.filter(p => p.status === 'scheduled'),
       validationErrors,
-      dslCode,  // full DSL including deleted entries so Langium diagnostics still fire
+      dslCode,
       schedulerDiagnostics,
     };
   } catch (error: any) {
@@ -405,47 +305,12 @@ async function computeSchedule(userId: number): Promise<ScheduleResult> {
         start: e.start_time,
         end: e.end_time,
         status: 'failed' as const,
-        failureReason: error.message || 'Scheduler error'
+        failureReason: error.message || 'Scheduler error',
       })),
       validationErrors: [error.message || 'Failed to run scheduler'],
-      dslCode
+      dslCode,
     };
   }
-}
-
-// Extract placements from the scheduler result
-export function extractPlacements(entries: ScheduleEntryWithDetails[], exportModel: ExportModel): ScheduledPlacement[] {
-  const scheduled = exportModel.autoSchedule?.scheduled ?? [];
-  const unscheduled = exportModel.autoSchedule?.unscheduled ?? [];
-
-  return entries.map(entry => {
-    const entryIdPattern = `entry_${entry.id}`;
-    const scheduledMatch = scheduled.find(s => s.id === entryIdPattern);
-
-    if (scheduledMatch) {
-      return {
-        entryId: entry.id,
-        aircraftName: entry.aircraft_name,
-        hangar: scheduledMatch.hangar,
-        bays: scheduledMatch.bays,
-        start: scheduledMatch.start,
-        end: scheduledMatch.end,
-        status: 'scheduled' as const
-      };
-    }
-
-    const unscheduledMatch = unscheduled.find(u => u.id === entryIdPattern);
-    return {
-      entryId: entry.id,
-      aircraftName: entry.aircraft_name,
-      hangar: null,
-      bays: [],
-      start: entry.start_time,
-      end: entry.end_time,
-      status: 'failed' as const,
-      failureReason: unscheduledMatch?.reasonRuleId ?? 'SCHEDULING_FAILED'
-    };
-  });
 }
 
 export default router;

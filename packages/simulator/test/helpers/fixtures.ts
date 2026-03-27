@@ -159,3 +159,63 @@ export function mkModel(
         $type: 'Model'
     };
 }
+
+// ---------------------------------------------------------------------------
+// Access path mocks (used by PlacementEngine and corridor-fit tests)
+// ---------------------------------------------------------------------------
+
+export function mkAccessNode(
+    name: string,
+    width?: number,
+    height?: number
+) {
+    return { name, width, height, $type: 'AccessNode' as const };
+}
+
+export function mkAccessLink(
+    fromNode: any,
+    toNode: any,
+    bidirectional = false
+) {
+    return {
+        from: ref(fromNode),
+        to: ref(toNode),
+        bidirectional,
+        $type: 'AccessLink' as const,
+    };
+}
+
+export function mkAccessPath(
+    name: string,
+    nodes: ReturnType<typeof mkAccessNode>[] = [],
+    links: ReturnType<typeof mkAccessLink>[] = []
+) {
+    return { name, nodes, links, $type: 'AccessPath' as const };
+}
+
+// ---------------------------------------------------------------------------
+// SimulationState builder (used by PlacementEngine and event-handler tests)
+// ---------------------------------------------------------------------------
+
+import type { SimulationState } from '../../src/simulation/types.js';
+
+/**
+ * Builds a minimal `SimulationState` for use in simulation unit tests.
+ * All collections are empty and `currentTime` defaults to epoch ms for
+ * 2024-06-01T08:00:00Z. Pass `overrides` to customise any field.
+ */
+export function mkPlacementEngineState(
+    overrides: Partial<SimulationState> = {}
+): SimulationState {
+    return {
+        currentTime: Date.parse('2024-06-01T08:00:00Z'),
+        occupiedBays: new Map(),
+        waitingQueue: [],
+        pendingDepartures: [],
+        activeInductions: [],
+        completedInductions: [],
+        fixedOccupancy: [],
+        eventLog: [],
+        ...overrides,
+    };
+}

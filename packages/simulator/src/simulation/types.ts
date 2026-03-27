@@ -96,6 +96,14 @@ export interface SpatialCandidate {
 // State model — mutable simulation state
 // ============================================================
 
+/**
+ * Build the map key used for `SimulationState.occupiedBays`.
+ * Format: `"<hangarName>::<bayName>"`.
+ */
+export function bayKey(hangarName: string, bayName: string): string {
+    return `${hangarName}::${bayName}`;
+}
+
 /** Which bays are currently occupied and by whom. Key = "hangarName::bayName". */
 export interface OccupiedBayInfo {
     inductionId: string;

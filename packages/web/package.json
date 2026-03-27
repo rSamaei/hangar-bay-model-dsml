@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "npm run copy-examples && concurrently --names server,client --prefix-colors cyan,yellow \"tsx watch backend/server.ts\" \"vite\"",
-    "dev:server": "tsx watch backend/server.ts",
+    "dev": "npm run copy-examples && concurrently --names server,client --prefix-colors cyan,yellow \"tsx watch backend/start.ts\" \"vite\"",
+    "dev:server": "tsx watch backend/start.ts",
     "dev:client": "npm run copy-examples && vite",
     "build": "npm run copy-examples && npm run build:client && npm run build:server && npm run copy-examples-dist",
     "build:server": "tsc -p tsconfig.server.json && shx cp -r backend/data dist/data && shx mkdir -p dist/db && shx cp backend/db/schema.sql dist/db/",
@@ -12,7 +12,7 @@
     "copy-examples": "shx mkdir -p frontend/public/examples && shx cp -r ../../airfield-tests/examples/*.air frontend/public/examples/",
     "copy-examples-dist": "shx mkdir -p dist/client/examples && shx cp -r ../../airfield-tests/examples/*.air dist/client/examples/",
     "preview": "vite preview",
-    "start": "npm run build && node dist/server.js",
+    "start": "npm run build && node dist/start.js",
     "test": "vitest run"
   },
   "dependencies": {

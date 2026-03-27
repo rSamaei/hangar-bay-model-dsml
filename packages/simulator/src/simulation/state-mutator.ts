@@ -11,6 +11,7 @@ import { buildDepartureDelayReason } from './reason-builders.js';
 import type { PeakStats } from './result-builder.js';
 import {
     EVENT_PRIORITY,
+    bayKey,
     type SimulationConfig,
     type SimulationState,
     type ArrivalEvent,
@@ -68,7 +69,7 @@ export class StateMutator {
         queue: EventQueue,
     ): void {
         for (const bayName of result.bayNames) {
-            const key = `${result.hangarName}::${bayName}`;
+            const key = bayKey(result.hangarName, bayName);
             state.occupiedBays.set(key, {
                 inductionId,
                 aircraftName,
@@ -126,7 +127,7 @@ export class StateMutator {
     ): void {
         // Free bays
         for (const bayName of bayNames) {
-            state.occupiedBays.delete(`${hangarName}::${bayName}`);
+            state.occupiedBays.delete(bayKey(hangarName, bayName));
         }
 
         // Move from active to completed

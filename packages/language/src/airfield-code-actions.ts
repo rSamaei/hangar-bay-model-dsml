@@ -7,6 +7,60 @@ import { isInduction } from './generated/ast.js';
 import type { Induction } from './generated/ast.js';
 import { buildBayAdjacencyGraph } from './bay-adjacency.js';
 
+// ---------------------------------------------------------------------------
+// Shared bay-expansion fix helper
+// ---------------------------------------------------------------------------
+
+interface BayExpansionParams {
+    diagnostic: Diagnostic;
+    document: LangiumDocument;
+    induction: Induction;
+    candidateCount: number;
+    findCandidates: (assigned: Set<string>, adjacency: Map<string, Set<string>>) => string[];
+    titleSingular: (bayList: string) => string;
+    titlePlural: (bayList: string) => string;
+}
+
+function createBayExpansionFix(params: BayExpansionParams): CodeAction[] {
+    const { diagnostic, document, induction, findCandidates, titleSingular, titlePlural } = params;
+
+    const hangar = induction.hangar?.ref;
+    if (!hangar) return [];
+
+    const assigned = induction.bays
+        .map(b => b.ref?.name)
+        .filter((n): n is string => n !== undefined);
+    if (assigned.length === 0) return [];
+
+    const { adjacency } = buildBayAdjacencyGraph(hangar.grid);
+    const assignedSet = new Set(assigned);
+    const candidates = findCandidates(assignedSet, adjacency);
+    if (candidates.length === 0) return [];
+
+    const bays = induction.bays;
+    if (bays.length === 0) return [];
+    const insertPos = bays[bays.length - 1].$refNode?.range.end;
+    if (!insertPos) return [];
+
+    const bayList = candidates.map(b => `'${b}'`).join(', ');
+    const title = candidates.length === 1 ? titleSingular(bayList) : titlePlural(bayList);
+
+    return [{
+        title,
+        kind: CodeActionKind.QuickFix,
+        diagnostics: [diagnostic],
+        isPreferred: true,
+        edit: {
+            changes: {
+                [document.textDocument.uri]: [{
+                    range: { start: insertPos, end: insertPos },
+                    newText: ' ' + candidates.join(' '),
+                }]
+            }
+        }
+    }];
+}
+
 /**
  * Provides quick-fix code actions for two rules:
  *
@@ -58,36 +112,19 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         const induction = this.findInductionAtDiagnostic(document, diagnostic);
         if (!induction) return [];
 
-        const hangar = induction.hangar?.ref;
-        if (!hangar) return [];
-
         const assigned = induction.bays
             .map(b => b.ref?.name)
             .filter((n): n is string => n !== undefined);
         if (assigned.length < 2) return [];
 
-        const { adjacency } = buildBayAdjacencyGraph(hangar.grid);
-        const bridgingBays = this.findBridgingBays(assigned, adjacency);
-        if (bridgingBays.length === 0) return [];
-
-        const insertPos = this.insertionPosition(induction);
-        if (!insertPos) return [];
-
-        const bayList = bridgingBays.map(b => `'${b}'`).join(', ');
-        return [{
-            title: `Add ${bayList} to restore bay contiguity`,
-            kind: CodeActionKind.QuickFix,
-            diagnostics: [diagnostic],
-            isPreferred: true,
-            edit: {
-                changes: {
-                    [document.textDocument.uri]: [{
-                        range: { start: insertPos, end: insertPos },
-                        newText: ' ' + bridgingBays.join(' ')
-                    }]
-                }
-            }
-        }];
+        return createBayExpansionFix({
+            diagnostic, document, induction,
+            candidateCount: Infinity,
+            findCandidates: (_assignedSet, adjacency) =>
+                this.findBridgingBays(assigned, adjacency),
+            titleSingular: (bayList) => `Add ${bayList} to restore bay contiguity`,
+            titlePlural:   (bayList) => `Add ${bayList} to restore bay contiguity`,
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -105,17 +142,14 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         document: LangiumDocument,
         evidence?: { effectiveWingspan?: number; bayWidth?: number; widthFits?: boolean; [key: string]: any }
     ): CodeAction[] {
-        // Only fix wingspan (width) violations — height/depth can't be resolved by adding bays
         let effectiveWingspan: number;
         let bayWidth: number;
 
         if (evidence !== undefined && evidence.effectiveWingspan !== undefined && evidence.bayWidth !== undefined) {
-            // Evidence-based path: check widthFits flag directly
             if (evidence.widthFits !== false) return [];
             effectiveWingspan = evidence.effectiveWingspan;
             bayWidth = evidence.bayWidth;
         } else {
-            // Legacy regex fallback
             const wingspanMatch = diagnostic.message.match(/wingspan:\s*([\d.]+)m\s*>\s*([\d.]+)m/);
             if (!wingspanMatch) return [];
             effectiveWingspan = parseFloat(wingspanMatch[1]);
@@ -125,9 +159,6 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         const induction = this.findInductionAtDiagnostic(document, diagnostic);
         if (!induction) return [];
 
-        const hangar = induction.hangar?.ref;
-        if (!hangar) return [];
-
         const assigned = induction.bays
             .map(b => b.ref?.name)
             .filter((n): n is string => n !== undefined);
@@ -136,33 +167,16 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         const needed = Math.ceil(effectiveWingspan / bayWidth) - assigned.length;
         if (needed <= 0) return [];
 
-        const { adjacency } = buildBayAdjacencyGraph(hangar.grid);
-        const allBayNames = hangar.grid.bays.map(b => b.name);
-        const candidates = this.findAdjacentCandidateBays(assigned, adjacency, allBayNames, needed);
-        if (candidates.length === 0) return [];
+        const allBayNames = induction.hangar?.ref?.grid.bays.map(b => b.name) ?? [];
 
-        const insertPos = this.insertionPosition(induction);
-        if (!insertPos) return [];
-
-        const bayList = candidates.map(b => `'${b}'`).join(', ');
-        const label = candidates.length === 1
-            ? `Add bay ${bayList} to accommodate aircraft wingspan`
-            : `Add bays ${bayList} to accommodate aircraft wingspan`;
-
-        return [{
-            title: label,
-            kind: CodeActionKind.QuickFix,
-            diagnostics: [diagnostic],
-            isPreferred: true,
-            edit: {
-                changes: {
-                    [document.textDocument.uri]: [{
-                        range: { start: insertPos, end: insertPos },
-                        newText: ' ' + candidates.join(' ')
-                    }]
-                }
-            }
-        }];
+        return createBayExpansionFix({
+            diagnostic, document, induction,
+            candidateCount: needed,
+            findCandidates: (assignedSet, adjacency) =>
+                this.findAdjacentCandidateBays([...assignedSet], adjacency, allBayNames, needed),
+            titleSingular: (bayList) => `Add bay ${bayList} to accommodate aircraft wingspan`,
+            titlePlural:   (bayList) => `Add bays ${bayList} to accommodate aircraft wingspan`,
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -174,55 +188,29 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         document: LangiumDocument,
         evidence?: { effectiveMin?: number; assignedCount?: number; [key: string]: any }
     ): CodeAction[] {
-        const induction = this.findInductionAtDiagnostic(document, diagnostic);
-        if (!induction) return [];
-
-        const hangar = induction.hangar?.ref;
-        if (!hangar) return [];
-
         let needed: number;
         if (evidence !== undefined && evidence.effectiveMin !== undefined && evidence.assignedCount !== undefined) {
-            // Evidence-based path: read values directly
             needed = evidence.effectiveMin - evidence.assignedCount;
         } else {
-            // Legacy regex fallback: parse "requires at least N bays … but only M is/are assigned"
             const match = diagnostic.message.match(/requires at least (\d+) bays.*?only (\d+)/);
             if (!match) return [];
             needed = parseInt(match[1], 10) - parseInt(match[2], 10);
         }
         if (needed <= 0) return [];
 
-        const assigned = induction.bays
-            .map(b => b.ref?.name)
-            .filter((n): n is string => n !== undefined);
+        const induction = this.findInductionAtDiagnostic(document, diagnostic);
+        if (!induction) return [];
 
-        const { adjacency } = buildBayAdjacencyGraph(hangar.grid);
-        const allBayNames = hangar.grid.bays.map(b => b.name);
-        const candidates = this.findAdjacentCandidateBays(assigned, adjacency, allBayNames, needed);
-        if (candidates.length === 0) return [];
+        const allBayNames = induction.hangar?.ref?.grid.bays.map(b => b.name) ?? [];
 
-        const insertPos = this.insertionPosition(induction);
-        if (!insertPos) return [];
-
-        const bayList = candidates.map(b => `'${b}'`).join(', ');
-        const label = candidates.length === 1
-            ? `Add bay ${bayList} to meet wingspan requirement`
-            : `Add bays ${bayList} to meet wingspan requirement`;
-
-        return [{
-            title: label,
-            kind: CodeActionKind.QuickFix,
-            diagnostics: [diagnostic],
-            isPreferred: true,
-            edit: {
-                changes: {
-                    [document.textDocument.uri]: [{
-                        range: { start: insertPos, end: insertPos },
-                        newText: ' ' + candidates.join(' ')
-                    }]
-                }
-            }
-        }];
+        return createBayExpansionFix({
+            diagnostic, document, induction,
+            candidateCount: needed,
+            findCandidates: (assignedSet, adjacency) =>
+                this.findAdjacentCandidateBays([...assignedSet], adjacency, allBayNames, needed),
+            titleSingular: (bayList) => `Add bay ${bayList} to meet wingspan requirement`,
+            titlePlural:   (bayList) => `Add bays ${bayList} to meet wingspan requirement`,
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -243,17 +231,6 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         const leaf = CstUtils.findLeafNodeAtOffset(rootCst, offset);
         if (!leaf) return undefined;
         return AstUtils.getContainerOfType(leaf.astNode, isInduction);
-    }
-
-    /**
-     * Return the LSP Position immediately after the last bay reference token.
-     * New bay names are appended here, separated by a space.
-     */
-    private insertionPosition(induction: Induction): import('vscode-languageserver-types').Position | undefined {
-        const bays = induction.bays;
-        if (bays.length === 0) return undefined;
-        const lastRefNode = bays[bays.length - 1].$refNode;
-        return lastRefNode?.range.end;
     }
 
     // -------------------------------------------------------------------------

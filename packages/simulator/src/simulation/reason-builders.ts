@@ -10,6 +10,41 @@ import type {
     SimulationState,
 } from './types.js';
 
+// ---------------------------------------------------------------------------
+// Typed evidence interfaces per rule
+// ---------------------------------------------------------------------------
+
+interface TimeOverlapEvidence { bayNames?: string[] }
+interface DynamicReachabilityEvidence { unreachableNodeIds?: string[] }
+interface CorridorFitEvidence { corridorViolations?: string[] }
+
+// ---------------------------------------------------------------------------
+// Per-rule formatter registry
+// ---------------------------------------------------------------------------
+
+type RuleFormatter = (r: PlacementRejection, aircraftName: string) => string;
+
+const WAIT_REASON_FORMATTERS = new Map<string, RuleFormatter>([
+    ['SFR16_TIME_OVERLAP', (r) => {
+        const ev = r.evidence as TimeOverlapEvidence;
+        return `Bay set {${ev.bayNames?.join(', ') ?? '?'}} has time conflict in ${r.hangar ?? '?'}`;
+    }],
+    ['SFR11_DOOR_FIT', (r, aircraftName) =>
+        `No door in ${r.hangar ?? '?'} fits aircraft ${aircraftName}`
+    ],
+    ['NO_SUITABLE_BAY_SET', (r) =>
+        `No connected bay set large enough in ${r.hangar ?? '?'}`
+    ],
+    ['SFR_DYNAMIC_REACHABILITY', (r) => {
+        const ev = r.evidence as DynamicReachabilityEvidence;
+        return `Bays unreachable via access path in ${r.hangar ?? '?'} — blocked nodes: ${ev.unreachableNodeIds?.join(', ') ?? '?'}`;
+    }],
+    ['SFR_CORRIDOR_FIT', (r) => {
+        const ev = r.evidence as CorridorFitEvidence;
+        return `Aircraft too wide for corridor in ${r.hangar ?? '?'} — blocked at: ${ev.corridorViolations?.join(', ') ?? '?'}`;
+    }],
+]);
+
 /**
  * Build a structured wait reason from placement rejections.
  * Returns a human-readable, DSML-grounded explanation.
@@ -30,32 +65,8 @@ export function buildWaitReason(
     const parts: string[] = [];
     for (const [ruleId, rejs] of byRule) {
         const r = rejs[0];
-        const evidence = r.evidence as Record<string, any>;
-        switch (ruleId) {
-            case 'SFR16_TIME_OVERLAP': {
-                const bays = evidence.bayNames as string[] | undefined;
-                parts.push(`Bay set {${bays?.join(', ') ?? '?'}} has time conflict in ${r.hangar ?? '?'}`);
-                break;
-            }
-            case 'SFR11_DOOR_FIT':
-                parts.push(`No door in ${r.hangar ?? '?'} fits aircraft ${aircraftName}`);
-                break;
-            case 'NO_SUITABLE_BAY_SET':
-                parts.push(`No connected bay set large enough in ${r.hangar ?? '?'}`);
-                break;
-            case 'SFR_DYNAMIC_REACHABILITY': {
-                const unreachable = evidence.unreachableNodeIds as string[] | undefined;
-                parts.push(`Bays unreachable via access path in ${r.hangar ?? '?'} — blocked nodes: ${unreachable?.join(', ') ?? '?'}`);
-                break;
-            }
-            case 'SFR_CORRIDOR_FIT': {
-                const violations = evidence.corridorViolations as string[] | undefined;
-                parts.push(`Aircraft too wide for corridor in ${r.hangar ?? '?'} — blocked at: ${violations?.join(', ') ?? '?'}`);
-                break;
-            }
-            default:
-                parts.push(r.message);
-        }
+        const formatter = WAIT_REASON_FORMATTERS.get(ruleId);
+        parts.push(formatter ? formatter(r, aircraftName) : r.message);
     }
 
     return parts.join('; ');

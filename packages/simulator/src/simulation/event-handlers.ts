@@ -73,8 +73,8 @@ export class EventHandlers {
         this.tracker.incrementAttempts(event.inductionId);
 
         const durationMs = event.autoInduction.duration * MINUTES_TO_MS;
-        const clearance = (event.autoInduction.clearance?.ref ?? aircraft.clearance?.ref) as any;
-        const preferredHangar = event.autoInduction.preferredHangar?.ref as any;
+        const clearance = event.autoInduction.clearance?.ref ?? aircraft.clearance?.ref;
+        const preferredHangar = event.autoInduction.preferredHangar?.ref;
         const requires = event.autoInduction.requires;
 
         // Check deadline before attempting placement
@@ -93,7 +93,7 @@ export class EventHandlers {
         }
 
         const result = this.placementEngine.attemptPlacement(
-            event.inductionId, aircraft as any, clearance, durationMs,
+            event.inductionId, aircraft, clearance, durationMs,
             preferredHangar, requires, state, this.config,
         );
 
@@ -118,7 +118,7 @@ export class EventHandlers {
             const waiting: WaitingAircraft = {
                 inductionId: event.inductionId,
                 autoInduction: event.autoInduction,
-                aircraft: aircraft as any,
+                aircraft,
                 clearance,
                 requestedArrival: event.time,
                 deadline,
@@ -261,7 +261,7 @@ export class EventHandlers {
             waiting.placementAttempts = this.tracker.getAttempts(waiting.inductionId);
 
             const result = this.placementEngine.attemptPlacement(
-                waiting.inductionId, aircraft as any, waiting.clearance as any,
+                waiting.inductionId, aircraft, waiting.clearance,
                 durationMs, preferredHangar, requires, state, this.config,
             );
 

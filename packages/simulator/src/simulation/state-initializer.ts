@@ -10,6 +10,7 @@ import { calculateSearchWindow } from '../search/time-window.js';
 import { EventQueue } from './event-queue.js';
 import {
     EVENT_PRIORITY,
+    bayKey,
     type SimulationState,
     type FixedOccupancy,
     type OccupiedBayInfo,
@@ -103,7 +104,7 @@ function loadFixedOccupancy(
 
         // Mark bays as occupied
         for (const bayName of bayNames) {
-            const key = `${hangarName}::${bayName}`;
+            const key = bayKey(hangarName, bayName);
             const info: OccupiedBayInfo = {
                 inductionId,
                 aircraftName: aircraft.name,

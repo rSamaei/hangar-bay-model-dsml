@@ -16,6 +16,12 @@ export default defineConfig({
                 'packages/language/src/generated/**',
                 'packages/web/backend/db/**',
             ],
+            thresholds: {
+                statements: 85,
+                branches: 75,
+                functions: 85,
+                lines: 85,
+            },
         },
     },
 });
