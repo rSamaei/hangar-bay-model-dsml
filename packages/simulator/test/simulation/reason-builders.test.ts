@@ -178,4 +178,55 @@ describe('buildDepartureDelayReason', () => {
         const reason = buildDepartureDelayReason(event, ['unknown_blocker'], state);
         expect(reason).toContain('unknown_blocker');
     });
+
+    test('empty doorName falls back to "door"', () => {
+        const event = mkDepartureEvent(['Bay1'], '');
+        const state = emptyState();
+        const reason = buildDepartureDelayReason(event, [], state);
+        expect(reason).toContain('door');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// buildWaitReason — r.hangar undefined (??  '?' fallback on lines 30,33,36,40,44)
+// ---------------------------------------------------------------------------
+
+describe('buildWaitReason — hangar undefined fallback', () => {
+    function mkRejectionNoHangar(ruleId: string, evidence: object = {}): PlacementRejection {
+        return { ruleId, hangar: undefined, message: `[${ruleId}] failure`, evidence } as PlacementRejection;
+    }
+
+    test('SFR16_TIME_OVERLAP with hangar=undefined yields "?" in output', () => {
+        const r = mkRejectionNoHangar('SFR16_TIME_OVERLAP', { bayNames: ['Bay1'] });
+        const reason = buildWaitReason([r], 'Cessna');
+        expect(reason).toContain('?');
+    });
+
+    test('SFR11_DOOR_FIT with hangar=undefined yields "?" in output', () => {
+        const r = mkRejectionNoHangar('SFR11_DOOR_FIT');
+        const reason = buildWaitReason([r], 'Cessna');
+        expect(reason).toContain('?');
+    });
+
+    test('NO_SUITABLE_BAY_SET with hangar=undefined yields "?" in output', () => {
+        const r = mkRejectionNoHangar('NO_SUITABLE_BAY_SET');
+        const reason = buildWaitReason([r], 'Cessna');
+        expect(reason).toContain('?');
+    });
+
+    test('SFR_DYNAMIC_REACHABILITY with hangar=undefined and no nodeIds yields "?" twice', () => {
+        // Both r.hangar ?? '?' and ev.unreachableNodeIds?.join() ?? '?' hit fallback
+        const r = mkRejectionNoHangar('SFR_DYNAMIC_REACHABILITY', {});
+        const reason = buildWaitReason([r], 'Cessna');
+        expect(reason).toContain('?');
+        expect(reason).toContain('blocked nodes: ?');
+    });
+
+    test('SFR_CORRIDOR_FIT with hangar=undefined and no corridorViolations yields "?" twice', () => {
+        // Both r.hangar ?? '?' and ev.corridorViolations?.join() ?? '?' hit fallback
+        const r = mkRejectionNoHangar('SFR_CORRIDOR_FIT', {});
+        const reason = buildWaitReason([r], 'Cessna');
+        expect(reason).toContain('?');
+        expect(reason).toContain('blocked at: ?');
+    });
 });

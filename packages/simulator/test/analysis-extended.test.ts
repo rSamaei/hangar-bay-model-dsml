@@ -115,3 +115,52 @@ describe('analyzeAndSchedule — hangarStatistics queuedAtPeak', () => {
         expect(hs!.queuedAtPeak).toBe(0);
     });
 });
+
+// ---------------------------------------------------------------------------
+// exportUnscheduledAuto — export-model.ts lines 209, 211–212
+//
+// Line 209: auto.aircraft.ref?.name ?? 'unknown' — fires when aircraft.ref = undefined
+// Lines 211–212: first?.ruleId ?? 'SCHEDULING_FAILED' and first?.evidence ?? {...}
+//               — fire when rejections = [] (no hangars in model → no candidates)
+// ---------------------------------------------------------------------------
+
+describe('analyzeAndSchedule — exportUnscheduledAuto branches', () => {
+    test('unscheduled auto with null aircraft ref uses "unknown" aircraft name (line 209)', () => {
+        const nullRefAuto = {
+            id: 'NULL-REF-EXPORT',
+            aircraft: { ref: undefined, $refText: 'Ghost' },
+            preferredHangar: { ref: ONE_BAY_HANGAR, $refText: 'Alpha' },
+            duration: 60,
+            requires: undefined,
+            notBefore: undefined,
+            notAfter: undefined,
+            precedingInductions: [],
+            clearance: undefined,
+            $type: 'AutoInduction',
+        };
+        const model = mkModel([ONE_BAY_HANGAR], [], [nullRefAuto as any]);
+        const { exportModel } = analyzeAndSchedule(model);
+
+        // The auto ends up unscheduled (INVALID_AIRCRAFT_REF)
+        const unscheduled = exportModel.autoSchedule?.unscheduled ?? [];
+        const entry = unscheduled.find(u => u.id === 'NULL-REF-EXPORT');
+        expect(entry).toBeDefined();
+        // aircraft.ref?.name is undefined → ?? 'unknown' fires
+        expect(entry!.aircraft).toBe('unknown');
+    });
+
+    test('unscheduled auto with no hangars uses simulation adapter fallback reason', () => {
+        // Model with no hangars → simulator places auto in failedInductions with
+        // SIM_NEVER_PLACED reason → adapter's generic fallback sets the ruleId
+        const auto = mkAutoInduction('NO-HANGAR', CESSNA, undefined, 60);
+        const model = mkModel([], [], [auto as any]);
+        const { exportModel } = analyzeAndSchedule(model);
+
+        const unscheduled = exportModel.autoSchedule?.unscheduled ?? [];
+        const entry = unscheduled.find(u => u.id === 'NO-HANGAR');
+        expect(entry).toBeDefined();
+        // Adapter's generic fallback fires (SIM_NEVER_PLACED or similar)
+        expect(entry!.reasonRuleId).toBeTruthy();
+        expect(entry!.aircraft).toBe('Cessna172');
+    });
+});

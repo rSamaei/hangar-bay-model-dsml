@@ -289,3 +289,203 @@ describe('StateMutator.expireWaitingAircraft', () => {
         expect(expiredWaiting).toHaveLength(0);
     });
 });
+
+// ---------------------------------------------------------------------------
+// finalise — pendingDepartures (lines 307–315)
+//
+// Aircraft placed but departure blocked at sim-end → finalise completes them.
+// ---------------------------------------------------------------------------
+
+describe('StateMutator.finalise — pendingDepartures', () => {
+    test('pending departure at sim end is moved to completedInductions', () => {
+        const { mutator, tracker } = mkMutator();
+        const state = mkState(5000);
+
+        tracker.recordRequestedArrival('ind_1', 1000);
+        state.activeInductions.push({
+            id: 'ind_1', kind: 'auto', aircraftName: 'Cessna', hangarName: 'H1',
+            doorName: 'D1', bayNames: ['Bay1'], actualStart: 1000, scheduledEnd: 3000,
+            departureBlockedSince: 3000,
+        });
+        state.pendingDepartures.push({
+            inductionId: 'ind_1', aircraftName: 'Cessna', hangarName: 'H1',
+            bayNames: ['Bay1'], doorName: 'D1', durationExpiredAt: 3000, retryCount: 2,
+        });
+
+        mutator.finalise(state);
+
+        expect(state.activeInductions).toHaveLength(0);
+        expect(state.completedInductions).toHaveLength(1);
+        expect(state.completedInductions[0].id).toBe('ind_1');
+    });
+
+    test('pending departure with no matching active induction is silently skipped', () => {
+        const { mutator } = mkMutator();
+        const state = mkState(5000);
+
+        // No matching activeInduction → the if (activeIdx >= 0) branch is false
+        state.pendingDepartures.push({
+            inductionId: 'ghost', aircraftName: 'Ghost', hangarName: 'H1',
+            bayNames: ['Bay1'], doorName: 'D1', durationExpiredAt: 3000, retryCount: 1,
+        });
+
+        mutator.finalise(state);
+
+        expect(state.completedInductions).toHaveLength(0);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// logAndScheduleDepartureRetry — line 247: findEarliestBlockerEnd returns undefined
+//
+// When blockingIds is empty (no blockers found), findEarliestBlockerEnd returns
+// undefined, and the ?? fallback (state.currentTime + 1) is used as retryTime.
+// ---------------------------------------------------------------------------
+
+describe('StateMutator.logAndScheduleDepartureRetry — retryTime fallback (line 247)', () => {
+    test('empty blockingIds uses currentTime+1 as retryTime', () => {
+        const { mutator } = mkMutator();
+        const state = mkState(2000);
+        const queue = new EventQueue();
+
+        mutator.logAndScheduleDepartureRetry(
+            'ind_1', 'H1', ['Bay1'], [], state, queue, 'test reason',
+        );
+
+        const event = queue.pop();
+        expect(event?.kind).toBe('DEPARTURE_RETRY');
+        // No blockers → findEarliestBlockerEnd returns undefined → retryTime = 2000 + 1
+        expect(event?.time).toBe(2001);
+    });
+
+    test('blocker in occupiedBays with earlier endTime than activeInductions.scheduledEnd (lines 380–381)', () => {
+        const { mutator } = mkMutator();
+        const state = mkState(1000);
+        const queue = new EventQueue();
+
+        // blocker1 is in activeInductions with scheduledEnd=3000
+        state.activeInductions.push({
+            id: 'blocker1', kind: 'auto', aircraftName: 'Hawk', hangarName: 'H1',
+            doorName: 'D1', bayNames: ['Bay2'], actualStart: 0, scheduledEnd: 3000,
+            departureBlockedSince: null,
+        });
+        // blocker1 is ALSO in occupiedBays with endTime=1500 (earlier than 3000)
+        state.occupiedBays.set(bayKey('H1', 'Bay2'), {
+            inductionId: 'blocker1', aircraftName: 'Hawk', hangarName: 'H1',
+            bayNames: ['Bay2'], doorName: 'D1', startTime: 0, endTime: 1500, fixed: false,
+        });
+
+        mutator.logAndScheduleDepartureRetry(
+            'ind_1', 'H1', ['Bay1'], ['blocker1'], state, queue, 'blocked reason',
+        );
+
+        const event = queue.pop();
+        expect(event?.kind).toBe('DEPARTURE_RETRY');
+        // occupiedBays.endTime=1500 < activeInductions.scheduledEnd=3000
+        // → findEarliestBlockerEnd returns 1500
+        expect(event?.time).toBe(1500);
+    });
+
+    test('two blockers in activeInductions — second with smaller scheduledEnd wins (line 373)', () => {
+        const { mutator } = mkMutator();
+        const state = mkState(1000);
+        const queue = new EventQueue();
+
+        // blocker1 ends at 5000, blocker2 ends at 3000 (earlier)
+        state.activeInductions.push({
+            id: 'b1', kind: 'auto', aircraftName: 'Hawk', hangarName: 'H1',
+            doorName: 'D1', bayNames: ['BayA'], actualStart: 0, scheduledEnd: 5000,
+            departureBlockedSince: null,
+        });
+        state.activeInductions.push({
+            id: 'b2', kind: 'auto', aircraftName: 'Cessna', hangarName: 'H1',
+            doorName: 'D1', bayNames: ['BayB'], actualStart: 0, scheduledEnd: 3000,
+            departureBlockedSince: null,
+        });
+
+        mutator.logAndScheduleDepartureRetry(
+            'ind_1', 'H1', ['Bay1'], ['b1', 'b2'], state, queue, 'two blockers',
+        );
+
+        const event = queue.pop();
+        // b1.scheduledEnd=5000, then b2.scheduledEnd=3000 < 5000 → earliest=3000
+        expect(event?.time).toBe(3000);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// completeDeparture — lines 165–166: pendingDepartures loop continue branches
+//
+// Line 165: skip pending departure whose inductionId matches the completing id.
+// Line 166: skip pending departure in a different hangar.
+// The third entry (same hangar, different id) should get a DEPARTURE_RETRY.
+// ---------------------------------------------------------------------------
+
+describe('StateMutator.completeDeparture — pendingDepartures re-check continue branches', () => {
+    test('same-id pending is skipped (line 165), other-hangar is skipped (line 166), same-hangar gets retry', () => {
+        const { mutator, tracker } = mkMutator();
+        const state = mkState(3000);
+
+        tracker.recordRequestedArrival('ind_1', 1000);
+        state.activeInductions.push({
+            id: 'ind_1', kind: 'auto', aircraftName: 'Cessna', hangarName: 'H1',
+            doorName: 'D1', bayNames: ['Bay1'], actualStart: 1000, scheduledEnd: 3000,
+            departureBlockedSince: null,
+        });
+
+        // Entry 1: same inductionId as completing → line 165 continue
+        state.pendingDepartures.push({
+            inductionId: 'ind_1', aircraftName: 'Cessna', hangarName: 'H1',
+            bayNames: ['Bay1'], doorName: 'D1', durationExpiredAt: 2000, retryCount: 1,
+        });
+        // Entry 2: different hangar → line 166 continue
+        state.pendingDepartures.push({
+            inductionId: 'other', aircraftName: 'Hawk', hangarName: 'H2',
+            bayNames: ['Bay2'], doorName: 'D2', durationExpiredAt: 2000, retryCount: 0,
+        });
+        // Entry 3: same hangar, different id → gets DEPARTURE_RETRY
+        state.pendingDepartures.push({
+            inductionId: 'blocked', aircraftName: 'Lear', hangarName: 'H1',
+            bayNames: ['Bay3'], doorName: 'D1', durationExpiredAt: 2000, retryCount: 0,
+        });
+
+        const queue = new EventQueue();
+        mutator.completeDeparture('ind_1', 'H1', ['Bay1'], 'D1', 'auto', state, queue);
+
+        // Only 'blocked' should get a DEPARTURE_RETRY (others were skipped)
+        const retryEvents: any[] = [];
+        let ev;
+        while ((ev = queue.pop())) retryEvents.push(ev);
+        const departureRetries = retryEvents.filter(e => e.kind === 'DEPARTURE_RETRY');
+        expect(departureRetries).toHaveLength(1);
+        expect(departureRetries[0].inductionId).toBe('blocked');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// handleBlockedDeparture — line 209: active?.aircraftName ?? '' when active missing
+//
+// When the inductionId being blocked isn't in state.activeInductions, active is
+// undefined, and `active?.aircraftName ?? ''` uses the '' fallback.
+// ---------------------------------------------------------------------------
+
+describe('StateMutator.handleBlockedDeparture — active missing uses ?? empty string (line 209)', () => {
+    test('inductionId not in activeInductions → aircraftName defaults to empty string', () => {
+        const { mutator } = mkMutator();
+        const state = mkState(2000);
+        const queue = new EventQueue();
+
+        const event: any = {
+            kind: 'DEPARTURE', time: 2000, priority: 1,
+            inductionId: 'ghost', hangarName: 'H1', bayNames: ['Bay1'],
+            doorName: 'D1', fixed: false,
+        };
+
+        // 'ghost' is not in state.activeInductions → active = undefined → ?? '' fires
+        mutator.handleBlockedDeparture('ghost', 'H1', ['Bay1'], 'D1', event, [], state, queue);
+
+        const pending = state.pendingDepartures.find(p => p.inductionId === 'ghost')!;
+        expect(pending).toBeDefined();
+        expect(pending.aircraftName).toBe(''); // ?? '' fallback
+    });
+});

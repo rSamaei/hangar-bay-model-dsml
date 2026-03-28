@@ -181,6 +181,23 @@ describe('PUT /api/hangars/:id', () => {
       .send({ name: 'X', bays: VALID_BAYS });
     expect(res.status).toBe(400);
   });
+
+  test('returns 400 when bays array is invalid (parseBays error)', async () => {
+    const res = await agent.put('/api/hangars/1').set(AUTH)
+      .send({ name: 'Alpha', bays: [] });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/bay/i);
+  });
+
+  test('returns 409 on SQLITE_CONSTRAINT_UNIQUE during update', async () => {
+    const err: any = new Error('UNIQUE constraint failed');
+    err.code = 'SQLITE_CONSTRAINT_UNIQUE';
+    mockUpdate.mockImplementation(() => { throw err; });
+    const res = await agent.put('/api/hangars/1').set(AUTH)
+      .send({ name: 'Alpha', bays: VALID_BAYS });
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/already exists/i);
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -106,4 +106,15 @@ describe('checkBaySetFitEffective (SFR12)', () => {
         const result = checkBaySetFitEffective(mkDims(11, 8, 3), [mkBay('Bay1', 15, 20, 5)] as any, 'Cessna');
         expect(result.ruleId).toBe('SFR12_BAY_FIT');
     });
+
+    test('second bay narrower than first — bay.width < minWidth true branch fires (line 90)', () => {
+        // Bay1 width=15, Bay2 width=8: on Bay2 iteration 8 < 15 → limitingWidthBay updated.
+        // Use longitudinal span so minWidth (not sumWidth) is the width constraint,
+        // making the test outcome deterministic: minWidth(8) < wingspan(20) → fail.
+        const bays = [mkBay('Bay1', 15, 20, 5), mkBay('Bay2', 8, 20, 5)];
+        const result = checkBaySetFitEffective(mkDims(20, 15, 3), bays as any, 'Widebody', 'longitudinal');
+        expect(result.ok).toBe(false);
+        expect(result.evidence.limitingWidthBay).toBe('Bay2');
+        expect(result.evidence.minWidth).toBe(8);
+    });
 });

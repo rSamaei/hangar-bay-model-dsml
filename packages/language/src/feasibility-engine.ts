@@ -1,10 +1,3 @@
-/**
- * Core domain feasibility rules (SFR11–SFR16).
- *
- * Pure functions operating on AST types with no side effects or Langium
- * dependencies.  Used by both the language validators and the simulator as
- * the single source of truth for geometry and ownership checks.
- */
 import type {
     Hangar,
     HangarBay,
@@ -26,22 +19,39 @@ export interface ValidationReport {
     timestamp: string;
 }
 
+export interface EffectiveDimensions {
+    wingspan: number;
+    length: number;
+    height: number;
+}
+
+/** Compute aircraft dimensions enlarged by clearance margins. */
+export function computeEffectiveDimensions(
+    aircraft: AircraftType,
+    clearance?: ClearanceEnvelope
+): EffectiveDimensions {
+    return {
+        wingspan: aircraft.wingspan + (clearance?.lateralMargin ?? 0),
+        length: aircraft.length + (clearance?.longitudinalMargin ?? 0),
+        height: (aircraft.tailHeight ?? aircraft.height) + (clearance?.verticalMargin ?? 0),
+    };
+}
+
 /** SFR11: Check if aircraft fits through door with clearance. */
 export function checkDoorFit(
     aircraft: AircraftType,
     door: HangarDoor,
     clearance?: ClearanceEnvelope
 ): RuleResult {
-    const effectiveWingspan = aircraft.wingspan + (clearance?.lateralMargin ?? 0);
-    const effectiveHeight = (aircraft.tailHeight ?? aircraft.height) + (clearance?.verticalMargin ?? 0);
+    const eff = computeEffectiveDimensions(aircraft, clearance);
 
-    const wingspanFits = effectiveWingspan <= door.width;
-    const heightFits = effectiveHeight <= door.height;
+    const wingspanFits = eff.wingspan <= door.width;
+    const heightFits = eff.height <= door.height;
     const ok = wingspanFits && heightFits;
 
     const violations: string[] = [];
-    if (!wingspanFits) violations.push(`wingspan: ${effectiveWingspan.toFixed(2)}m > ${door.width}m`);
-    if (!heightFits) violations.push(`height: ${effectiveHeight.toFixed(2)}m > ${door.height}m`);
+    if (!wingspanFits) violations.push(`wingspan: ${eff.wingspan.toFixed(2)}m > ${door.width}m`);
+    if (!heightFits) violations.push(`height: ${eff.height.toFixed(2)}m > ${door.height}m`);
 
     return {
         ok,
@@ -54,8 +64,8 @@ export function checkDoorFit(
             doorName: door.name,
             doorWidth: door.width,
             doorHeight: door.height,
-            effectiveWingspan,
-            effectiveHeight,
+            effectiveWingspan: eff.wingspan,
+            effectiveHeight: eff.height,
             clearanceName: clearance?.name,
             wingspanFits,
             heightFits
@@ -69,19 +79,17 @@ export function checkBayFit(
     bay: HangarBay,
     clearance?: ClearanceEnvelope
 ): RuleResult {
-    const effectiveWingspan = aircraft.wingspan + (clearance?.lateralMargin ?? 0);
-    const effectiveLength = aircraft.length + (clearance?.longitudinalMargin ?? 0);
-    const effectiveHeight = (aircraft.tailHeight ?? aircraft.height) + (clearance?.verticalMargin ?? 0);
+    const eff = computeEffectiveDimensions(aircraft, clearance);
 
-    const widthFits = effectiveWingspan <= bay.width;
-    const depthFits = effectiveLength <= bay.depth;
-    const heightFits = effectiveHeight <= bay.height;
+    const widthFits = eff.wingspan <= bay.width;
+    const depthFits = eff.length <= bay.depth;
+    const heightFits = eff.height <= bay.height;
     const ok = widthFits && depthFits && heightFits;
 
     const violations: string[] = [];
-    if (!widthFits) violations.push(`wingspan: ${effectiveWingspan.toFixed(2)}m > ${bay.width}m`);
-    if (!depthFits) violations.push(`length: ${effectiveLength.toFixed(2)}m > ${bay.depth}m`);
-    if (!heightFits) violations.push(`height: ${effectiveHeight.toFixed(2)}m > ${bay.height}m`);
+    if (!widthFits) violations.push(`wingspan: ${eff.wingspan.toFixed(2)}m > ${bay.width}m`);
+    if (!depthFits) violations.push(`length: ${eff.length.toFixed(2)}m > ${bay.depth}m`);
+    if (!heightFits) violations.push(`height: ${eff.height.toFixed(2)}m > ${bay.height}m`);
 
     return {
         ok,
@@ -95,9 +103,9 @@ export function checkBayFit(
             bayWidth: bay.width,
             bayDepth: bay.depth,
             bayHeight: bay.height,
-            effectiveWingspan,
-            effectiveLength,
-            effectiveHeight,
+            effectiveWingspan: eff.wingspan,
+            effectiveLength: eff.length,
+            effectiveHeight: eff.height,
             clearanceName: clearance?.name,
             widthFits,
             depthFits,
@@ -106,11 +114,22 @@ export function checkBayFit(
     };
 }
 
+/** Find the bay with the minimum value for a dimension, returning the min and the bay name. */
+function findMinDimension(bays: HangarBay[], getter: (b: HangarBay) => number): { min: number; bayName: string } {
+    let min = getter(bays[0]);
+    let bayName = bays[0].name;
+    for (const bay of bays) {
+        const val = getter(bay);
+        if (val < min) { min = val; bayName = bay.name; }
+    }
+    return { min, bayName };
+}
+
 /**
  * SFR12_COMBINED: Check if aircraft fits the aggregate bay set.
- * - lateral:      sumWidth >= effectiveWingspan, minDepth >= effectiveLength
- * - longitudinal: sumDepth >= effectiveLength,  minWidth >= effectiveWingspan
- * Height check is always: minHeight >= effectiveTailHeight.
+ * Primary axis is summed (lateral: widths, longitudinal: depths).
+ * Secondary axis uses the minimum (lateral: min depth, longitudinal: min width).
+ * Height check always uses the minimum bay height.
  */
 export function checkBaySetFit(
     aircraft: AircraftType,
@@ -118,68 +137,54 @@ export function checkBaySetFit(
     clearance?: ClearanceEnvelope,
     span: string = 'lateral'
 ): RuleResult {
-    const effectiveWingspan = aircraft.wingspan + (clearance?.lateralMargin ?? 0);
-    const effectiveLength = aircraft.length + (clearance?.longitudinalMargin ?? 0);
-    const effectiveHeight = (aircraft.tailHeight ?? aircraft.height) + (clearance?.verticalMargin ?? 0);
-
-    const isLongitudinal = span === 'longitudinal';
+    const eff = computeEffectiveDimensions(aircraft, clearance);
+    const isLong = span === 'longitudinal';
     const bayNames = bays.map(b => b.name);
 
-    let minHeight = bays[0].height;
-    let limitingHeightBay = bays[0].name;
-    for (const bay of bays) {
-        if (bay.height < minHeight) { minHeight = bay.height; limitingHeightBay = bay.name; }
-    }
-    const heightFits = minHeight >= effectiveHeight;
-    const violations: string[] = [];
-    let primaryFits: boolean;
-    let secondaryFits: boolean;
-    let combinedTotal: number;
-    let evidence: Record<string, any>;
+    // Axis configuration: which dimension is summed vs which uses min
+    const primaryGetter   = isLong ? (b: HangarBay) => b.depth  : (b: HangarBay) => b.width;
+    const secondaryGetter = isLong ? (b: HangarBay) => b.width  : (b: HangarBay) => b.depth;
+    const primaryThreshold   = isLong ? eff.length   : eff.wingspan;
+    const secondaryThreshold = isLong ? eff.wingspan  : eff.length;
+    const primaryLabel   = isLong ? 'depth'  : 'width';
+    const secondaryLabel = isLong ? 'width'  : 'depth';
+    const primaryUnit    = isLong ? 'length' : 'wingspan';
+    const secondaryUnit  = isLong ? 'wingspan' : 'length';
 
-    if (isLongitudinal) {
-        combinedTotal = bays.reduce((s, b) => s + b.depth, 0);
-        let minWidth = bays[0].width;
-        let limitingWidthBay = bays[0].name;
-        for (const bay of bays) {
-            if (bay.width < minWidth) { minWidth = bay.width; limitingWidthBay = bay.name; }
-        }
-        primaryFits = combinedTotal >= effectiveLength;
-        secondaryFits = minWidth >= effectiveWingspan;
-        if (!primaryFits) violations.push(`sum depth ${combinedTotal.toFixed(2)}m < length ${effectiveLength.toFixed(2)}m`);
-        if (!secondaryFits) violations.push(`min width ${minWidth.toFixed(2)}m (${limitingWidthBay}) < wingspan ${effectiveWingspan.toFixed(2)}m`);
-        evidence = { bayNames, span, sumDepth: combinedTotal, minWidth, limitingWidthBay, minHeight, limitingHeightBay,
-            effectiveWingspan, effectiveLength, effectiveHeight,
-            depthFits: primaryFits, widthFits: secondaryFits, heightFits, violations };
-    } else {
-        combinedTotal = bays.reduce((s, b) => s + b.width, 0);
-        let minDepth = bays[0].depth;
-        let limitingDepthBay = bays[0].name;
-        for (const bay of bays) {
-            if (bay.depth < minDepth) { minDepth = bay.depth; limitingDepthBay = bay.name; }
-        }
-        primaryFits = combinedTotal >= effectiveWingspan;
-        secondaryFits = minDepth >= effectiveLength;
-        if (!primaryFits) violations.push(`sum width ${combinedTotal.toFixed(2)}m < wingspan ${effectiveWingspan.toFixed(2)}m`);
-        if (!secondaryFits) violations.push(`min depth ${minDepth.toFixed(2)}m (${limitingDepthBay}) < length ${effectiveLength.toFixed(2)}m`);
-        evidence = { bayNames, span, sumWidth: combinedTotal, minDepth, limitingDepthBay, minHeight, limitingHeightBay,
-            effectiveWingspan, effectiveLength, effectiveHeight,
-            widthFits: primaryFits, depthFits: secondaryFits, heightFits, violations };
-    }
-    if (!heightFits) violations.push(`min height ${minHeight.toFixed(2)}m (${limitingHeightBay}) < tail height ${effectiveHeight.toFixed(2)}m`);
+    const combinedTotal = bays.reduce((s, b) => s + primaryGetter(b), 0);
+    const secondary = findMinDimension(bays, secondaryGetter);
+    const height = findMinDimension(bays, b => b.height);
+
+    const primaryFits   = combinedTotal >= primaryThreshold;
+    const secondaryFits = secondary.min >= secondaryThreshold;
+    const heightFits    = height.min >= eff.height;
+
+    const violations: string[] = [];
+    if (!primaryFits) violations.push(`sum ${primaryLabel} ${combinedTotal.toFixed(2)}m < ${primaryUnit} ${primaryThreshold.toFixed(2)}m`);
+    if (!secondaryFits) violations.push(`min ${secondaryLabel} ${secondary.min.toFixed(2)}m (${secondary.bayName}) < ${secondaryUnit} ${secondaryThreshold.toFixed(2)}m`);
+    if (!heightFits) violations.push(`min height ${height.min.toFixed(2)}m (${height.bayName}) < tail height ${eff.height.toFixed(2)}m`);
 
     const ok = primaryFits && secondaryFits && heightFits;
-    const dimLabel = isLongitudinal ? 'length' : 'wingspan';
-    const dimVal = isLongitudinal ? effectiveLength : effectiveWingspan;
-    const axisLabel = isLongitudinal ? 'depth' : 'width';
+
+    const evidence: Record<string, any> = {
+        bayNames, span,
+        [`sum${primaryLabel.charAt(0).toUpperCase() + primaryLabel.slice(1)}`]: combinedTotal,
+        [`min${secondaryLabel.charAt(0).toUpperCase() + secondaryLabel.slice(1)}`]: secondary.min,
+        [`limiting${secondaryLabel.charAt(0).toUpperCase() + secondaryLabel.slice(1)}Bay`]: secondary.bayName,
+        minHeight: height.min, limitingHeightBay: height.bayName,
+        effectiveWingspan: eff.wingspan, effectiveLength: eff.length, effectiveHeight: eff.height,
+        widthFits: isLong ? secondaryFits : primaryFits,
+        depthFits: isLong ? primaryFits : secondaryFits,
+        heightFits, violations,
+    };
 
     return {
         ok,
         ruleId: 'SFR12_COMBINED',
         message: ok
             ? `Aircraft ${aircraft.name} fits in combined bay set [${bayNames.join(', ')}]`
-            : `Aircraft '${aircraft.name}' (effective ${dimLabel} ${dimVal.toFixed(2)}m) exceeds combined bay set ${axisLabel} (${combinedTotal.toFixed(2)}m) across bays [${bayNames.join(', ')}].`,
-        evidence: { ...evidence, violations }
+            : `Aircraft '${aircraft.name}' (effective ${primaryUnit} ${primaryThreshold.toFixed(2)}m) exceeds combined bay set ${primaryLabel} (${combinedTotal.toFixed(2)}m) across bays [${bayNames.join(', ')}].`,
+        evidence
     };
 }
 

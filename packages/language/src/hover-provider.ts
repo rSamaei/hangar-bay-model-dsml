@@ -1,9 +1,3 @@
-/**
- * Custom hover provider for the Airfield DSL.
- *
- * Shows computed derived properties (effective dimensions, bays required,
- * contiguity, clearance margins) when hovering over AST nodes in the editor.
- */
 import type { AstNode, MaybePromise, LangiumDocument } from 'langium';
 import { CstUtils } from 'langium';
 import { AstNodeHoverProvider } from 'langium/lsp';
@@ -13,7 +7,7 @@ import {
     isInduction, isAircraftType, isHangarBay, isClearanceEnvelope,
     type AircraftType, type ClearanceEnvelope, type Induction, type HangarBay
 } from './generated/ast.js';
-import { checkBayContiguity } from './feasibility-engine.js';
+import { checkBayContiguity, computeEffectiveDimensions } from './feasibility-engine.js';
 import { greedyBaysRequired } from './validators/induction-checks.js';
 
 export class AirfieldHoverProvider extends AstNodeHoverProvider {
@@ -52,13 +46,6 @@ export class AirfieldHoverProvider extends AstNodeHoverProvider {
         return undefined;
     }
 
-    private effectiveDims(aircraft: AircraftType, clearance?: ClearanceEnvelope) {
-        const ew = aircraft.wingspan + (clearance?.lateralMargin ?? 0);
-        const el = aircraft.length + (clearance?.longitudinalMargin ?? 0);
-        const eh = (aircraft.tailHeight ?? aircraft.height) + (clearance?.verticalMargin ?? 0);
-        return { ew, el, eh };
-    }
-
     private fmt(n: number): string {
         return n % 1 === 0 ? `${n}` : n.toFixed(2);
     }
@@ -68,21 +55,19 @@ export class AirfieldHoverProvider extends AstNodeHoverProvider {
         if (!aircraft) return undefined;
         const hangar = ind.hangar?.ref;
         const clearance = ind.clearance?.ref ?? aircraft.clearance?.ref;
-        const { ew, el, eh } = this.effectiveDims(aircraft, clearance);
+        const eff = computeEffectiveDimensions(aircraft, clearance);
         const span = ind.span ?? 'lateral';
         const bays = ind.bays.map(b => b.ref).filter((b): b is HangarBay => b !== undefined);
         const bayNames = bays.map(b => b.name);
 
-        // Bays required
         let baysRequired = 1;
         if (hangar && hangar.grid.bays.length > 0) {
             const isLong = span === 'longitudinal';
             const dims = hangar.grid.bays.map(b => isLong ? b.depth : b.width);
-            const threshold = isLong ? el : ew;
+            const threshold = isLong ? eff.length : eff.wingspan;
             baysRequired = greedyBaysRequired(dims, threshold).count;
         }
 
-        // Contiguity
         let connectivity = 'n/a';
         if (bays.length === 1) {
             connectivity = 'single bay';
@@ -98,7 +83,7 @@ export class AirfieldHoverProvider extends AstNodeHoverProvider {
 
         const lines = [
             `${label} (${aircraft.name})`,
-            `Effective: ${this.fmt(ew)}m × ${this.fmt(el)}m × ${this.fmt(eh)}m${clrName}`,
+            `Effective: ${this.fmt(eff.wingspan)}m × ${this.fmt(eff.length)}m × ${this.fmt(eff.height)}m${clrName}`,
             `Bays: ${bayNames.join(', ') || 'none'} (${bays.length} allocated, ${baysRequired} required) — ${connectivity}`,
             `Span: ${span} | Window: ${ind.start} → ${ind.end}`,
         ];
@@ -113,9 +98,9 @@ export class AirfieldHoverProvider extends AstNodeHoverProvider {
 
         const clearance = aircraft.clearance?.ref;
         if (clearance) {
-            const { ew, el, eh } = this.effectiveDims(aircraft, clearance);
+            const eff = computeEffectiveDimensions(aircraft, clearance);
             lines.push(`Clearance: ${clearance.name} (L:${this.fmt(clearance.lateralMargin)} / D:${this.fmt(clearance.longitudinalMargin)} / V:${this.fmt(clearance.verticalMargin)})`);
-            lines.push(`Effective: ${this.fmt(ew)}m × ${this.fmt(el)}m × ${this.fmt(eh)}m`);
+            lines.push(`Effective: ${this.fmt(eff.wingspan)}m × ${this.fmt(eff.length)}m × ${this.fmt(eff.height)}m`);
         }
         return lines.join('  \n');
     }

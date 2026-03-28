@@ -7,10 +7,6 @@ import { isInduction } from './generated/ast.js';
 import type { Induction } from './generated/ast.js';
 import { buildBayAdjacencyGraph } from './bay-adjacency.js';
 
-// ---------------------------------------------------------------------------
-// Shared bay-expansion fix helper
-// ---------------------------------------------------------------------------
-
 interface BayExpansionParams {
     diagnostic: Diagnostic;
     document: LangiumDocument;
@@ -81,10 +77,6 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         return result.length > 0 ? result : undefined;
     }
 
-    // -------------------------------------------------------------------------
-    // Dispatch
-    // -------------------------------------------------------------------------
-
     private createActionsForDiagnostic(
         diagnostic: Diagnostic,
         document: LangiumDocument
@@ -103,10 +95,6 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         if (msg.includes('SFR12_BAY_FIT')) return this.createBayFitWidthFix(diagnostic, document);
         return [];
     }
-
-    // -------------------------------------------------------------------------
-    // SFR13: Contiguity fix
-    // -------------------------------------------------------------------------
 
     private createContiguityFix(diagnostic: Diagnostic, document: LangiumDocument, _evidence?: any): CodeAction[] {
         const induction = this.findInductionAtDiagnostic(document, diagnostic);
@@ -127,16 +115,7 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         });
     }
 
-    // -------------------------------------------------------------------------
-    // SFR12: Bay fit width fix
-    // -------------------------------------------------------------------------
-
-    /**
-     * When the aircraft wingspan exceeds a single bay's width, offer to add
-     * enough adjacent bays so their combined width covers the aircraft.
-     * Height and depth violations cannot be resolved by adding bays, so only
-     * wingspan failures get a fix.
-     */
+    /** SFR12: Offer adjacent bays to cover wingspan (only width failures are fixable by adding bays). */
     private createBayFitWidthFix(
         diagnostic: Diagnostic,
         document: LangiumDocument,
@@ -179,10 +158,6 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         });
     }
 
-    // -------------------------------------------------------------------------
-    // SFR25: Bay count fix
-    // -------------------------------------------------------------------------
-
     private createBayCountFix(
         diagnostic: Diagnostic,
         document: LangiumDocument,
@@ -213,14 +188,6 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         });
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers: AST / CST navigation
-    // -------------------------------------------------------------------------
-
-    /**
-     * Find the Induction node that "owns" the diagnostic position.
-     * Walks up the CST leaf at the diagnostic start offset.
-     */
     private findInductionAtDiagnostic(
         document: LangiumDocument,
         diagnostic: Diagnostic
@@ -233,22 +200,7 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         return AstUtils.getContainerOfType(leaf.astNode, isInduction);
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers: Bridging bay search (for SFR13)
-    // -------------------------------------------------------------------------
-
-    /**
-     * Given an assigned set of bays that are NOT all connected, find the
-     * smallest set of currently-unassigned bays whose addition would connect
-     * the two disconnected components.
-     *
-     * Algorithm:
-     *  1. BFS within `assigned` only → componentA (reachable from assigned[0])
-     *  2. Identify the unreachable assigned bays (componentB targets)
-     *  3. BFS through the full hangar graph from componentA, traversing only
-     *     unassigned nodes as intermediates, until a target is reached
-     *  4. Reconstruct the path; return only the unassigned intermediate bays
-     */
+    /** BFS to find unassigned bays that bridge disconnected components of the assigned set. */
     private findBridgingBays(
         assigned: string[],
         adjacency: Map<string, Set<string>>
@@ -313,14 +265,7 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         return bridging;
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers: Adjacent candidate search (for SFR25)
-    // -------------------------------------------------------------------------
-
-    /**
-     * Find up to `count` unassigned bays adjacent to the currently assigned set.
-     * Uses BFS outward from the assigned frontier.
-     */
+    /** Find up to `count` unassigned bays adjacent to the assigned set via BFS. */
     private findAdjacentCandidateBays(
         assigned: string[],
         adjacency: Map<string, Set<string>>,

@@ -76,4 +76,13 @@ describe('calculateEffectiveDimensions', () => {
         expect(dims.height).toBeCloseTo(3.5);
         expect(dims.tailHeight).toBeCloseTo(3.5);
     });
+
+    test('aircraft without tailHeight field — ?? aircraft.height fallback fires (line 33)', () => {
+        // Direct mock without tailHeight — mkAircraft always sets tailHeight so we bypass it
+        const aircraftNoTail = { name: 'NoTail', wingspan: 10, length: 8, height: 3.5, $type: 'AircraftType' };
+        const dims = calculateEffectiveDimensions(aircraftNoTail as any);
+        // aircraft.tailHeight is undefined → ?? aircraft.height fires → rawTailHeight = 3.5
+        expect(dims.tailHeight).toBe(3.5);
+        expect(dims.rawAircraft.tailHeight).toBe(3.5);
+    });
 });

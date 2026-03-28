@@ -4,11 +4,7 @@ import { AstUtils } from 'langium';
 import { isModel } from '../generated/ast.js';
 import { validateInduction, checkBaySetFit, generateValidationReport as buildValidationReport } from '../feasibility-engine.js';
 
-/**
- * Greedy estimate of the minimum number of bays needed to cover a target
- * dimension. Sorts the supplied dimensions descending and sums until the
- * threshold is met. Returns the count and the dimensions that were summed.
- */
+/** Greedy estimate of the minimum bays needed to cover a target dimension. */
 export function greedyBaysRequired(
     dimensions: number[],
     threshold: number
@@ -97,17 +93,7 @@ export function checkInductionTimeWindow(induction: Induction, accept: Validatio
     }
 }
 
-/**
- * SFR14: Explicit bay-hangar membership check.
- *
- * The scope provider restricts bay completions to the target hangar, so a bay from
- * the wrong hangar will usually fail to link (producing Langium's generic "Could not
- * resolve reference" error).  This check intercepts that gap and emits a clear,
- * domain-appropriate message:
- *   - If the reference resolved but points to the wrong hangar (fallback scope path).
- *   - If the reference is unresolved AND the bay name exists in a different hangar
- *     (i.e., the root cause is "wrong hangar", not a typo).
- */
+/** SFR14: Check bays belong to the target hangar. Catches both resolved wrong-hangar and unresolved cross-hangar refs. */
 export function checkBayHangarMembership(induction: Induction, accept: ValidationAcceptor): void {
     const hangar = induction.hangar?.ref;
     if (!hangar) return;
@@ -141,14 +127,7 @@ export function checkBayHangarMembership(induction: Induction, accept: Validatio
     }
 }
 
-/**
- * SFR24: Hangar-level door fit pre-check (warning).
- *
- * When an induction names a hangar but no specific door, warn if the aircraft (with
- * clearance) cannot pass through ANY door of that hangar.  This surfaces the issue
- * at authoring time without waiting for the simulator.  Only fires when no door is
- * explicitly specified — SFR11 (via checkInductionFeasibility) covers the named-door case.
- */
+/** SFR24: Warn if aircraft can't fit through any door when no specific door is named. */
 export function checkDoorFitPrecheck(induction: Induction, accept: ValidationAcceptor): void {
     if (induction.door) return;
     const aircraft = induction.aircraft?.ref;
@@ -171,31 +150,7 @@ export function checkDoorFitPrecheck(induction: Induction, accept: ValidationAcc
     );
 }
 
-/**
- * Computes the minimum bays required for one axis and emits warnings if the
- * induction under-declares. Extracted to eliminate lateral/longitudinal duplication.
- */
-function computeAxisBaysRequired(
-    effectiveDim: number,
-    bayDims: number[],
-    label: string,          // 'lateral' | 'longitudinal' (for diagnostics)
-    dimLabel: string,       // 'widths' | 'depths'
-    dimUnit: string,        // 'wingspan' | 'length'
-): { min: number; axis: string; dimsUsed: number[] } {
-    const { count: min, used: dimsUsed } = greedyBaysRequired(bayDims, effectiveDim);
-    return { min, axis: label, dimsUsed };
-}
-
-/**
- * SFR25: Bay count sufficiency warning.
- *
- * Estimates the minimum number of bays required using a greedy approach:
- * lateral (default): sum-of-widths >= effectiveWingspan;
- * longitudinal: sum-of-depths >= effectiveLength.
- *
- * Also emits SFR_BAY_COUNT_OVERRIDE when an explicit `requires N bays` clause
- * declares fewer bays than the geometry-derived minimum.
- */
+/** SFR25: Bay count sufficiency warning. */
 export function checkBayCountSufficiency(induction: Induction, accept: ValidationAcceptor): void {
     const aircraft = induction.aircraft?.ref;
     if (!aircraft) return;
@@ -209,7 +164,6 @@ export function checkBayCountSufficiency(induction: Induction, accept: Validatio
     const clearance = induction.clearance?.ref ?? aircraft.clearance?.ref;
     const isLongitudinal = induction.span === 'longitudinal';
 
-    // Axis-specific parameters
     const effectiveDim = isLongitudinal
         ? aircraft.length + (clearance?.longitudinalMargin ?? 0)
         : aircraft.wingspan + (clearance?.lateralMargin ?? 0);
@@ -222,10 +176,7 @@ export function checkBayCountSufficiency(induction: Induction, accept: Validatio
     const dimUnit  = isLongitudinal ? 'length' : 'wingspan';
     const axisLabel = isLongitudinal ? 'longitudinal span' : '';
 
-    const { min: baysRequired, dimsUsed } = computeAxisBaysRequired(
-        effectiveDim, bayDims, isLongitudinal ? 'longitudinal' : 'lateral', dimLabel, dimUnit,
-    );
-
+    const { count: baysRequired, used: dimsUsed } = greedyBaysRequired(bayDims, effectiveDim);
     const dimsStr = dimsUsed.map(d => d.toFixed(2)).join(', ');
 
     if (induction.requires !== undefined && induction.requires < baysRequired) {
@@ -250,10 +201,7 @@ export function checkBayCountSufficiency(induction: Induction, accept: Validatio
     }
 }
 
-/**
- * SFR22: Reject duplicate `id` strings across all induct and auto-induct declarations.
- * Only the second (and later) occurrence is flagged, pointing back to the first.
- */
+/** SFR22: Flag duplicate induction IDs (second and later occurrences). */
 export function checkDuplicateInductionId(induction: Induction, accept: ValidationAcceptor): void {
     if (!induction.id) return;
     const model = AstUtils.getContainerOfType(induction, isModel);

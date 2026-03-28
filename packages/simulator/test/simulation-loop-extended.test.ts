@@ -173,6 +173,107 @@ describe('DiscreteEventSimulator — buildResult eventLog timestamps', () => {
 });
 
 // ---------------------------------------------------------------------------
+// result-builder line 97: active.kind !== 'auto' → continue
+//
+// A fixed manual induction (kind='manual') that is still active when the sim
+// ends (its far-future departure hasn't fired) hits the `continue` on line 97
+// and is excluded from scheduledInductions.
+// ---------------------------------------------------------------------------
+
+describe('DiscreteEventSimulator — manual active induction excluded from scheduledInductions (line 97)', () => {
+    test('manual induction still active at sim-end is skipped by buildResult', () => {
+        // Manual occupies BAY1 from 2024-06-01 to far future (2099)
+        const FAR_FUTURE_END = '2099-01-01T00:00';
+        const MANUAL_START   = '2024-06-01T08:00';
+        const manualInd = {
+            id: 'MANUAL-LONGTERM',
+            aircraft: { ref: CESSNA, $refText: 'Cessna172' },
+            hangar:   { ref: HANGAR, $refText: 'Alpha' },
+            bays:     [{ ref: BAY1, $refText: 'Bay1' }],
+            door:     { ref: DOOR, $refText: 'MainDoor' },
+            start: MANUAL_START,
+            end:   FAR_FUTURE_END,
+            clearance: undefined,
+            $type: 'Induction',
+        };
+        // Auto also wants the same hangar/bay → blocked by manual occupancy
+        const auto = mkAutoInduction('AUTO-BLOCKED', CESSNA, HANGAR, 60);
+        const model = mkModel([HANGAR], [manualInd], [auto]) as any;
+
+        // maxEvents=1: ARRIVAL fires (auto tries to place, fails), then circuit break.
+        // Manual's departure (2099) never fires → manual stays in activeInductions.
+        const sim = new DiscreteEventSimulator(model, { maxEvents: 1 });
+        const result = sim.run();
+
+        // Manual must NOT appear in scheduledInductions (kind='manual' → continue)
+        const manualScheduled = result.scheduledInductions.find(
+            s => s.inductionId === 'MANUAL-LONGTERM'
+        );
+        expect(manualScheduled).toBeUndefined();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// result-builder lines 134–139: STRUCTURALLY_INFEASIBLE with notBefore/notAfter
+//
+// When the infeasible auto has notBefore/notAfter set, result-builder uses
+// their timestamps instead of the searchWindowStart / null fallbacks.
+// ---------------------------------------------------------------------------
+
+describe('DiscreteEventSimulator — STRUCTURALLY_INFEASIBLE with notBefore and notAfter', () => {
+    test('failedInductions uses notBefore as requestedArrival when set', () => {
+        const nullRefAuto = {
+            id: 'INFEAS-DATED',
+            aircraft: { ref: undefined, $refText: 'Ghost' },
+            preferredHangar: { ref: HANGAR, $refText: 'Alpha' },
+            duration: 60,
+            requires: undefined,
+            notBefore: '2030-06-01T08:00',
+            notAfter: '2030-06-01T12:00',
+            precedingInductions: [],
+            clearance: undefined,
+            $type: 'AutoInduction',
+        };
+        const model = mkModel([HANGAR], [], [nullRefAuto]) as any;
+        const sim = new DiscreteEventSimulator(model);
+        const result = sim.run();
+
+        const failed = result.failedInductions.find(f => f.inductionId === 'INFEAS-DATED')!;
+        expect(failed).toBeDefined();
+        expect(failed.reason).toBe('STRUCTURALLY_INFEASIBLE');
+        // notBefore is set → requestedArrival = notBefore timestamp, not searchWindowStart
+        expect(failed.requestedArrival).toBe(new Date('2030-06-01T08:00').getTime());
+        // notAfter is set → deadline = notAfter timestamp, not null
+        expect(failed.deadline).toBe(new Date('2030-06-01T12:00').getTime());
+    });
+});
+
+// ---------------------------------------------------------------------------
+// result-builder line 154–156: DEPENDENCY_NEVER_PLACED with notAfter on dependent
+//
+// When the dependent auto (waiting for a dependency) has notAfter set,
+// result-builder uses notAfter.getTime() for deadline instead of null.
+// ---------------------------------------------------------------------------
+
+describe('DiscreteEventSimulator — DEPENDENCY_NEVER_PLACED with notAfter', () => {
+    test('dependent with notAfter has non-null deadline in failedInductions', () => {
+        const autoB = mkAutoInduction('DEP-B', WIDE, HANGAR, 60);
+        const autoA = mkAutoInduction('DEP-A', CESSNA, HANGAR, 60, {
+            precedingInductions: [autoB],
+            notAfter: '2030-12-31T23:59',
+        });
+        const model = mkModel([HANGAR], [], [autoB, autoA]) as any;
+        const sim = new DiscreteEventSimulator(model);
+        const result = sim.run();
+
+        const failedA = result.failedInductions.find(f => f.inductionId === 'DEP-A')!;
+        expect(failedA).toBeDefined();
+        expect(failedA.reason).toBe('DEPENDENCY_NEVER_PLACED');
+        expect(failedA.deadline).toBe(new Date('2030-12-31T23:59').getTime());
+    });
+});
+
+// ---------------------------------------------------------------------------
 // buildWaitReason SFR16_TIME_OVERLAP branch (lines 967–970)
 // Two autos competing for 1 bay → second is queued with SFR16_TIME_OVERLAP
 // rejection → buildWaitReason produces bay-set conflict message

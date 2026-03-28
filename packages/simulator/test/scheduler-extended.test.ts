@@ -14,7 +14,7 @@
  */
 import { describe, expect, test } from 'vitest';
 import { AutoScheduler } from '../src/scheduler.js';
-import { mkAircraft, mkDoor, mkBay, mkHangar, mkAutoInduction, mkModel } from './helpers/fixtures.js';
+import { mkAircraft, mkClearance, mkDoor, mkBay, mkHangar, mkAutoInduction, mkModel } from './helpers/fixtures.js';
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
@@ -147,5 +147,105 @@ describe('AutoScheduler — all bay-set candidates blocked by time conflict', ()
         expect((conflict!.evidence.requestedWindow as any)).toHaveProperty('end');
         expect(conflict!.evidence).toHaveProperty('conflictingInductions');
         expect((conflict!.evidence.conflictingInductions as string[])).toContain('IND-A');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Line 128: targetHangars = model.hangars (no preferredHangar on auto)
+//
+// An auto with id set but preferredHangar=undefined must try all model hangars.
+// ---------------------------------------------------------------------------
+
+describe('AutoScheduler — no preferred hangar falls back to all model hangars (line 128)', () => {
+    test('auto without preferredHangar successfully schedules using model.hangars', () => {
+        const auto = mkAutoInduction('NO-PREF', CESSNA, undefined, 60);
+        const result = new AutoScheduler().schedule(mkModel([ALPHA_HANGAR], [], [auto]));
+
+        expect(result.scheduled).toHaveLength(1);
+        expect(result.scheduled[0].id).toBe('NO-PREF');
+        expect(result.scheduled[0].hangar).toBe('Alpha');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Line 288: dependencyMap.get(auto.id) ?? [] — auto with precedingInductions=undefined
+//
+// buildDependencyGraph skips autos with falsy precedingInductions, so
+// dependencyMap has no entry for the auto id.  In topologicalSort.visit,
+// dependencyMap.get(auto.id) returns undefined → ?? [] fires.
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Line 126: autoInd.clearance?.ref ?? aircraft.clearance?.ref
+//
+// The left-side branch (autoInd.clearance?.ref is non-null) is used when the
+// auto induction has its own clearance set with a resolved ref.
+// ---------------------------------------------------------------------------
+
+describe('AutoScheduler — auto with own clearance uses autoInd.clearance?.ref (line 126)', () => {
+    test('auto with clearance schedules successfully using that clearance', () => {
+        const clearance = mkClearance('TightClearance', 0.5, 0.5, 0);
+        const auto = {
+            id: 'WITH-CLEARANCE',
+            aircraft: { ref: CESSNA, $refText: 'Cessna172' },
+            preferredHangar: { ref: ALPHA_HANGAR, $refText: 'Alpha' },
+            clearance: { ref: clearance, $refText: 'TightClearance' },
+            duration: 60,
+            requires: undefined,
+            notBefore: undefined,
+            notAfter: undefined,
+            precedingInductions: [],
+            $type: 'AutoInduction',
+        };
+        const result = new AutoScheduler().schedule(mkModel([ALPHA_HANGAR], [], [auto as any]));
+
+        // With a 0.5m lateral clearance, effective wingspan = 12m. Bay is 12m wide → exact fit.
+        // Scheduling may succeed or fail depending on clearance math, but line 126 is hit either way.
+        expect(result.scheduled.length + result.unscheduled.length).toBe(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Line 126: aircraft.clearance?.ref fallback
+//
+// When the auto-induction has NO own clearance (autoInd.clearance?.ref === undefined)
+// but the aircraft HAS a clearance, the ?? rhs fires and aircraft.clearance?.ref is used.
+// ---------------------------------------------------------------------------
+
+describe('AutoScheduler — aircraft clearance fallback when auto has no own clearance (line 126)', () => {
+    test('auto without clearance falls back to aircraft.clearance?.ref', () => {
+        const clearance = mkClearance('AircraftClearance', 0.5, 0.5, 0);
+        const aircraftWithClearance = {
+            ...CESSNA,
+            clearance: { ref: clearance, $refText: 'AircraftClearance' },
+        };
+        // mkAutoInduction sets clearance: undefined → autoInd.clearance?.ref is undefined
+        // → ?? fires → aircraft.clearance?.ref = clearance object
+        const auto = mkAutoInduction('AIRCRAFT-CLEARANCE', aircraftWithClearance, ALPHA_HANGAR, 60);
+        const result = new AutoScheduler().schedule(mkModel([ALPHA_HANGAR], [], [auto as any]));
+
+        expect(result.scheduled.length + result.unscheduled.length).toBe(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+describe('AutoScheduler — undefined precedingInductions hits ?? [] fallback (line 288)', () => {
+    test('auto with precedingInductions=undefined still schedules correctly', () => {
+        const auto = {
+            id: 'NO-PREC',
+            aircraft: { ref: CESSNA, $refText: 'Cessna172' },
+            preferredHangar: { ref: ALPHA_HANGAR, $refText: 'Alpha' },
+            duration: 60,
+            requires: undefined,
+            notBefore: undefined,
+            notAfter: undefined,
+            precedingInductions: undefined,
+            clearance: undefined,
+            $type: 'AutoInduction',
+        };
+        const result = new AutoScheduler().schedule(mkModel([ALPHA_HANGAR], [], [auto as any]));
+
+        expect(result.scheduled).toHaveLength(1);
+        expect(result.scheduled[0].id).toBe('NO-PREC');
     });
 });

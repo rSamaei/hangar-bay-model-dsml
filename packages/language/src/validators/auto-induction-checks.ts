@@ -47,15 +47,7 @@ export function checkAutoInductionTimeWindow(autoInduction: AutoInduction, accep
     }
 }
 
-/**
- * SFR_BAY_COUNT_OVERRIDE (AutoInduction): Warn when an explicit `requires N bays`
- * clause is present but N is less than the geometry-derived minimum for the
- * preferred hangar (or any hangar if no preference is stated).
- *
- * The geometry-derived minimum uses the same greedy lateral sum-of-widths approach
- * as checkBayCountSufficiency. When no hangar can be identified (no preference and
- * no hangars in the model) the check is skipped.
- */
+/** SFR_BAY_COUNT_OVERRIDE: Warn when `requires N bays` is less than the geometry-derived minimum. */
 export function checkAutoInductionBayCountOverride(autoInduction: AutoInduction, accept: ValidationAcceptor): void {
     if (autoInduction.requires === undefined) return;
     const aircraft = autoInduction.aircraft?.ref;

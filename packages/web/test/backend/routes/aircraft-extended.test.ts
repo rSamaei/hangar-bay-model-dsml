@@ -21,6 +21,7 @@ vi.mock('../../../backend/db/database.js', () => ({
 
 import aircraftRoute from '../../../backend/routes/aircraft.js';
 import {
+  createAircraft,
   updateAircraft,
   getSessionByToken,
 } from '../../../backend/db/database.js';
@@ -30,6 +31,7 @@ app.use(express.json());
 app.use('/api', aircraftRoute);
 const agent = supertest(app);
 
+const mockCreate     = createAircraft     as ReturnType<typeof vi.fn>;
 const mockUpdate     = updateAircraft     as ReturnType<typeof vi.fn>;
 const mockGetSession = getSessionByToken  as ReturnType<typeof vi.fn>;
 
@@ -87,5 +89,30 @@ describe('POST /api/aircraft — additional validation', () => {
     const res = await agent.post('/api/aircraft').set(AUTH)
       .send({ name: 'X', wingspan: 11, length: 8, height: 3, tailHeight: -1 });
     expect(res.status).toBe(400);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/aircraft — non-SQLITE error rethrow (line 63)
+// ---------------------------------------------------------------------------
+
+describe('POST /api/aircraft — non-SQLITE error rethrow', () => {
+  test('rethrows non-SQLITE errors (Express returns 500)', async () => {
+    mockCreate.mockImplementation(() => { throw new Error('connection pool exhausted'); });
+    const VALID_BODY = { name: 'Cessna', wingspan: 11, length: 8.3, height: 2.7, tailHeight: 2.7 };
+    const res = await agent.post('/api/aircraft').set(AUTH).send(VALID_BODY);
+    expect(res.status).toBe(500);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PUT /api/aircraft/:id — non-SQLITE error rethrow (line 103)
+// ---------------------------------------------------------------------------
+
+describe('PUT /api/aircraft/:id — non-SQLITE error rethrow', () => {
+  test('rethrows non-SQLITE errors (Express returns 500)', async () => {
+    mockUpdate.mockImplementation(() => { throw new Error('connection pool exhausted'); });
+    const res = await agent.put('/api/aircraft/1').set(AUTH).send({ name: 'NewName' });
+    expect(res.status).toBe(500);
   });
 });

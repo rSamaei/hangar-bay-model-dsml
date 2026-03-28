@@ -278,3 +278,42 @@ describe('DELETE /api/schedule/clear', () => {
     expect(res.status).toBe(401);
   });
 });
+
+// ---------------------------------------------------------------------------
+// computeSchedule internal — parseErrors return path (lines 260-267)
+// ---------------------------------------------------------------------------
+
+describe('GET /api/schedule — computeSchedule parseErrors branch', () => {
+  test('returns result with parseErrors when service returns parseErrors flag', async () => {
+    mockGetEntries.mockReturnValue([ENTRY]);
+    mockGetHangars.mockReturnValue([{ id: 1, name: 'Alpha', bays: [] }]);
+    mockGetAircraftByUser.mockReturnValue([]);
+    mockComputeSchedule.mockResolvedValue({
+      parseErrors: [{ message: 'syntax error' }],
+      placements: [],
+      validationErrors: ['failed to parse DSL'],
+    });
+    const res = await agent.get('/api/schedule').set(AUTH);
+    expect(res.status).toBe(200);
+    // The route returns the result from computeSchedule (internal), not a 500
+    expect(res.body.validationErrors).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeSchedule internal — runSchedule throws (lines 296-313)
+// ---------------------------------------------------------------------------
+
+describe('GET /api/schedule — computeSchedule catch branch', () => {
+  test('returns 200 with failed placements when runSchedule throws', async () => {
+    mockGetEntries.mockReturnValue([ENTRY]);
+    mockGetHangars.mockReturnValue([{ id: 1, name: 'Alpha', bays: [] }]);
+    mockGetAircraftByUser.mockReturnValue([]);
+    mockComputeSchedule.mockRejectedValue(new Error('scheduler crashed'));
+    const res = await agent.get('/api/schedule').set(AUTH);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.placements)).toBe(true);
+    expect(res.body.placements[0].status).toBe('failed');
+    expect(res.body.validationErrors[0]).toContain('scheduler crashed');
+  });
+});

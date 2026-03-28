@@ -133,4 +133,29 @@ describe('detectConflicts', () => {
         expect(conflicts[0].message).toContain('IND1');
         expect(conflicts[0].message).toContain('IND2');
     });
+
+    test('induction without id uses aircraft as fallback in message (line 66 ?? branch)', () => {
+        // ind.id = undefined → message uses ind.aircraft fallback
+        const ind1 = { id: undefined, aircraft: 'Cessna', hangar: 'H1', bays: ['Bay1'], start: h(8), end: h(10) };
+        const ind2 = { id: undefined, aircraft: 'Piper', hangar: 'H1', bays: ['Bay1'], start: h(9), end: h(11) };
+        const conflicts = detectConflicts([ind1 as any, ind2 as any]);
+        expect(conflicts).toHaveLength(1);
+        expect(conflicts[0].message).toContain('Cessna');
+        expect(conflicts[0].message).toContain('Piper');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// checkTimeOverlap — line 23 true branch (startA > startB)
+// ---------------------------------------------------------------------------
+
+describe('checkTimeOverlap — overlap interval when A starts after B', () => {
+    test('[09:00,11:00] vs [08:00,10:00] — startA > startB, start of interval = startA', () => {
+        const { overlaps, overlapInterval } = checkTimeOverlap(h(9), h(11), h(8), h(10));
+        expect(overlaps).toBe(true);
+        // startA(9) > startB(8) → true branch of ternary → start = startA = h(9)
+        expect(overlapInterval!.start).toEqual(h(9));
+        // endA(11) > endB(10) → false branch of end ternary → end = endB = h(10)
+        expect(overlapInterval!.end).toEqual(h(10));
+    });
 });

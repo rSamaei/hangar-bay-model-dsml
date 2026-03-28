@@ -1,13 +1,3 @@
-/**
- * Shared bay adjacency graph builder.
- *
- * Single source of truth for building a bidirectional adjacency map from a
- * hangar's bay grid. Used by the language validators, feasibility engine,
- * code-action provider, and the simulator.
- *
- * Uses a coordinate-to-bay map for O(1) neighbour lookups instead of
- * scanning the full bay array per offset.
- */
 import type { HangarBay } from './generated/ast.js';
 
 export interface BayAdjacencyResult {
@@ -19,22 +9,7 @@ export interface BayAdjacencyResult {
     };
 }
 
-/**
- * Build a bidirectional adjacency map for all bays in a grid.
- *
- * Adjacency is derived from two independent sources, applied in order:
- *
- * 1. **Grid coordinates** (when the grid declares `rows` and `cols`):
- *    Bays with `row`/`col` attributes are connected to their neighbours
- *    based on the grid's connectivity mode (4-connected default, 8-connected
- *    when `adjacency === 8`).
- *
- * 2. **Explicit `adjacent` references** (always applied):
- *    Cross-references are merged bidirectionally — they only add edges,
- *    never remove grid-derived adjacency.
- *
- * @param grid - The bay grid to inspect (typically `hangar.grid`).
- */
+/** Build a bidirectional adjacency map from grid coordinates and explicit references. */
 export function buildBayAdjacencyGraph(grid: {
     rows?: number;
     cols?: number;

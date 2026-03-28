@@ -108,6 +108,16 @@ describe('findConnectedSetsOfSize — edge cases', () => {
         expect(result).toHaveLength(0);
     });
 
+    test('completely empty adjacency map (no entries) — ?? [] fires on line 62', () => {
+        // adjacency has NO entries at all — adjacency.get(bay.name) returns undefined
+        // for any bay → the ?? [] fallback fires inside the DFS neighbor expansion
+        const bays = [{ name: 'Bay1' }, { name: 'Bay2' }] as any[];
+        const adj = new Map<string, Set<string>>(); // completely empty
+        const result = findConnectedSetsOfSize(bays, adj, 2);
+        // No adjacency entries → no neighbors found → no 2-bay sets
+        expect(result).toHaveLength(0);
+    });
+
     test('deduplication — same unordered set returned exactly once', () => {
         // 2-bay layout: Bay1 — Bay2
         const bays = [{ name: 'Bay1' }, { name: 'Bay2' }] as any[];

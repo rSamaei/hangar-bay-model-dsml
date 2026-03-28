@@ -100,3 +100,19 @@ describe('checkContiguity', () => {
         expect(result.evidence.reachableCount).toBeLessThan(result.evidence.bayCount);
     });
 });
+
+// ---------------------------------------------------------------------------
+// Line 61: adjacency.get(current) ?? new Set() — empty adjacency map
+// ---------------------------------------------------------------------------
+
+describe('checkContiguity — empty adjacency map fires ?? new Set() fallback (line 61)', () => {
+    test('adjacency map with no entries: get(current) returns undefined, ?? new Set() fires', () => {
+        // BFS starts with 'Bay1', calls adjacency.get('Bay1') → undefined → ?? new Set()
+        const emptyAdj = new Map<string, Set<string>>();
+        const result = checkContiguity(['Bay1', 'Bay2'], emptyAdj);
+
+        expect(result.ok).toBe(false);
+        expect(result.evidence.reachableBays).toEqual(['Bay1']);
+        expect(result.evidence.unreachableBays).toEqual(['Bay2']);
+    });
+});

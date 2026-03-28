@@ -1,18 +1,3 @@
-/**
- * This file is the dependency injection root for the Airfield language services.
- *
- * Langium uses a module/inject pattern where each language
- * feature — validation, scoping, code actions, etc. — is a service class wired together
- * here rather than instantiated ad-hoc. `createAirfieldServices` is the single entry
- * point called at startup (CLI, extension, web server) to produce a fully configured
- * language instance.
- *
- * Key pieces defined here:
- *  - AirfieldModule          — overrides/extends Langium defaults with my custom services
- *  - AirfieldScopeProvider   — controls which names are visible at each reference site
- *                              (e.g. only bays belonging to the induction's own hangar)
- *  - createAirfieldServices  — builds and returns the complete service graph
- */
 import { type Module, inject } from 'langium';
 import { 
     createDefaultModule, 

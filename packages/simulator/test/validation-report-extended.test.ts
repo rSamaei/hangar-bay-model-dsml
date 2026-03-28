@@ -135,6 +135,35 @@ describe('buildValidationReport — schedFailedViolation SFR16_TIME_OVERLAP bran
 });
 
 // ---------------------------------------------------------------------------
+// Line 295: schedFailedViolation — NO_SUITABLE_BAY_SET branch
+// ---------------------------------------------------------------------------
+
+describe('buildValidationReport — schedFailedViolation NO_SUITABLE_BAY_SET branch', () => {
+    test('primary reason NO_SUITABLE_BAY_SET → message contains "no suitable bay configuration"', () => {
+        const auto = mkAutoInduction('BAY-FAIL', CESSNA, ALPHA_HANGAR, 60);
+
+        const scheduleResult = {
+            scheduled: [],
+            unscheduled: [auto as any],
+            rejectionReasons: new Map([
+                ['BAY-FAIL', [{
+                    ruleId: 'NO_SUITABLE_BAY_SET',
+                    message: 'No suitable bay sets in hangar Alpha',
+                    evidence: { hangar: 'Alpha' },
+                }]],
+            ]),
+        };
+
+        const model = mkModel([ALPHA_HANGAR], [], [auto as any]);
+        const { violations } = buildValidationReport(model, scheduleResult as any);
+
+        const failed = violations.find(v => v.ruleId === 'SCHED_FAILED')!;
+        expect(failed).toBeDefined();
+        expect(failed.message).toContain('no suitable bay configuration');
+    });
+});
+
+// ---------------------------------------------------------------------------
 // Lines 296–297: schedFailedViolation — unknown ruleId fallback
 // ---------------------------------------------------------------------------
 
@@ -160,6 +189,81 @@ describe('buildValidationReport — schedFailedViolation unknown ruleId fallback
         const failed = violations.find(v => v.ruleId === 'SCHED_FAILED')!;
         expect(failed).toBeDefined();
         expect(failed.message).toContain('Custom failure reason text');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Lines 282–284: schedFailedViolation — null id + null aircraft ref
+//
+// When the unscheduled auto has no id and no aircraft.ref, all three fallback
+// branches (id ?? fallback, aircraft.ref?.name ?? 'unknown', name ?? 'Unknown')
+// and the rejectionReasons.get(autoId) ?? [] fallback fire.
+// ---------------------------------------------------------------------------
+
+describe('buildValidationReport — schedFailedViolation null-id and null-aircraft fallbacks', () => {
+    test('auto with id=undefined and aircraft.ref=undefined uses all fallback strings', () => {
+        const nullIdAuto = {
+            id: undefined,
+            aircraft: { ref: undefined, $refText: 'Ghost' },
+            preferredHangar: undefined,
+            duration: 60,
+            requires: undefined,
+            notBefore: undefined,
+            notAfter: undefined,
+            precedingInductions: [],
+            clearance: undefined,
+            $type: 'AutoInduction',
+        };
+
+        // No rejection reasons for 'auto_unknown' → reasons = [] → primary = undefined
+        const scheduleResult = {
+            scheduled: [],
+            unscheduled: [nullIdAuto as any],
+            rejectionReasons: new Map(),
+        };
+
+        const model = mkModel([ALPHA_HANGAR], [], [nullIdAuto as any]);
+        const { violations } = buildValidationReport(model, scheduleResult as any);
+
+        const failed = violations.find(v => v.ruleId === 'SCHED_FAILED')!;
+        expect(failed).toBeDefined();
+        // aircraftName fell back to 'Unknown' (line 283)
+        expect(failed.subject.name).toBe('Unknown');
+        // autoId fell back to 'auto_unknown' (lines 282 inner ?? 'unknown')
+        expect(failed.subject.id).toBe('auto_unknown');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Line 290: schedFailedViolation — SFR16_TIME_OVERLAP with no conflictingInductions key
+//
+// primary.evidence?.conflictingInductions ?? [] fires when the key is absent.
+// ---------------------------------------------------------------------------
+
+describe('buildValidationReport — schedFailedViolation SFR16 with missing conflictingInductions', () => {
+    test('SFR16_TIME_OVERLAP without conflictingInductions in evidence uses ?? [] fallback', () => {
+        const auto = mkAutoInduction('SFR16-NO-LIST', CESSNA, ALPHA_HANGAR, 60);
+
+        const scheduleResult = {
+            scheduled: [],
+            unscheduled: [auto as any],
+            rejectionReasons: new Map([
+                ['SFR16-NO-LIST', [{
+                    ruleId: 'SFR16_TIME_OVERLAP',
+                    message: 'Conflict',
+                    evidence: {}, // no conflictingInductions key
+                }]],
+            ]),
+        };
+
+        const model = mkModel([ALPHA_HANGAR], [], [auto as any]);
+        const { violations } = buildValidationReport(model, scheduleResult as any);
+
+        const failed = violations.find(v => v.ruleId === 'SCHED_FAILED')!;
+        expect(failed).toBeDefined();
+        // conflictingInductions ?? [] → empty list → join('') = '' → 'other inductions'
+        expect(failed.message).toContain('other inductions');
     });
 });
 

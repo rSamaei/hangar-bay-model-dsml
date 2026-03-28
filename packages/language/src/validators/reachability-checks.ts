@@ -35,11 +35,7 @@ export function checkBayReachability(induction: Induction, accept: ValidationAcc
     }
 }
 
-/**
- * SFR_DYNAMIC_REACHABILITY: Check that induction bays remain reachable from a
- * hangar door even after accounting for concurrent inductions that block the
- * access path. Silently skipped when no access graph has been modelled.
- */
+/** SFR_DYNAMIC_REACHABILITY: Check bays remain reachable when concurrent inductions block paths. */
 export function checkDynamicBayBlockingReachability(induction: Induction, accept: ValidationAcceptor): void {
     const hangar = induction.hangar?.ref;
     if (!hangar) return;
@@ -59,11 +55,7 @@ export function checkDynamicBayBlockingReachability(induction: Induction, accept
     }
 }
 
-/**
- * SFR_CORRIDOR_FIT: Warn when the aircraft's effective wingspan exceeds the
- * width of a corridor node on the access path to an assigned bay.
- * Static check — concurrent inductions are not considered.
- */
+/** SFR_CORRIDOR_FIT: Warn when aircraft wingspan exceeds a corridor node's width on route to a bay. */
 export function checkCorridorFitReachability(induction: Induction, accept: ValidationAcceptor): void {
     const hangar = induction.hangar?.ref;
     const aircraft = induction.aircraft?.ref;

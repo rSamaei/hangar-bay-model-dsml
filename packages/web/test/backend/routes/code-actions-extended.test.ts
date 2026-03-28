@@ -103,3 +103,35 @@ describe('POST /api/code-actions — empty body guard', () => {
     expect(res.body).toEqual({ actions: [] });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Real action returned — exercises the action-processing inner loop
+// ---------------------------------------------------------------------------
+
+describe('POST /api/code-actions — action with edits returned', () => {
+  /**
+   * The induction `induct Cessna into AlphaHangar bays Bay1 Bay3` is at
+   * line 17 (1-based) of THREE_BAY_DSL. Sending the diagnostic at that
+   * exact position causes findInductionAtDiagnostic to resolve the node
+   * and the provider to build a real bridging edit — exercising lines 58-75.
+   */
+  test('returns edit action when SFR13 diagnostic is at the induction line', async () => {
+    const res = await agent.post('/api/code-actions').send({
+      dslCode: THREE_BAY_DSL,
+      diagnostics: [{
+        message: 'SFR13_CONTIGUITY: Bay1 and Bay3 are not contiguous',
+        startLine: 17,
+        startColumn: 4,
+        data: { ruleId: 'SFR13_CONTIGUITY' },
+      }],
+    });
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.actions)).toBe(true);
+    // The provider should find the induction and return at least one edit action
+    expect(res.body.actions.length).toBeGreaterThan(0);
+    const action = res.body.actions[0];
+    expect(action.title).toBeDefined();
+    expect(Array.isArray(action.edits)).toBe(true);
+    expect(action.edits.length).toBeGreaterThan(0);
+  });
+});

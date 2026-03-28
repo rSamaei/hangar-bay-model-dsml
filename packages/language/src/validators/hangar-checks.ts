@@ -4,15 +4,7 @@ import { AstUtils } from 'langium';
 import { isModel } from '../generated/ast.js';
 import { buildAccessGraph } from '../access-graph.js';
 
-/**
- * SFR_REACHABILITY_SKIPPED: Info-level diagnostic emitted once per hangar
- * when the hangar has at least one induction targeting it but no access graph
- * has been modelled (no accessNode hooks on any of its doors or bays).
- *
- * This tells authors that dynamic bay-blocking analysis was not performed and
- * they can enable it by defining an accessPath with nodes linked to their doors
- * and bays.
- */
+/** SFR_REACHABILITY_SKIPPED: Hint when hangar has inductions but no access graph. */
 export function checkReachabilitySkipped(hangar: Hangar, accept: ValidationAcceptor): void {
     const model = AstUtils.getContainerOfType(hangar, isModel);
     if (!model) return;
@@ -29,15 +21,7 @@ export function checkReachabilitySkipped(hangar: Hangar, accept: ValidationAccep
     );
 }
 
-/**
- * SFR7_ASYMMETRIC_ADJACENCY: Warn when a hangar uses pure explicit adjacency
- * (no grid rows/cols defined) and the declarations are not symmetric — i.e.
- * Bay A declares Bay B adjacent but Bay B does not declare Bay A adjacent.
- *
- * The adjacency builder silently adds the reverse edge, so the simulation is
- * unaffected, but the DSL model is misleading. This check prompts authors to
- * keep explicit models symmetric.
- */
+/** SFR7_ASYMMETRIC_ADJACENCY: Warn when explicit adjacency is not symmetric (non-grid hangars only). */
 export function checkAsymmetricAdjacency(hangar: Hangar, accept: ValidationAcceptor): void {
     if (hangar.grid.rows !== undefined && hangar.grid.cols !== undefined) return;
 
@@ -66,20 +50,7 @@ export function checkAsymmetricAdjacency(hangar: Hangar, accept: ValidationAccep
     }
 }
 
-/**
- * SFR_NONGRID_ADJACENCY / SFR_GRID_OVERRIDE: Warn when explicit adjacent {}
- * declarations contradict the grid-derived 4-connected neighbour structure.
- *
- * SFR_NONGRID_ADJACENCY fires when Bay A declares Bay B as adjacent but their
- * grid coordinates are not 4-connected (Manhattan distance != 1).
- *
- * SFR_GRID_OVERRIDE fires when Bay A has a non-empty explicit adjacent {} block
- * but a grid-neighbour Bay B is absent from that list (the grid edge is silently
- * overridden by the explicit declaration).
- *
- * Both checks are skipped for bays without grid coordinates and for bays with
- * no explicit adjacent {} block, so pure-grid hangars never produce false positives.
- */
+/** SFR_NONGRID_ADJACENCY / SFR_GRID_OVERRIDE: Warn when explicit adjacency contradicts grid coordinates. */
 export function checkAdjacencyConsistency(hangar: Hangar, accept: ValidationAcceptor): void {
     if (hangar.grid.rows === undefined || hangar.grid.cols === undefined) return;
 
