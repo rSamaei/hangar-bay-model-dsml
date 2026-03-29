@@ -15,7 +15,11 @@ export default defineConfig({
             reporter: ['text', 'html', 'lcov'],
             reportsDirectory: './coverage',
             include: ['src/**/*.ts'],
-            exclude: ['src/generated/**']
+            exclude: [
+                'src/generated/**',
+                // Pure barrel — compiles to empty JS, no executable statements
+                'src/index.ts',
+            ]
         }
     }
 });

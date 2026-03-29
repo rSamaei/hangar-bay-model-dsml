@@ -7,8 +7,11 @@
  * AST node shapes and the feasibility-engine helpers.
  */
 import { describe, expect, test, beforeAll } from 'vitest';
+import { EmptyFileSystem } from 'langium';
+import { parseHelper } from 'langium/test';
 import { AirfieldHoverProvider } from '../src/hover-provider.js';
-import type { HangarBay } from '../src/generated/ast.js';
+import { createAirfieldServices } from '../src/airfield-module.js';
+import type { HangarBay, Model } from '../src/generated/ast.js';
 
 // ---------------------------------------------------------------------------
 // Minimal mock services (AstNodeHoverProvider constructor stores nameProvider)
@@ -360,5 +363,66 @@ describe('fmt number formatting', () => {
         const ac = mkAircraft({ wingspan: 11.37 });
         const result = await aircraftHover(ac);
         expect(result).toContain('11.37');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// getHoverContent override (lines 24-39)
+// Uses real parsed Langium documents so CstUtils.findLeafNodeAtOffset
+// works on actual CST nodes (ESM live bindings cannot be mocked).
+// ---------------------------------------------------------------------------
+
+describe('getHoverContent override', () => {
+    let hoverProvider: AirfieldHoverProvider;
+    let parse: ReturnType<typeof parseHelper<Model>>;
+
+    beforeAll(() => {
+        const services = createAirfieldServices(EmptyFileSystem);
+        hoverProvider = services.Airfield.lsp.HoverProvider as AirfieldHoverProvider;
+        parse = parseHelper<Model>(services.Airfield);
+    });
+
+    const MINIMAL_DSL = `
+        airfield T {
+            aircraft A { wingspan 10 m  length 8 m  height 3 m }
+            hangar H {
+                doors { door D1 { width 15 m  height 5 m } }
+                grid baygrid { bay B1 { width 12 m  depth 15 m  height 5 m } }
+            }
+            induct A into H bays B1 from 2025-01-01T08:00 to 2025-01-02T08:00;
+        }
+    `;
+
+    test('returns undefined when document has no CST root (line 29)', async () => {
+        const doc = {
+            parseResult: { value: { $cstNode: undefined } },
+            textDocument: { offsetAt: () => 0 },
+        } as any;
+        const result = await hoverProvider.getHoverContent(doc, { position: { line: 0, character: 0 } } as any);
+        expect(result).toBeUndefined();
+    });
+
+    test('returns a Hover when cursor is on an induction keyword (lines 34-37)', async () => {
+        const doc = await parse(MINIMAL_DSL);
+        expect(doc.parseResult.parserErrors).toHaveLength(0);
+        const text = doc.textDocument.getText();
+        // Position the cursor inside the "induct" keyword
+        const inductOffset = text.indexOf('induct');
+        const pos = doc.textDocument.positionAt(inductOffset + 1);
+        const result = await hoverProvider.getHoverContent(doc, { position: pos } as any);
+        // Induction hover returns a string → wrapped in Hover
+        expect(result).toBeDefined();
+        expect((result as any)?.contents).toBeDefined();
+    });
+
+    test('returns undefined when cursor is on the airfield keyword (line 38 — not a handled AST node type)', async () => {
+        const doc = await parse(MINIMAL_DSL);
+        expect(doc.parseResult.parserErrors).toHaveLength(0);
+        const text = doc.textDocument.getText();
+        // Position cursor inside "airfield" keyword — not an Induction/Aircraft/Bay/Clearance
+        const afOffset = text.indexOf('airfield');
+        const pos = doc.textDocument.positionAt(afOffset + 1);
+        const result = await hoverProvider.getHoverContent(doc, { position: pos } as any);
+        expect(result).toBeUndefined();
     });
 });

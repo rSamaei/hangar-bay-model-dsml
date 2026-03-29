@@ -15,6 +15,12 @@ export default defineConfig({
             exclude: [
                 'packages/language/src/generated/**',
                 'packages/web/backend/db/**',
+                // Pure interface/type-only files — compile to empty JS, nothing for v8 to execute.
+                'packages/simulator/src/types/conflict.ts',
+                'packages/simulator/src/types/dimensions.ts',
+                'packages/simulator/src/types/export.ts',
+                'packages/simulator/src/types/model.ts',
+                'packages/simulator/src/types/simulation.ts',
             ],
             thresholds: {
                 statements: 85,

@@ -353,6 +353,31 @@ describe('checkDynamicBayReachability', () => {
             [ind, nonOverlap] as any, [path] as any);
         expect(result.ok).toBe(true);
     });
+
+    test('message formats blocker aircraft name when blocker has no id (line 273)', () => {
+        const { hangar, bay1, bay2, path } = mkMinimalHangar();
+        const ind = mkInduction({ bays: [bay2], hangar,
+            start: '2025-06-01T08:00', end: '2025-06-01T16:00' });
+        // blocker has no id — exercises the `: \`induction (${b.occupiedByAircraft})\`` branch
+        const blocker = mkInduction({ bays: [bay1], hangar,
+            start: '2025-06-01T10:00', end: '2025-06-01T14:00',
+            aircraft: { name: 'Hawk', wingspan: 10 } });
+        const allInductions = [ind, blocker];
+        const result = checkDynamicBayReachability(hangar as any, ind as any, allInductions as any, [path] as any);
+        expect(result.ok).toBe(false);
+        expect(result.message).toContain('Hawk');
+        expect(result.message).not.toContain("'undefined'");
+    });
+
+    test('wingspanEff computed when target induction has aircraft with wingspan > 0 (line 308)', () => {
+        const { hangar, bay2, path } = mkMinimalHangar();
+        const ind = mkInduction({ bays: [bay2], hangar,
+            start: '2025-06-01T08:00', end: '2025-06-01T16:00',
+            aircraft: { name: 'Hawk', wingspan: 10 } });
+        const result = checkDynamicBayReachability(hangar as any, ind as any, [ind] as any, [path] as any);
+        expect(result.ok).toBe(true);
+        expect(result.skipped).toBe(false);
+    });
 });
 
 // ============================================================================

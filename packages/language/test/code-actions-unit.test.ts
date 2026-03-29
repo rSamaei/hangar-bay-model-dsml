@@ -5,8 +5,12 @@
  * are private, so they are accessed via `(provider as any)`. No Langium runtime
  * is needed; the only inputs are plain strings and a Map<string, Set<string>>.
  */
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+import { describe, expect, test, beforeEach, beforeAll, vi } from 'vitest';
+import { EmptyFileSystem } from 'langium';
+import { parseHelper } from 'langium/test';
 import { AirfieldCodeActionProvider } from '../src/airfield-code-actions.js';
+import { createAirfieldServices } from '../src/airfield-module.js';
+import type { Model } from '../src/generated/ast.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -474,5 +478,57 @@ describe('fix builder: createBayCountFix', () => {
         const diag = { ...DIAG_RANGE, message: 'SFR25_BAY_COUNT', data: { ruleId: 'SFR25_BAY_COUNT', evidence } };
         const result = (p as any).createBayCountFix(diag, NULL_CST_DOC, evidence);
         expect(result).toEqual([]);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// findInductionAtDiagnostic — lines 197-200 (rootCst present)
+// Uses a real parsed Langium document so CstUtils.findLeafNodeAtOffset
+// operates on a real CST (ESM live bindings cannot be spied upon).
+// ---------------------------------------------------------------------------
+
+describe('findInductionAtDiagnostic (rootCst present)', () => {
+    let parse: ReturnType<typeof parseHelper<Model>>;
+
+    beforeAll(() => {
+        const { Airfield } = createAirfieldServices(EmptyFileSystem);
+        parse = parseHelper<Model>(Airfield);
+    });
+
+    const MINIMAL_DSL = `
+        airfield T {
+            aircraft A { wingspan 10 m  length 8 m  height 3 m }
+            hangar H {
+                doors { door D1 { width 15 m  height 5 m } }
+                grid baygrid { bay B1 { width 12 m  depth 15 m  height 5 m } }
+            }
+            induct A into H bays B1 from 2025-01-01T08:00 to 2025-01-02T08:00;
+        }
+    `;
+
+    test('returns an Induction when offset points inside the induct keyword (line 200)', async () => {
+        const doc = await parse(MINIMAL_DSL);
+        expect(doc.parseResult.parserErrors).toHaveLength(0);
+        // Find the character offset of "induct" in the document text
+        const text = doc.textDocument.getText();
+        const inductOffset = text.indexOf('induct');
+        const pos = doc.textDocument.positionAt(inductOffset + 1);
+        const diag = { range: { start: pos, end: pos } } as any;
+        const p = new AirfieldCodeActionProvider();
+        const result = (p as any).findInductionAtDiagnostic(doc, diag);
+        expect(result).toBeDefined();
+        expect(result.$type).toBe('Induction');
+    });
+
+    test('returns undefined when offset points outside any induction node (line 199/200)', async () => {
+        const doc = await parse(MINIMAL_DSL);
+        expect(doc.parseResult.parserErrors).toHaveLength(0);
+        // Use offset 0 (before "airfield" keyword — not inside an Induction)
+        const pos = doc.textDocument.positionAt(0);
+        const diag = { range: { start: pos, end: pos } } as any;
+        const p = new AirfieldCodeActionProvider();
+        const result = (p as any).findInductionAtDiagnostic(doc, diag);
+        // "airfield" keyword is not inside an Induction container
+        expect(result).toBeUndefined();
     });
 });
