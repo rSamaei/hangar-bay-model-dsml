@@ -21,6 +21,14 @@ export default defineConfig({
                 'packages/simulator/src/types/export.ts',
                 'packages/simulator/src/types/model.ts',
                 'packages/simulator/src/types/simulation.ts',
+                // Pure barrel/shim files — no executable logic.
+                'packages/language/src/index.ts',
+                'packages/simulator/src/index.ts',
+                'packages/simulator/src/engine.ts',
+                // Process entry points — untestable bootstraps.
+                'packages/cli/src/main.ts',
+                'packages/web/backend/server.ts',
+                'packages/web/backend/start.ts',
             ],
             thresholds: {
                 statements: 85,

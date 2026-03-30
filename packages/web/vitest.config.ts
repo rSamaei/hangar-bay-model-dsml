@@ -9,7 +9,12 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',
       include: ['backend/**/*.ts'],
-      exclude: ['backend/db/**']
+      exclude: [
+        'backend/db/**',
+        // Process entry points — untestable bootstraps.
+        'backend/server.ts',
+        'backend/start.ts',
+      ]
     }
   },
 });
