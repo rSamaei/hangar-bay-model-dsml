@@ -53,7 +53,7 @@ airfield CleanField {
 `;
 
 /**
- * DSL with a zero wingspan → fires SFR20_DIMENSIONS (severity=1).
+ * DSL with a zero wingspan → fires SFR25_DIMENSIONS (severity=1).
  * This is a validation diagnostic, NOT a parse error — the DSL is syntactically valid.
  */
 const DSL_WITH_VALIDATION_DIAG = `
@@ -126,7 +126,7 @@ describe('parseDocument — validation diagnostic', () => {
     test('validationDiagnostics contains the SFR20 rule code', async () => {
         const result = await parseDocument(DSL_WITH_VALIDATION_DIAG);
         const hasSfr20 = result.validationDiagnostics.some(
-            d => typeof d.message === 'string' && d.message.includes('SFR20_DIMENSIONS')
+            d => typeof d.message === 'string' && d.message.includes('SFR25_DIMENSIONS')
         );
         expect(hasSfr20).toBe(true);
     });

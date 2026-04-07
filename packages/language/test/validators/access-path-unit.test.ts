@@ -1,5 +1,5 @@
 /**
- * Unit tests for access-path-checks.ts (SFR19_PATH_CONNECTIVITY rule).
+ * Unit tests for access-path-checks.ts (SFR20_PATH_CONNECTIVITY rule).
  *
  * Imports directly from the TypeScript source for v8 coverage.
  * Uses structural mocks — no Langium runtime.
@@ -47,7 +47,7 @@ function mkPath(
 }
 
 // ---------------------------------------------------------------------------
-// checkAccessPathConnectivity — SFR19_PATH_CONNECTIVITY
+// checkAccessPathConnectivity — SFR20_PATH_CONNECTIVITY
 // ---------------------------------------------------------------------------
 
 describe('checkAccessPathConnectivity', () => {
@@ -88,7 +88,7 @@ describe('checkAccessPathConnectivity', () => {
         expect(wasCalled(accept)).toBe(false);
     });
 
-    test('C has no edges — disconnected node → SFR19_PATH_CONNECTIVITY warning', () => {
+    test('C has no edges — disconnected node → SFR20_PATH_CONNECTIVITY warning', () => {
         const accept = mockAccept();
         const A = mkNode('A');
         const B = mkNode('B');
@@ -98,7 +98,7 @@ describe('checkAccessPathConnectivity', () => {
             [{ from: A, to: B, bidirectional: true }]
         );
         checkAccessPathConnectivity(path, accept);
-        expect(calledWithCode(accept, 'SFR19_PATH_CONNECTIVITY')).toBe(true);
+        expect(calledWithCode(accept, 'SFR20_PATH_CONNECTIVITY')).toBe(true);
     });
 
     test('directed B→A with A as start node → B unreachable → SFR19 warning', () => {
@@ -108,7 +108,7 @@ describe('checkAccessPathConnectivity', () => {
         // Only edge is B→A; BFS starts at A (nodes[0]) so B is never reached
         const path = mkPath([A, B], [{ from: B, to: A }]);
         checkAccessPathConnectivity(path, accept);
-        expect(calledWithCode(accept, 'SFR19_PATH_CONNECTIVITY')).toBe(true);
+        expect(calledWithCode(accept, 'SFR20_PATH_CONNECTIVITY')).toBe(true);
     });
 
     test('two disconnected components → warning for each node in the second component', () => {
@@ -126,7 +126,7 @@ describe('checkAccessPathConnectivity', () => {
             ]
         );
         checkAccessPathConnectivity(path, accept);
-        expect(calledWithCode(accept, 'SFR19_PATH_CONNECTIVITY')).toBe(true);
+        expect(calledWithCode(accept, 'SFR20_PATH_CONNECTIVITY')).toBe(true);
         // Both C and D are unreachable → accept called twice
         const calls = (accept as ReturnType<typeof vi.fn>).mock.calls;
         expect(calls.length).toBe(2);

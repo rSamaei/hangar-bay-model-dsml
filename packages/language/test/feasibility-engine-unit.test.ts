@@ -316,7 +316,7 @@ describe('checkDoorOwnership', () => {
         const hangar  = mkHangar([other], []);
         const result  = checkDoorOwnership(door, hangar);
         expect(result.ok).toBe(false);
-        expect(result.ruleId).toBe('SFR15_DOOR_OWNERSHIP');
+        expect(result.ruleId).toBe('SFR18_DOOR_OWNERSHIP');
     });
 });
 
@@ -331,7 +331,7 @@ describe('checkTimeOverlap', () => {
             '2025-06-01T12:00', '2025-06-01T18:00'
         );
         expect(result.ok).toBe(false);
-        expect(result.ruleId).toBe('SFR16_TIME_OVERLAP');
+        expect(result.ruleId).toBe('SFR23_TIME_OVERLAP');
         expect(result.evidence.overlapInterval).not.toBeNull();
     });
 
@@ -392,7 +392,7 @@ describe('validateInduction', () => {
         const hangar   = mkHangar([door], [bay]);
         const results  = validateInduction({ aircraft, hangar, bays: [bay], door });
         expect(results.some(r => r.ruleId === 'SFR11_DOOR_FIT')).toBe(true);
-        expect(results.some(r => r.ruleId === 'SFR15_DOOR_OWNERSHIP')).toBe(true);
+        expect(results.some(r => r.ruleId === 'SFR18_DOOR_OWNERSHIP')).toBe(true);
     });
 
     test('multi-bay: contiguity result included', () => {
@@ -403,7 +403,7 @@ describe('validateInduction', () => {
         (hangar.grid as any).rows = 1;
         (hangar.grid as any).cols = 2;
         const results = validateInduction({ aircraft, hangar, bays: [B1, B2] });
-        expect(results.some(r => r.ruleId === 'SFR13_CONTIGUITY')).toBe(true);
+        expect(results.some(r => r.ruleId === 'SFR16_CONTIGUITY')).toBe(true);
     });
 
     test('single bay: no contiguity result', () => {
@@ -411,7 +411,7 @@ describe('validateInduction', () => {
         const bay      = mkBay('B1');
         const hangar   = mkHangar([], [bay]);
         const results  = validateInduction({ aircraft, hangar, bays: [bay] });
-        expect(results.some(r => r.ruleId === 'SFR13_CONTIGUITY')).toBe(false);
+        expect(results.some(r => r.ruleId === 'SFR16_CONTIGUITY')).toBe(false);
     });
 });
 

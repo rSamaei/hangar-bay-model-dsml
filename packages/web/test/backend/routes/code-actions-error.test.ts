@@ -30,7 +30,7 @@ describe('POST /api/code-actions — parseDocument throws', () => {
     mockParse.mockRejectedValueOnce(new Error('unexpected parse failure'));
     const res = await agent.post('/api/code-actions').send({
       dslCode: 'airfield X {}',
-      diagnostics: [{ message: 'SFR13_CONTIGUITY: test', startLine: 1, startColumn: 0 }],
+      diagnostics: [{ message: 'SFR16_CONTIGUITY: test', startLine: 1, startColumn: 0 }],
     });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ actions: [] });

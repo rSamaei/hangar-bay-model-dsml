@@ -48,7 +48,7 @@ airfield CleanField {
 `;
 
 /**
- * Induction with non-contiguous bays → SFR13_CONTIGUITY violation.
+ * Induction with non-contiguous bays → SFR16_CONTIGUITY violation.
  * Bay1 and Bay3 are only adjacent to Bay2 (not each other), so assigning
  * Bay1+Bay3 without Bay2 is non-contiguous.
  */

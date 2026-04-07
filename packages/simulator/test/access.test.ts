@@ -333,7 +333,7 @@ describe('checkDynamicBayReachability — bay blocking', () => {
         expect(result.evidence.blockingBays[0].bayName).toBe('Bay1');
         expect(result.evidence.blockingBays[0].occupiedByInductionId).toBe('IND-BLOCK');
         expect(result.evidence.blockingBays[0].occupiedByAircraft).toBe('C130');
-        expect(result.message).toContain('[SFR_DYNAMIC_REACHABILITY]');
+        expect(result.message).toContain('[SFR21_DYNAMIC_REACHABILITY]');
         expect(result.message).toContain('Bay2');
         expect(result.message).toContain('IND-BLOCK');
     });

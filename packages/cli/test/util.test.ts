@@ -107,7 +107,7 @@ airfield CleanTest {
 `;
 
 /**
- * A model with an SFR20_DIMENSIONS error (zero wingspan).
+ * A model with an SFR25_DIMENSIONS error (zero wingspan).
  * The language validator fires with severity===1, so extractDocument must
  * call process.exit(1).
  */

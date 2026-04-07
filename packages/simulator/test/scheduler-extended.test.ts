@@ -109,7 +109,7 @@ describe('AutoScheduler — bay rejection with rejectedSets details', () => {
 // ---------------------------------------------------------------------------
 
 describe('AutoScheduler — all bay-set candidates blocked by time conflict', () => {
-    test('returns failure with SFR16_TIME_OVERLAP when every bay set is temporally occupied', () => {
+    test('returns failure with SFR23_TIME_OVERLAP when every bay set is temporally occupied', () => {
         // Use a fixed time window so both autos target the same slot.
         const notBefore = '2030-01-01T08:00:00Z';
         const notAfter  = '2030-01-01T09:00:00Z'; // 60 min window, exactly one slot
@@ -138,7 +138,7 @@ describe('AutoScheduler — all bay-set candidates blocked by time conflict', ()
         const reasons = result.rejectionReasons.get('IND-B')!;
         expect(reasons).toBeDefined();
 
-        const conflict = reasons.find(r => r.ruleId === 'SFR16_TIME_OVERLAP');
+        const conflict = reasons.find(r => r.ruleId === 'SFR23_TIME_OVERLAP');
         expect(conflict).toBeDefined();
         expect(conflict!.evidence).toHaveProperty('hangar', 'Alpha');
         expect(conflict!.evidence).toHaveProperty('bays');

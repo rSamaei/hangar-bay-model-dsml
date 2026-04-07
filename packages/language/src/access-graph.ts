@@ -186,7 +186,7 @@ function findRelevantBlockers(
     return relevant;
 }
 
-// -- SFR_DYNAMIC_REACHABILITY ------------------------------------------------
+// -- SFR21_DYNAMIC_REACHABILITY ------------------------------------------------
 
 interface NodeMapping { bayName: string; nodeId: string }
 interface DoorMapping { doorName: string; nodeId: string }
@@ -286,7 +286,7 @@ export function checkDynamicBayReachability(
     const hangarName  = hangar.name;
 
     const makeSkipped = (reason: string): ReachabilityResult => ({
-        ok: true, skipped: true, ruleId: 'SFR_DYNAMIC_REACHABILITY', message: reason,
+        ok: true, skipped: true, ruleId: 'SFR21_DYNAMIC_REACHABILITY', message: reason,
         evidence: { inductionId, hangarName, unreachableBays: [], blockingBays: [], checkedFromDoors: [] }
     });
 
@@ -318,7 +318,7 @@ export function checkDynamicBayReachability(
     const unreachable = ownBayNodes.filter(b => !reachable.has(b.nodeId));
     if (unreachable.length === 0) {
         return {
-            ok: true, skipped: false, ruleId: 'SFR_DYNAMIC_REACHABILITY',
+            ok: true, skipped: false, ruleId: 'SFR21_DYNAMIC_REACHABILITY',
             message: `All bays for induction${inductionId ? ` '${inductionId}'` : ''} are reachable from door(s) [${checkedFromDoors.join(', ')}]`,
             evidence: { inductionId, hangarName, unreachableBays: [], blockingBays: [], checkedFromDoors }
         };
@@ -330,8 +330,8 @@ export function checkDynamicBayReachability(
     );
 
     return {
-        ok: false, skipped: false, ruleId: 'SFR_DYNAMIC_REACHABILITY',
-        message: `[SFR_DYNAMIC_REACHABILITY] Bays [${unreachableBays.join(', ')}] are unreachable` +
+        ok: false, skipped: false, ruleId: 'SFR21_DYNAMIC_REACHABILITY',
+        message: `[SFR21_DYNAMIC_REACHABILITY] Bays [${unreachableBays.join(', ')}] are unreachable` +
                  ` from door(s) [${checkedFromDoors.join(', ')}] because ${formatBlockerDescription(relevantBlockers)}`,
         evidence: { inductionId, hangarName, unreachableBays, blockingBays: relevantBlockers, checkedFromDoors }
     };
@@ -359,7 +359,7 @@ export function checkCorridorFit(
     wingspanEff: number
 ): CorridorFitResult {
     const graph = buildAccessGraph(hangar, accessPaths);
-    if (!graph) return { ok: true, skipped: true, ruleId: 'SFR_CORRIDOR_FIT', violations: [] };
+    if (!graph) return { ok: true, skipped: true, ruleId: 'SFR22_CORRIDOR_FIT', violations: [] };
 
     // Door entry nodes
     const doorNodeIds: string[] = [];
@@ -367,7 +367,7 @@ export function checkCorridorFit(
         const an = door.accessNode?.ref;
         if (an && graph.nodes.has(an.name)) doorNodeIds.push(an.name);
     }
-    if (doorNodeIds.length === 0) return { ok: true, skipped: true, ruleId: 'SFR_CORRIDOR_FIT', violations: [] };
+    if (doorNodeIds.length === 0) return { ok: true, skipped: true, ruleId: 'SFR22_CORRIDOR_FIT', violations: [] };
 
     // Assigned bay nodes
     const ownBayNodes: Array<{ bayName: string; nodeId: string }> = [];
@@ -377,7 +377,7 @@ export function checkCorridorFit(
         const an = bay.accessNode?.ref;
         if (an && graph.nodes.has(an.name)) ownBayNodes.push({ bayName: bay.name, nodeId: an.name });
     }
-    if (ownBayNodes.length === 0) return { ok: true, skipped: true, ruleId: 'SFR_CORRIDOR_FIT', violations: [] };
+    if (ownBayNodes.length === 0) return { ok: true, skipped: true, ruleId: 'SFR22_CORRIDOR_FIT', violations: [] };
 
     const reachableWithConstraint = reachableNodes(doorNodeIds, graph, new Set(), wingspanEff);
     const reachableNoConstraint = reachableNodes(doorNodeIds, graph);
@@ -387,7 +387,7 @@ export function checkCorridorFit(
         !reachableWithConstraint.has(b.nodeId) && reachableNoConstraint.has(b.nodeId)
     );
     if (corridorBlockedBays.length === 0) {
-        return { ok: true, skipped: false, ruleId: 'SFR_CORRIDOR_FIT', violations: [] };
+        return { ok: true, skipped: false, ruleId: 'SFR22_CORRIDOR_FIT', violations: [] };
     }
 
     // Narrow corridor nodes on reachable paths
@@ -411,5 +411,5 @@ export function checkCorridorFit(
         }
     }
 
-    return { ok: violations.length === 0, skipped: false, ruleId: 'SFR_CORRIDOR_FIT', violations };
+    return { ok: violations.length === 0, skipped: false, ruleId: 'SFR22_CORRIDOR_FIT', violations };
 }

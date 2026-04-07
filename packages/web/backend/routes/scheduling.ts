@@ -56,7 +56,7 @@ export function formatSchedulerReason(aircraftName: string, reasonRuleId: string
       return `SCHED_NO_BAY: Cannot schedule ${aircraftName} — no bay combination fits the aircraft dimensions`;
     case 'SFR11_DOOR_FIT':
       return `SCHED_DOOR_FIT: Cannot schedule ${aircraftName} — aircraft does not fit through any hangar door`;
-    case 'SFR16_TIME_OVERLAP':
+    case 'SFR23_TIME_OVERLAP':
       return `SCHED_TIME_OVERLAP: Cannot schedule ${aircraftName} — time slot conflicts with an existing induction`;
     default:
       return `SCHED_FAILURE: Cannot schedule ${aircraftName} — ${reasonRuleId}`;

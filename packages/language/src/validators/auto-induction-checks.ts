@@ -28,7 +28,7 @@ export function checkAutoPrecedenceCycles(autoInduction: AutoInduction, accept: 
 
     if (hasCycle(autoInduction)) {
         accept('error',
-            `[SFR18_PRECEDENCE_CYCLE] Circular precedence dependency detected in auto-induction`,
+            `[SFR24_PRECEDENCE_CYCLE] Circular precedence dependency detected in auto-induction`,
             { node: autoInduction, property: 'precedingInductions' }
         );
     }
@@ -41,13 +41,13 @@ export function checkAutoInductionTimeWindow(autoInduction: AutoInduction, accep
     const notAfter = new Date(autoInduction.notAfter);
     if (notBefore >= notAfter) {
         accept('error',
-            `[SFR21_TIME_WINDOW] Auto-induction time window is invalid: notBefore (${autoInduction.notBefore}) is not before notAfter (${autoInduction.notAfter})`,
+            `[SFR26_TIME_WINDOW] Auto-induction time window is invalid: notBefore (${autoInduction.notBefore}) is not before notAfter (${autoInduction.notAfter})`,
             { node: autoInduction, property: 'notAfter' }
         );
     }
 }
 
-/** SFR_BAY_COUNT_OVERRIDE: Warn when `requires N bays` is less than the geometry-derived minimum. */
+/** SFR15_BAY_COUNT_OVERRIDE: Warn when `requires N bays` is less than the geometry-derived minimum. */
 export function checkAutoInductionBayCountOverride(autoInduction: AutoInduction, accept: ValidationAcceptor): void {
     if (autoInduction.requires === undefined) return;
     const aircraft = autoInduction.aircraft?.ref;
@@ -74,7 +74,7 @@ export function checkAutoInductionBayCountOverride(autoInduction: AutoInduction,
 
     if (autoInduction.requires < baysRequired) {
         accept('warning',
-            `[SFR_BAY_COUNT_OVERRIDE] Aircraft '${aircraft.name}' requires at least ${baysRequired} bays` +
+            `[SFR15_BAY_COUNT_OVERRIDE] Aircraft '${aircraft.name}' requires at least ${baysRequired} bays` +
             ` by geometry (widths [${bayWidthsUsed.map(w => w.toFixed(2)).join(', ')}]m cover effective wingspan ${effectiveWingspan.toFixed(2)}m)` +
             ` but 'requires ${autoInduction.requires} bays' declares less. The geometric minimum will take precedence.`,
             { node: autoInduction, property: 'requires' }

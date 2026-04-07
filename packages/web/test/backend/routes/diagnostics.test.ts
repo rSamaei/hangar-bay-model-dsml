@@ -58,7 +58,7 @@ function validationDiagResult() {
     document: {},
     parseErrors: [],
     validationDiagnostics: [{
-      message: 'SFR20_DIMENSIONS: wingspan must be positive',
+      message: 'SFR25_DIMENSIONS: wingspan must be positive',
       severity: 1,
       line: 3,
       column: 2,
@@ -130,7 +130,7 @@ describe('POST /api/diagnostics — validation diagnostics', () => {
     const items = res.body.diagnostics;
     expect(items.length).toBeGreaterThan(0);
     expect(items[0].source).toBe('validator');
-    expect(items[0].message).toContain('SFR20_DIMENSIONS');
+    expect(items[0].message).toContain('SFR25_DIMENSIONS');
   });
 });
 

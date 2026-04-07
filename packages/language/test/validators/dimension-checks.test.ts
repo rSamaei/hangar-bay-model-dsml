@@ -4,10 +4,10 @@ import { setupServices, parse, validate, hasDiag } from '../helpers/setup.js';
 setupServices();
 
 // ===========================================================================
-// SFR20_DIMENSIONS — Aircraft
+// SFR25_DIMENSIONS — Aircraft
 // ===========================================================================
 
-describe('SFR20_DIMENSIONS — aircraft dimensions must be positive', () => {
+describe('SFR25_DIMENSIONS — aircraft dimensions must be positive', () => {
 
     test('zero wingspan triggers SFR20 error', async () => {
         const doc = await parse(`
@@ -17,7 +17,7 @@ describe('SFR20_DIMENSIONS — aircraft dimensions must be positive', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(hasDiag(diags, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('zero length triggers SFR20 error', async () => {
@@ -28,7 +28,7 @@ describe('SFR20_DIMENSIONS — aircraft dimensions must be positive', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(hasDiag(diags, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('zero height triggers SFR20 error', async () => {
@@ -39,7 +39,7 @@ describe('SFR20_DIMENSIONS — aircraft dimensions must be positive', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(hasDiag(diags, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('positive dimensions produce no SFR20 error', async () => {
@@ -50,15 +50,15 @@ describe('SFR20_DIMENSIONS — aircraft dimensions must be positive', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR20_DIMENSIONS')).toBe(false);
+        expect(hasDiag(diags, 'SFR25_DIMENSIONS')).toBe(false);
     });
 });
 
 // ===========================================================================
-// SFR20_DIMENSIONS — Bay
+// SFR25_DIMENSIONS — Bay
 // ===========================================================================
 
-describe('SFR20_DIMENSIONS — bay dimensions must be positive', () => {
+describe('SFR25_DIMENSIONS — bay dimensions must be positive', () => {
 
     test('zero bay width triggers SFR20 error', async () => {
         const doc = await parse(`
@@ -73,7 +73,7 @@ describe('SFR20_DIMENSIONS — bay dimensions must be positive', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(hasDiag(diags, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('zero bay depth triggers SFR20 error', async () => {
@@ -89,7 +89,7 @@ describe('SFR20_DIMENSIONS — bay dimensions must be positive', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(hasDiag(diags, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('zero bay height triggers SFR20 error', async () => {
@@ -105,15 +105,15 @@ describe('SFR20_DIMENSIONS — bay dimensions must be positive', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(hasDiag(diags, 'SFR25_DIMENSIONS')).toBe(true);
     });
 });
 
 // ===========================================================================
-// SFR20_DIMENSIONS — Door
+// SFR25_DIMENSIONS — Door
 // ===========================================================================
 
-describe('SFR20_DIMENSIONS — door dimensions must be positive', () => {
+describe('SFR25_DIMENSIONS — door dimensions must be positive', () => {
 
     test('zero door width triggers SFR20 error', async () => {
         const doc = await parse(`
@@ -128,7 +128,7 @@ describe('SFR20_DIMENSIONS — door dimensions must be positive', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(hasDiag(diags, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('zero door height triggers SFR20 error', async () => {
@@ -144,15 +144,15 @@ describe('SFR20_DIMENSIONS — door dimensions must be positive', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(hasDiag(diags, 'SFR25_DIMENSIONS')).toBe(true);
     });
 });
 
 // ===========================================================================
-// SFR26_UNREFERENCED_CLEARANCE — clearance envelopes should be used
+// SFR30_UNREFERENCED_CLEARANCE — clearance envelopes should be used
 // ===========================================================================
 
-describe('SFR26_UNREFERENCED_CLEARANCE — clearance envelopes must be referenced', () => {
+describe('SFR30_UNREFERENCED_CLEARANCE — clearance envelopes must be referenced', () => {
 
     test('defined-but-unused clearance envelope triggers SFR26 warning', async () => {
         const doc = await parse(`
@@ -171,7 +171,7 @@ describe('SFR26_UNREFERENCED_CLEARANCE — clearance envelopes must be reference
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR26_UNREFERENCED_CLEARANCE')).toBe(true);
+        expect(hasDiag(diags, 'SFR30_UNREFERENCED_CLEARANCE')).toBe(true);
     });
 
     test('clearance envelope referenced by an aircraft produces no SFR26 warning', async () => {
@@ -192,6 +192,6 @@ describe('SFR26_UNREFERENCED_CLEARANCE — clearance envelopes must be reference
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR26_UNREFERENCED_CLEARANCE')).toBe(false);
+        expect(hasDiag(diags, 'SFR30_UNREFERENCED_CLEARANCE')).toBe(false);
     });
 });

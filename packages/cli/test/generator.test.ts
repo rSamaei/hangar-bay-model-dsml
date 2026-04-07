@@ -86,7 +86,7 @@ airfield TestAirfield {
 `;
 
 /**
- * A model with an SFR20_DIMENSIONS error (zero wingspan).
+ * A model with an SFR25_DIMENSIONS error (zero wingspan).
  * This triggers a severity-1 diagnostic, so extractDocument (in util.ts)
  * calls process.exit(1) before generateAction can produce output.
  */

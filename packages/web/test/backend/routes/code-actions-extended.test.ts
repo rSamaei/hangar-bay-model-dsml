@@ -80,14 +80,14 @@ describe('POST /api/code-actions — position conversion', () => {
 
 describe('POST /api/code-actions — data field forwarding', () => {
   test('diagnostic with ruleId data forwarded to provider', async () => {
-    // The SFR13_CONTIGUITY diagnostic should be picked up by ruleId in the data field
+    // The SFR16_CONTIGUITY diagnostic should be picked up by ruleId in the data field
     const res = await agent.post('/api/code-actions').send({
       dslCode: THREE_BAY_DSL,
       diagnostics: [{
-        message: 'SFR13_CONTIGUITY: Bay1 and Bay3 are not contiguous',
+        message: 'SFR16_CONTIGUITY: Bay1 and Bay3 are not contiguous',
         startLine: 20,
         startColumn: 4,
-        data: { ruleId: 'SFR13_CONTIGUITY' },
+        data: { ruleId: 'SFR16_CONTIGUITY' },
       }],
     });
     expect(res.status).toBe(200);
@@ -119,10 +119,10 @@ describe('POST /api/code-actions — action with edits returned', () => {
     const res = await agent.post('/api/code-actions').send({
       dslCode: THREE_BAY_DSL,
       diagnostics: [{
-        message: 'SFR13_CONTIGUITY: Bay1 and Bay3 are not contiguous',
+        message: 'SFR16_CONTIGUITY: Bay1 and Bay3 are not contiguous',
         startLine: 17,
         startColumn: 4,
-        data: { ruleId: 'SFR13_CONTIGUITY' },
+        data: { ruleId: 'SFR16_CONTIGUITY' },
       }],
     });
     expect(res.status).toBe(200);

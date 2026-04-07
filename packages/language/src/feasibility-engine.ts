@@ -196,7 +196,7 @@ export function checkBayContiguity(
     if (bays.length <= 1) {
         return {
             ok: true,
-            ruleId: 'SFR13_CONTIGUITY',
+            ruleId: 'SFR16_CONTIGUITY',
             message: 'Single bay requires no contiguity check',
             evidence: { bayCount: bays.length, bayNames: bays.map(b => b.name) }
         };
@@ -223,7 +223,7 @@ export function checkBayContiguity(
     const ok = visited.size === selected.size;
     return {
         ok,
-        ruleId: 'SFR13_CONTIGUITY',
+        ruleId: 'SFR16_CONTIGUITY',
         message: ok
             ? `Bays ${bays.map(b => b.name).join(', ')} are contiguous`
             : `Bays ${bays.map(b => b.name).join(', ')} are not contiguous (${visited.size}/${selected.size} reachable)`,
@@ -244,7 +244,7 @@ export function checkBayOwnership(bay: HangarBay, hangar: Hangar): RuleResult {
     const ok = hangar.grid.bays.includes(bay);
     return {
         ok,
-        ruleId: 'SFR14_BAY_OWNERSHIP',
+        ruleId: 'SFR17_BAY_OWNERSHIP',
         message: ok
             ? `Bay ${bay.name} belongs to hangar ${hangar.name}`
             : `Bay ${bay.name} does not belong to hangar ${hangar.name}`,
@@ -261,7 +261,7 @@ export function checkDoorOwnership(door: HangarDoor, hangar: Hangar): RuleResult
     const ok = hangar.doors.includes(door);
     return {
         ok,
-        ruleId: 'SFR15_DOOR_OWNERSHIP',
+        ruleId: 'SFR18_DOOR_OWNERSHIP',
         message: ok
             ? `Door ${door.name} belongs to hangar ${hangar.name}`
             : `Door ${door.name} does not belong to hangar ${hangar.name}`,
@@ -295,7 +295,7 @@ export function checkTimeOverlap(
 
     return {
         ok: !overlaps,
-        ruleId: 'SFR16_TIME_OVERLAP',
+        ruleId: 'SFR23_TIME_OVERLAP',
         message: overlaps
             ? `Time overlap detected: ${overlapStart?.toISOString()} to ${overlapEnd?.toISOString()}`
             : 'No time overlap',

@@ -14,7 +14,7 @@ export interface InductionInfo {
 
 /** A detected scheduling conflict between two inductions sharing a bay at the same time. */
 export interface ConflictInfo {
-    ruleId: 'SFR16_TIME_OVERLAP';
+    ruleId: 'SFR23_TIME_OVERLAP';
     induction1: { id?: string; aircraft: string };
     induction2: { id?: string; aircraft: string };
     hangar: string;

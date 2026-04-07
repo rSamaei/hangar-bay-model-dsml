@@ -1,5 +1,5 @@
 /**
- * Unit tests for auto-induction-checks.ts (SFR18 / SFR21 / SFR_BAY_COUNT_OVERRIDE).
+ * Unit tests for auto-induction-checks.ts (SFR18 / SFR21 / SFR15_BAY_COUNT_OVERRIDE).
  *
  * Imports directly from the TypeScript source for v8 coverage.
  * Uses structural mocks — no Langium runtime.
@@ -40,7 +40,7 @@ function mkAuto(id?: string): AutoInduction {
 }
 
 // ---------------------------------------------------------------------------
-// checkAutoPrecedenceCycles — SFR18_PRECEDENCE_CYCLE
+// checkAutoPrecedenceCycles — SFR24_PRECEDENCE_CYCLE
 // ---------------------------------------------------------------------------
 
 describe('checkAutoPrecedenceCycles', () => {
@@ -71,7 +71,7 @@ describe('checkAutoPrecedenceCycles', () => {
         const autoA = mkAuto('A');
         (autoA as any).precedingInductions = [{ ref: autoA }];
         checkAutoPrecedenceCycles(autoA, accept);
-        expect(calledWithCode(accept, 'SFR18_PRECEDENCE_CYCLE')).toBe(true);
+        expect(calledWithCode(accept, 'SFR24_PRECEDENCE_CYCLE')).toBe(true);
     });
 
     test('indirect cycle A→B→A — SFR18 error', () => {
@@ -81,7 +81,7 @@ describe('checkAutoPrecedenceCycles', () => {
         (autoA as any).precedingInductions = [{ ref: autoB }];
         (autoB as any).precedingInductions = [{ ref: autoA }];
         checkAutoPrecedenceCycles(autoA, accept);
-        expect(calledWithCode(accept, 'SFR18_PRECEDENCE_CYCLE')).toBe(true);
+        expect(calledWithCode(accept, 'SFR24_PRECEDENCE_CYCLE')).toBe(true);
     });
 
     test('shared dependency A→B and A→C, B→C — C visited once, no false positive', () => {
@@ -140,14 +140,14 @@ describe('checkAutoInductionTimeWindow', () => {
         const accept = mockAccept();
         const auto = { notBefore: '2024-01-01T08:00', notAfter: '2024-01-01T08:00' } as unknown as AutoInduction;
         checkAutoInductionTimeWindow(auto, accept);
-        expect(calledWithCode(accept, 'SFR21_TIME_WINDOW')).toBe(true);
+        expect(calledWithCode(accept, 'SFR26_TIME_WINDOW')).toBe(true);
     });
 
     test('notBefore after notAfter — SFR21 error', () => {
         const accept = mockAccept();
         const auto = { notBefore: '2024-01-01T18:00', notAfter: '2024-01-01T08:00' } as unknown as AutoInduction;
         checkAutoInductionTimeWindow(auto, accept);
-        expect(calledWithCode(accept, 'SFR21_TIME_WINDOW')).toBe(true);
+        expect(calledWithCode(accept, 'SFR26_TIME_WINDOW')).toBe(true);
     });
 
     test('valid window (notBefore < notAfter) — no error', () => {
@@ -159,7 +159,7 @@ describe('checkAutoInductionTimeWindow', () => {
 });
 
 // ---------------------------------------------------------------------------
-// checkAutoInductionBayCountOverride — SFR_BAY_COUNT_OVERRIDE
+// checkAutoInductionBayCountOverride — SFR15_BAY_COUNT_OVERRIDE
 // ---------------------------------------------------------------------------
 
 describe('checkAutoInductionBayCountOverride', () => {
@@ -238,7 +238,7 @@ describe('checkAutoInductionBayCountOverride', () => {
         expect(wasCalled(accept)).toBe(false);
     });
 
-    test('requires < geometric minimum — SFR_BAY_COUNT_OVERRIDE warning', () => {
+    test('requires < geometric minimum — SFR15_BAY_COUNT_OVERRIDE warning', () => {
         const accept = mockAccept();
         const aircraft = { name: 'Wide', wingspan: 70, clearance: undefined };
         const hangar = mkHangar([{ width: 36 }, { width: 36 }]);
@@ -251,7 +251,7 @@ describe('checkAutoInductionBayCountOverride', () => {
         } as unknown as AutoInduction;
         (auto as any).$container = model;
         checkAutoInductionBayCountOverride(auto, accept);
-        expect(calledWithCode(accept, 'SFR_BAY_COUNT_OVERRIDE')).toBe(true);
+        expect(calledWithCode(accept, 'SFR15_BAY_COUNT_OVERRIDE')).toBe(true);
     });
 
     test('requires === geometric minimum — no warning', () => {
@@ -285,7 +285,7 @@ describe('checkAutoInductionBayCountOverride', () => {
         (auto as any).$container = model;
         checkAutoInductionBayCountOverride(auto, accept);
         // Uses preferredHangar (needs 2 bays), requires=1 → warning
-        expect(calledWithCode(accept, 'SFR_BAY_COUNT_OVERRIDE')).toBe(true);
+        expect(calledWithCode(accept, 'SFR15_BAY_COUNT_OVERRIDE')).toBe(true);
     });
 
     test('clearance lateral margin adds to effective wingspan', () => {

@@ -33,8 +33,8 @@ describe('formatSchedulerReason', () => {
     expect(msg).toContain('Hawk');
   });
 
-  test('SFR16_TIME_OVERLAP → SCHED_TIME_OVERLAP message', () => {
-    const msg = formatSchedulerReason('A400M', 'SFR16_TIME_OVERLAP');
+  test('SFR23_TIME_OVERLAP → SCHED_TIME_OVERLAP message', () => {
+    const msg = formatSchedulerReason('A400M', 'SFR23_TIME_OVERLAP');
     expect(msg).toContain('SCHED_TIME_OVERLAP');
   });
 

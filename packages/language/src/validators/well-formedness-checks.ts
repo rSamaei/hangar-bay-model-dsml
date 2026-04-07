@@ -18,19 +18,19 @@ function checkDuplicateNames(
 
 export function checkDuplicateAircraftNames(model: Model, accept: ValidationAcceptor): void {
     checkDuplicateNames(model.aircraftTypes,
-        name => `[WF_DUPLICATE_AIRCRAFT] Duplicate aircraft type name '${name}' — each aircraft type must have a unique name`,
+        name => `[SFR27_DUPLICATE_AIRCRAFT] Duplicate aircraft type name '${name}' — each aircraft type must have a unique name`,
         accept);
 }
 
 export function checkDuplicateBayNames(hangar: Hangar, accept: ValidationAcceptor): void {
     checkDuplicateNames(hangar.grid.bays,
-        name => `[WF_DUPLICATE_BAY] Duplicate bay name '${name}' in hangar '${hangar.name}' — bay names must be unique within a hangar`,
+        name => `[SFR27_DUPLICATE_BAY] Duplicate bay name '${name}' in hangar '${hangar.name}' — bay names must be unique within a hangar`,
         accept);
 }
 
 export function checkDuplicateHangarNames(model: Model, accept: ValidationAcceptor): void {
     checkDuplicateNames(model.hangars,
-        name => `[WF_DUPLICATE_HANGAR] Duplicate hangar name '${name}' — each hangar must have a unique name`,
+        name => `[SFR27_DUPLICATE_HANGAR] Duplicate hangar name '${name}' — each hangar must have a unique name`,
         accept);
 }
 
@@ -44,7 +44,7 @@ export function checkSelfAdjacency(bay: HangarBay, accept: ValidationAcceptor): 
     for (let i = 0; i < bay.adjacent.length; i++) {
         if (bay.adjacent[i].ref === bay) {
             accept('warning',
-                `[SFR7_SELF_ADJACENCY] Bay '${bay.name}' declares itself as adjacent — self-adjacency is not meaningful`,
+                `[SFR28_SELF_ADJACENCY] Bay '${bay.name}' declares itself as adjacent — self-adjacency is not meaningful`,
                 { node: bay, property: 'adjacent', index: i }
             );
         }
@@ -56,7 +56,7 @@ export function checkSelfLoopAccessLink(link: AccessLink, accept: ValidationAcce
     const toNode = link.to?.ref;
     if (fromNode !== undefined && toNode !== undefined && fromNode === toNode) {
         accept('warning',
-            `[SFR7_SELF_LOOP] Access link from '${fromNode.name}' to '${fromNode.name}' is a self-loop`,
+            `[SFR28_SELF_LOOP] Access link from '${fromNode.name}' to '${fromNode.name}' is a self-loop`,
             { node: link, property: 'to' }
         );
     }

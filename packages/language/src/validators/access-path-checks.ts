@@ -38,7 +38,7 @@ export function checkAccessPathConnectivity(accessPath: AccessPath, accept: Vali
     for (const node of nodes) {
         if (!reachable.has(node)) {
             accept('warning',
-                `[SFR19_PATH_CONNECTIVITY] Node ${node.name} is not connected to the rest of the access path`,
+                `[SFR20_PATH_CONNECTIVITY] Node ${node.name} is not connected to the rest of the access path`,
                 { node: accessPath, property: 'nodes' }
             );
         }

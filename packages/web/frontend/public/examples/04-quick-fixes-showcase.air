@@ -1,17 +1,17 @@
 // =============================================================================
 // AVAILABLE QUICK FIXES
 //
-//  FIX A ─ SFR12_BAY_FIT / SFR25_BAY_COUNT  (wingspan)
+//  FIX A ─ SFR12_BAY_FIT / SFR14_BAY_COUNT  (wingspan)
 //           Aircraft is wider than the assigned bay.
 //           Quick fix: add an adjacent bay so the combined width covers
 //           the aircraft's effective wingspan.
 //
-//  FIX B ─ SFR13_CONTIGUITY
+//  FIX B ─ SFR16_CONTIGUITY
 //           The assigned bays are not all connected to each other.
 //           Quick fix: insert the minimum bridging bay(s) to restore
 //           a contiguous chain.
 //
-//  FIX C ─ SFR25_BAY_COUNT  (explicit requires clause)
+//  FIX C ─ SFR14_BAY_COUNT  (explicit requires clause)
 //           Fewer bays are assigned than the `requires N bays` clause
 //           demands (even when the aircraft would fit the current set).
 //           Quick fix: add adjacent bays until the count is satisfied.
@@ -83,14 +83,14 @@ airfield QuickFixShowcase {
     }
 
     // =========================================================================
-    // FIX A — SFR12_BAY_FIT + SFR25_BAY_COUNT  (wingspan quick fix)
+    // FIX A — SFR12_BAY_FIT + SFR14_BAY_COUNT  (wingspan quick fix)
     //
     // MediumJet wingspan = 18 m.  Bay1 is only 10 m wide.
     //
     // Errors fired:
     //   [SFR12_BAY_FIT]   Aircraft MediumJet does not fit in bay Bay1:
     //                     wingspan: 18.00m > 10m
-    //   [SFR25_BAY_COUNT] Aircraft 'MediumJet' requires at least 2 bays
+    //   [SFR14_BAY_COUNT] Aircraft 'MediumJet' requires at least 2 bays
     //                     (widths [10.00, 10.00]m cover effective wingspan
     //                     18.00m) but only 1 is assigned
     //
@@ -108,12 +108,12 @@ airfield QuickFixShowcase {
     // to   2024-06-01T18:00;
 
     // =========================================================================
-    // FIX B — SFR13_CONTIGUITY  (bridge bay quick fix)
+    // FIX B — SFR16_CONTIGUITY  (bridge bay quick fix)
     //
     // Bay1 (col 0) and Bay3 (col 2) are not adjacent — Bay2 lies between them.
     //
     // Error fired:
-    //   [SFR13_CONTIGUITY] Bays Bay1, Bay3 are not contiguous
+    //   [SFR16_CONTIGUITY] Bays Bay1, Bay3 are not contiguous
     //                      (1/2 reachable)
     //
     // Quick fix: "Add 'Bay2' to restore bay contiguity"
@@ -130,14 +130,14 @@ airfield QuickFixShowcase {
     // to   2024-06-02T18:00;
 
     // =========================================================================
-    // FIX C — SFR25_BAY_COUNT  (explicit `requires` clause quick fix)
+    // FIX C — SFR14_BAY_COUNT  (explicit `requires` clause quick fix)
     //
     // MediumJet wingspan = 18 m.  Two bays are assigned (combined 20 m ≥ 18 m)
     // so the aircraft fits and no SFR12 error fires.  However the `requires 3
     // bays` clause demands one more — perhaps for operational clearance.
     //
     // Warning fired:
-    //   [SFR25_BAY_COUNT] Aircraft 'MediumJet' requires at least 3 bays
+    //   [SFR14_BAY_COUNT] Aircraft 'MediumJet' requires at least 3 bays
     //                     (widths [10.00, 10.00, 10.00]m cover effective
     //                     wingspan 18.00m) but only 2 are assigned
     //

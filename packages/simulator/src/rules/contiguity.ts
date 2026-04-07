@@ -37,7 +37,7 @@ export function checkContiguity(
     if (bayNames.length <= 1) {
         return {
             ok: true,
-            ruleId: 'SFR13_CONTIGUITY',
+            ruleId: 'SFR16_CONTIGUITY',
             message: 'Single bay requires no contiguity check',
             evidence: {
                 bayNames,
@@ -70,7 +70,7 @@ export function checkContiguity(
 
     return {
         ok,
-        ruleId: 'SFR13_CONTIGUITY',
+        ruleId: 'SFR16_CONTIGUITY',
         message: ok
             ? `Bay set [${bayNames.join(', ')}] is contiguous`
             : `Bay set [${bayNames.join(', ')}] is NOT contiguous: only ${visited.size}/${selected.size} reachable`,

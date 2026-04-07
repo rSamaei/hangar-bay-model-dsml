@@ -116,7 +116,7 @@ beforeEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// checkBayReachability — SFR17_REACHABILITY
+// checkBayReachability — SFR19_REACHABILITY
 // ---------------------------------------------------------------------------
 describe('checkBayReachability', () => {
     test('no door ref → silent return', () => {
@@ -165,7 +165,7 @@ describe('checkBayReachability', () => {
         expect(wasCalled(accept)).toBe(false);
     });
 
-    test('bay not reachable → SFR17_REACHABILITY error', () => {
+    test('bay not reachable → SFR19_REACHABILITY error', () => {
         const accept = mockAccept();
         mockBuildAccessGraph.mockReturnValue(mkGraph(['DN1', 'N1']));
         mockReachableNodes.mockReturnValue(new Set(['DN1']));  // N1 absent
@@ -173,7 +173,7 @@ describe('checkBayReachability', () => {
         const bay  = mkBay('Bay1', 'N1');
         const ind  = mkInduction({ door, hangar: mkHangar('H'), bays: [bay] });
         checkBayReachability(ind, accept);
-        expect(calledWithCode(accept, 'SFR17_REACHABILITY')).toBe(true);
+        expect(calledWithCode(accept, 'SFR19_REACHABILITY')).toBe(true);
     });
 
     test('bay has no accessNode → skipped for that bay (no false positive)', () => {
@@ -189,11 +189,11 @@ describe('checkBayReachability', () => {
 });
 
 // ---------------------------------------------------------------------------
-// checkDynamicBayBlockingReachability — SFR_DYNAMIC_REACHABILITY
+// checkDynamicBayBlockingReachability — SFR21_DYNAMIC_REACHABILITY
 // ---------------------------------------------------------------------------
 describe('checkDynamicBayBlockingReachability', () => {
     function okResult(): ReachabilityResult {
-        return { ok: true, skipped: false, ruleId: 'SFR_DYNAMIC_REACHABILITY', message: '', evidence: { hangarName: 'H', unreachableBays: [], blockingBays: [], checkedFromDoors: [] } };
+        return { ok: true, skipped: false, ruleId: 'SFR21_DYNAMIC_REACHABILITY', message: '', evidence: { hangarName: 'H', unreachableBays: [], blockingBays: [], checkedFromDoors: [] } };
     }
 
     test('no hangar ref → silent return', () => {
@@ -222,11 +222,11 @@ describe('checkDynamicBayBlockingReachability', () => {
 
     test('result.skipped=false and ok=false → error with result.message', () => {
         const accept = mockAccept();
-        const msg = '[SFR_DYNAMIC_REACHABILITY] Bay Bay2 blocked';
+        const msg = '[SFR21_DYNAMIC_REACHABILITY] Bay Bay2 blocked';
         mockCheckDynamicReach.mockReturnValue({ ...okResult(), ok: false, skipped: false, message: msg });
         const ind = mkInduction({ hangar: mkHangar('H') });
         checkDynamicBayBlockingReachability(ind, accept);
-        expect(calledWithCode(accept, 'SFR_DYNAMIC_REACHABILITY')).toBe(true);
+        expect(calledWithCode(accept, 'SFR21_DYNAMIC_REACHABILITY')).toBe(true);
         const calls = (accept as ReturnType<typeof vi.fn>).mock.calls as unknown[][];
         expect(calls[0][0]).toBe('error');
         expect(calls[0][1]).toBe(msg);
@@ -234,7 +234,7 @@ describe('checkDynamicBayBlockingReachability', () => {
 });
 
 // ---------------------------------------------------------------------------
-// checkCorridorFitReachability — SFR_CORRIDOR_FIT
+// checkCorridorFitReachability — SFR22_CORRIDOR_FIT
 // ---------------------------------------------------------------------------
 describe('checkCorridorFitReachability', () => {
     function noViolations() {
@@ -265,7 +265,7 @@ describe('checkCorridorFitReachability', () => {
         expect(wasCalled(accept)).toBe(false);
     });
 
-    test('one corridor violation → SFR_CORRIDOR_FIT warning', () => {
+    test('one corridor violation → SFR22_CORRIDOR_FIT warning', () => {
         const accept = mockAccept();
         mockCheckCorridorFit.mockReturnValue({
             violations: [{ nodeName: 'Corridor1', nodeWidth: 8, wingspanEff: 11, bayName: 'Bay2' }],
@@ -273,7 +273,7 @@ describe('checkCorridorFitReachability', () => {
         });
         const ind = mkInduction({ hangar: mkHangar('H'), aircraft: mkAircraft('Hawk', 10) });
         checkCorridorFitReachability(ind, accept);
-        expect(calledWithCode(accept, 'SFR_CORRIDOR_FIT')).toBe(true);
+        expect(calledWithCode(accept, 'SFR22_CORRIDOR_FIT')).toBe(true);
         const calls = (accept as ReturnType<typeof vi.fn>).mock.calls as unknown[][];
         expect(calls[0][0]).toBe('warning');
     });

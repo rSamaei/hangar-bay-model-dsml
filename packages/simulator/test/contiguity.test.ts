@@ -32,7 +32,7 @@ describe('checkContiguity', () => {
         const adj = mkAdjacency([], []);
         const result = checkContiguity([], adj);
         expect(result.ok).toBe(true);
-        expect(result.ruleId).toBe('SFR13_CONTIGUITY');
+        expect(result.ruleId).toBe('SFR16_CONTIGUITY');
     });
 
     test('single bay — always contiguous', () => {

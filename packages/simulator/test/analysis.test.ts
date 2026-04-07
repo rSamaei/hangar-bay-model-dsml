@@ -11,7 +11,7 @@
  * so fixtures must include the full structural mock (aircraft wingspan/length/
  * height, bay width/depth/height/row/col, hangar grid rows/cols).
  *
- * The dynamic-reachability check (SFR_DYNAMIC_REACHABILITY) is automatically
+ * The dynamic-reachability check (SFR21_DYNAMIC_REACHABILITY) is automatically
  * skipped when no doors or bays carry an accessNode — which is true for all
  * fixtures below — so no access-path mocks are required.
  */

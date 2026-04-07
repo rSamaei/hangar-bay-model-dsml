@@ -5,12 +5,12 @@ import { CESSNA, ALPHA_HANGAR } from '../helpers/fixtures.js';
 setupServices();
 
 // ===========================================================================
-// SFR_REACHABILITY_SKIPPED — hint when hangar has inductions but no access graph
+// SFR31_REACHABILITY_SKIPPED — hint when hangar has inductions but no access graph
 // ===========================================================================
 
-describe('SFR_REACHABILITY_SKIPPED — info hint when no access path is modelled', () => {
+describe('SFR31_REACHABILITY_SKIPPED — info hint when no access path is modelled', () => {
 
-    test('hangar with a modelled access path produces no SFR_REACHABILITY_SKIPPED hint', async () => {
+    test('hangar with a modelled access path produces no SFR31_REACHABILITY_SKIPPED hint', async () => {
         const doc = await parse(`
             airfield T {
                 aircraft Cessna {
@@ -35,10 +35,10 @@ describe('SFR_REACHABILITY_SKIPPED — info hint when no access path is modelled
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR_REACHABILITY_SKIPPED')).toBe(false);
+        expect(hasDiag(diags, 'SFR31_REACHABILITY_SKIPPED')).toBe(false);
     });
 
-    test('hangar with induction but no access path triggers SFR_REACHABILITY_SKIPPED hint', async () => {
+    test('hangar with induction but no access path triggers SFR31_REACHABILITY_SKIPPED hint', async () => {
         const doc = await parse(`
             airfield T {
                 ${CESSNA}
@@ -50,15 +50,15 @@ describe('SFR_REACHABILITY_SKIPPED — info hint when no access path is modelled
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR_REACHABILITY_SKIPPED')).toBe(true);
+        expect(hasDiag(diags, 'SFR31_REACHABILITY_SKIPPED')).toBe(true);
 
         const hint = diags.find(
-            d => typeof d.message === 'string' && d.message.includes('SFR_REACHABILITY_SKIPPED')
+            d => typeof d.message === 'string' && d.message.includes('SFR31_REACHABILITY_SKIPPED')
         );
         expect(hint?.message).toContain("Hangar 'Alpha'");
     });
 
-    test('hangar with no inductions produces no SFR_REACHABILITY_SKIPPED hint', async () => {
+    test('hangar with no inductions produces no SFR31_REACHABILITY_SKIPPED hint', async () => {
         const doc = await parse(`
             airfield T {
                 hangar Alpha {
@@ -71,15 +71,15 @@ describe('SFR_REACHABILITY_SKIPPED — info hint when no access path is modelled
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR_REACHABILITY_SKIPPED')).toBe(false);
+        expect(hasDiag(diags, 'SFR31_REACHABILITY_SKIPPED')).toBe(false);
     });
 });
 
 // ===========================================================================
-// SFR_NONGRID_ADJACENCY / SFR_GRID_OVERRIDE — explicit vs grid adjacency
+// SFR29_NONGRID_ADJACENCY / SFR29_GRID_OVERRIDE — explicit vs grid adjacency
 // ===========================================================================
 
-describe('SFR_NONGRID_ADJACENCY / SFR_GRID_OVERRIDE — adjacency consistency checks', () => {
+describe('SFR29_NONGRID_ADJACENCY / SFR29_GRID_OVERRIDE — adjacency consistency checks', () => {
 
     test('explicit adjacency matching grid neighbours produces no warnings', async () => {
         const doc = await parse(`
@@ -104,11 +104,11 @@ describe('SFR_NONGRID_ADJACENCY / SFR_GRID_OVERRIDE — adjacency consistency ch
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR_NONGRID_ADJACENCY')).toBe(false);
-        expect(hasDiag(diags, 'SFR_GRID_OVERRIDE')).toBe(false);
+        expect(hasDiag(diags, 'SFR29_NONGRID_ADJACENCY')).toBe(false);
+        expect(hasDiag(diags, 'SFR29_GRID_OVERRIDE')).toBe(false);
     });
 
-    test('explicit adjacency spanning non-adjacent grid cells triggers SFR_NONGRID_ADJACENCY', async () => {
+    test('explicit adjacency spanning non-adjacent grid cells triggers SFR29_NONGRID_ADJACENCY', async () => {
         const doc = await parse(`
             airfield T {
                 hangar Alpha {
@@ -134,10 +134,10 @@ describe('SFR_NONGRID_ADJACENCY / SFR_GRID_OVERRIDE — adjacency consistency ch
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR_NONGRID_ADJACENCY')).toBe(true);
+        expect(hasDiag(diags, 'SFR29_NONGRID_ADJACENCY')).toBe(true);
     });
 
-    test('explicit adjacency that excludes a grid neighbour triggers SFR_GRID_OVERRIDE', async () => {
+    test('explicit adjacency that excludes a grid neighbour triggers SFR29_GRID_OVERRIDE', async () => {
         const doc = await parse(`
             airfield T {
                 hangar Alpha {
@@ -163,7 +163,7 @@ describe('SFR_NONGRID_ADJACENCY / SFR_GRID_OVERRIDE — adjacency consistency ch
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR_GRID_OVERRIDE')).toBe(true);
+        expect(hasDiag(diags, 'SFR29_GRID_OVERRIDE')).toBe(true);
     });
 
     test('bays with no explicit adjacency block produce no warnings', async () => {
@@ -187,8 +187,8 @@ describe('SFR_NONGRID_ADJACENCY / SFR_GRID_OVERRIDE — adjacency consistency ch
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR_NONGRID_ADJACENCY')).toBe(false);
-        expect(hasDiag(diags, 'SFR_GRID_OVERRIDE')).toBe(false);
+        expect(hasDiag(diags, 'SFR29_NONGRID_ADJACENCY')).toBe(false);
+        expect(hasDiag(diags, 'SFR29_GRID_OVERRIDE')).toBe(false);
     });
 });
 
@@ -198,7 +198,7 @@ describe('SFR_NONGRID_ADJACENCY / SFR_GRID_OVERRIDE — adjacency consistency ch
 
 describe('Adjacency mode — 8-connected allows diagonal explicit adjacency', () => {
 
-    test('adjacency 8: diagonal declared adjacent produces no SFR_NONGRID_ADJACENCY', async () => {
+    test('adjacency 8: diagonal declared adjacent produces no SFR29_NONGRID_ADJACENCY', async () => {
         const doc = await parse(`
             airfield T {
                 hangar Alpha {
@@ -220,11 +220,11 @@ describe('Adjacency mode — 8-connected allows diagonal explicit adjacency', ()
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR_NONGRID_ADJACENCY')).toBe(false);
-        expect(hasDiag(diags, 'SFR_GRID_OVERRIDE')).toBe(true);
+        expect(hasDiag(diags, 'SFR29_NONGRID_ADJACENCY')).toBe(false);
+        expect(hasDiag(diags, 'SFR29_GRID_OVERRIDE')).toBe(true);
     });
 
-    test('default adjacency (4): diagonal declared adjacent triggers SFR_NONGRID_ADJACENCY', async () => {
+    test('default adjacency (4): diagonal declared adjacent triggers SFR29_NONGRID_ADJACENCY', async () => {
         const doc = await parse(`
             airfield T {
                 hangar Alpha {
@@ -245,6 +245,6 @@ describe('Adjacency mode — 8-connected allows diagonal explicit adjacency', ()
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR_NONGRID_ADJACENCY')).toBe(true);
+        expect(hasDiag(diags, 'SFR29_NONGRID_ADJACENCY')).toBe(true);
     });
 });

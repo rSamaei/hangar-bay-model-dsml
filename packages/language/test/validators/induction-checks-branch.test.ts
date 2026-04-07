@@ -89,7 +89,7 @@ describe('checkBayHangarMembership — no model container', () => {
         } as unknown as Induction;
         checkBayHangarMembership(induction, accept);
         // bayB.ref is defined but not in hangar → SFR14 via resolved-ref path
-        expect(calledWithCode(accept, 'SFR14_BAY_OWNERSHIP')).toBe(true);
+        expect(calledWithCode(accept, 'SFR17_BAY_OWNERSHIP')).toBe(true);
     });
 
     test('bay in correct hangar, no model container → no error', () => {
@@ -129,7 +129,7 @@ describe('checkBayHangarMembership — unresolved bay ref ($refText)', () => {
         } as unknown as Induction;
         (induction as any).$container = model;
         checkBayHangarMembership(induction, accept);
-        expect(calledWithCode(accept, 'SFR14_BAY_OWNERSHIP')).toBe(true);
+        expect(calledWithCode(accept, 'SFR17_BAY_OWNERSHIP')).toBe(true);
     });
 
     test('unresolved ref whose $refText does NOT match any other hangar bay → no SFR14 error', () => {

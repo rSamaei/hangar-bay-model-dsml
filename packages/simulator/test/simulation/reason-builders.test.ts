@@ -40,16 +40,16 @@ describe('buildWaitReason', () => {
         expect(reason).toContain('No placement found');
     });
 
-    test('SFR16_TIME_OVERLAP formatter includes bay names and hangar', () => {
-        const r = mkRejection('SFR16_TIME_OVERLAP', 'H1', { bayNames: ['Bay1', 'Bay2'] });
+    test('SFR23_TIME_OVERLAP formatter includes bay names and hangar', () => {
+        const r = mkRejection('SFR23_TIME_OVERLAP', 'H1', { bayNames: ['Bay1', 'Bay2'] });
         const reason = buildWaitReason([r], 'Cessna');
         expect(reason).toContain('Bay1');
         expect(reason).toContain('Bay2');
         expect(reason).toContain('H1');
     });
 
-    test('SFR16_TIME_OVERLAP formatter falls back when bayNames is undefined', () => {
-        const r = mkRejection('SFR16_TIME_OVERLAP', 'H1', {});
+    test('SFR23_TIME_OVERLAP formatter falls back when bayNames is undefined', () => {
+        const r = mkRejection('SFR23_TIME_OVERLAP', 'H1', {});
         const reason = buildWaitReason([r], 'Cessna');
         expect(reason).toContain('H1');
         expect(reason).toContain('conflict');
@@ -69,15 +69,15 @@ describe('buildWaitReason', () => {
         expect(reason).toContain('AlphaHangar');
     });
 
-    test('SFR_DYNAMIC_REACHABILITY formatter includes unreachable node IDs', () => {
-        const r = mkRejection('SFR_DYNAMIC_REACHABILITY', 'H1', { unreachableNodeIds: ['Node1', 'Node2'] });
+    test('SFR21_DYNAMIC_REACHABILITY formatter includes unreachable node IDs', () => {
+        const r = mkRejection('SFR21_DYNAMIC_REACHABILITY', 'H1', { unreachableNodeIds: ['Node1', 'Node2'] });
         const reason = buildWaitReason([r], 'Cessna');
         expect(reason).toContain('Node1');
         expect(reason).toContain('Node2');
     });
 
-    test('SFR_CORRIDOR_FIT formatter includes corridor violations', () => {
-        const r = mkRejection('SFR_CORRIDOR_FIT', 'H1', { corridorViolations: ['Corridor_A'] });
+    test('SFR22_CORRIDOR_FIT formatter includes corridor violations', () => {
+        const r = mkRejection('SFR22_CORRIDOR_FIT', 'H1', { corridorViolations: ['Corridor_A'] });
         const reason = buildWaitReason([r], 'Cessna');
         expect(reason).toContain('Corridor_A');
     });
@@ -196,8 +196,8 @@ describe('buildWaitReason — hangar undefined fallback', () => {
         return { ruleId, hangar: undefined, message: `[${ruleId}] failure`, evidence } as PlacementRejection;
     }
 
-    test('SFR16_TIME_OVERLAP with hangar=undefined yields "?" in output', () => {
-        const r = mkRejectionNoHangar('SFR16_TIME_OVERLAP', { bayNames: ['Bay1'] });
+    test('SFR23_TIME_OVERLAP with hangar=undefined yields "?" in output', () => {
+        const r = mkRejectionNoHangar('SFR23_TIME_OVERLAP', { bayNames: ['Bay1'] });
         const reason = buildWaitReason([r], 'Cessna');
         expect(reason).toContain('?');
     });
@@ -214,17 +214,17 @@ describe('buildWaitReason — hangar undefined fallback', () => {
         expect(reason).toContain('?');
     });
 
-    test('SFR_DYNAMIC_REACHABILITY with hangar=undefined and no nodeIds yields "?" twice', () => {
+    test('SFR21_DYNAMIC_REACHABILITY with hangar=undefined and no nodeIds yields "?" twice', () => {
         // Both r.hangar ?? '?' and ev.unreachableNodeIds?.join() ?? '?' hit fallback
-        const r = mkRejectionNoHangar('SFR_DYNAMIC_REACHABILITY', {});
+        const r = mkRejectionNoHangar('SFR21_DYNAMIC_REACHABILITY', {});
         const reason = buildWaitReason([r], 'Cessna');
         expect(reason).toContain('?');
         expect(reason).toContain('blocked nodes: ?');
     });
 
-    test('SFR_CORRIDOR_FIT with hangar=undefined and no corridorViolations yields "?" twice', () => {
+    test('SFR22_CORRIDOR_FIT with hangar=undefined and no corridorViolations yields "?" twice', () => {
         // Both r.hangar ?? '?' and ev.corridorViolations?.join() ?? '?' hit fallback
-        const r = mkRejectionNoHangar('SFR_CORRIDOR_FIT', {});
+        const r = mkRejectionNoHangar('SFR22_CORRIDOR_FIT', {});
         const reason = buildWaitReason([r], 'Cessna');
         expect(reason).toContain('?');
         expect(reason).toContain('blocked at: ?');

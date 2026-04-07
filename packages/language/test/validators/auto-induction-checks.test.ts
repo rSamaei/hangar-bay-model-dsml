@@ -5,10 +5,10 @@ import { CESSNA, ALPHA_HANGAR } from '../helpers/fixtures.js';
 setupServices();
 
 // ===========================================================================
-// SFR21_TIME_WINDOW — Auto-induction time bounds
+// SFR26_TIME_WINDOW — Auto-induction time bounds
 // ===========================================================================
 
-describe('SFR21_TIME_WINDOW — auto-induction time bounds must be well-formed', () => {
+describe('SFR26_TIME_WINDOW — auto-induction time bounds must be well-formed', () => {
 
     test('auto-induction notBefore after notAfter triggers SFR21 error', async () => {
         const doc = await parse(`
@@ -23,7 +23,7 @@ describe('SFR21_TIME_WINDOW — auto-induction time bounds must be well-formed',
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR21_TIME_WINDOW')).toBe(true);
+        expect(hasDiag(diags, 'SFR26_TIME_WINDOW')).toBe(true);
     });
 
     test('valid auto-induction time bounds produce no SFR21 error', async () => {
@@ -39,17 +39,17 @@ describe('SFR21_TIME_WINDOW — auto-induction time bounds must be well-formed',
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR21_TIME_WINDOW')).toBe(false);
+        expect(hasDiag(diags, 'SFR26_TIME_WINDOW')).toBe(false);
     });
 });
 
 // ===========================================================================
-// AutoInduction requires clause (SFR_BAY_COUNT_OVERRIDE)
+// AutoInduction requires clause (SFR15_BAY_COUNT_OVERRIDE)
 // ===========================================================================
 
-describe('AutoInduction requires clause — SFR_BAY_COUNT_OVERRIDE', () => {
+describe('AutoInduction requires clause — SFR15_BAY_COUNT_OVERRIDE', () => {
 
-    test('auto-induction requires below geometric minimum triggers SFR_BAY_COUNT_OVERRIDE', async () => {
+    test('auto-induction requires below geometric minimum triggers SFR15_BAY_COUNT_OVERRIDE', async () => {
         const doc = await parse(`
             airfield T {
                 aircraft WideBody {
@@ -71,10 +71,10 @@ describe('AutoInduction requires clause — SFR_BAY_COUNT_OVERRIDE', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR_BAY_COUNT_OVERRIDE')).toBe(true);
+        expect(hasDiag(diags, 'SFR15_BAY_COUNT_OVERRIDE')).toBe(true);
     });
 
-    test('auto-induction requires matching geometric minimum produces no SFR_BAY_COUNT_OVERRIDE', async () => {
+    test('auto-induction requires matching geometric minimum produces no SFR15_BAY_COUNT_OVERRIDE', async () => {
         const doc = await parse(`
             airfield T {
                 ${CESSNA}
@@ -86,6 +86,6 @@ describe('AutoInduction requires clause — SFR_BAY_COUNT_OVERRIDE', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR_BAY_COUNT_OVERRIDE')).toBe(false);
+        expect(hasDiag(diags, 'SFR15_BAY_COUNT_OVERRIDE')).toBe(false);
     });
 });

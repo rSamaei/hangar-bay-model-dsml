@@ -17,7 +17,7 @@ export const examples: Example[] = [
   {
     id: 'access-paths',
     name: 'Access Paths & Reachability',
-    description: 'Corridor width bottleneck, SFR_CORRIDOR_FIT, SFR_DYNAMIC_REACHABILITY, traversable through-bay',
+    description: 'Corridor width bottleneck, SFR22_CORRIDOR_FIT, SFR21_DYNAMIC_REACHABILITY, traversable through-bay',
     file: '/examples/02-access-paths-and-reachability.air',
     category: 'complex'
   },

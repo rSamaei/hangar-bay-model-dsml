@@ -25,7 +25,7 @@ interface CorridorFitEvidence { corridorViolations?: string[] }
 type RuleFormatter = (r: PlacementRejection, aircraftName: string) => string;
 
 const WAIT_REASON_FORMATTERS = new Map<string, RuleFormatter>([
-    ['SFR16_TIME_OVERLAP', (r) => {
+    ['SFR23_TIME_OVERLAP', (r) => {
         const ev = r.evidence as TimeOverlapEvidence;
         return `Bay set {${ev.bayNames?.join(', ') ?? '?'}} has time conflict in ${r.hangar ?? '?'}`;
     }],
@@ -35,11 +35,11 @@ const WAIT_REASON_FORMATTERS = new Map<string, RuleFormatter>([
     ['NO_SUITABLE_BAY_SET', (r) =>
         `No connected bay set large enough in ${r.hangar ?? '?'}`
     ],
-    ['SFR_DYNAMIC_REACHABILITY', (r) => {
+    ['SFR21_DYNAMIC_REACHABILITY', (r) => {
         const ev = r.evidence as DynamicReachabilityEvidence;
         return `Bays unreachable via access path in ${r.hangar ?? '?'} — blocked nodes: ${ev.unreachableNodeIds?.join(', ') ?? '?'}`;
     }],
-    ['SFR_CORRIDOR_FIT', (r) => {
+    ['SFR22_CORRIDOR_FIT', (r) => {
         const ev = r.evidence as CorridorFitEvidence;
         return `Aircraft too wide for corridor in ${r.hangar ?? '?'} — blocked at: ${ev.corridorViolations?.join(', ') ?? '?'}`;
     }],

@@ -55,6 +55,6 @@ airfield TestBase_Violations {
     induct id "VIOL003" SmallFighter into SmallHangar bays TinyBay
         from 2024-04-01T14:00 to 2024-04-01T20:00
         meta {
-            expected: "SFR16_TIME_OVERLAP"
+            expected: "SFR23_TIME_OVERLAP"
         };
 }

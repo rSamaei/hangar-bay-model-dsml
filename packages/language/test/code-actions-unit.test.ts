@@ -208,12 +208,12 @@ function mkInductionNoRefNode(hangar: any, bays: any[]): any {
 // ---------------------------------------------------------------------------
 
 describe('getCodeActions dispatch (null-CST document)', () => {
-    test('ruleId SFR13_CONTIGUITY → createContiguityFix, no induction → empty', () => {
+    test('ruleId SFR16_CONTIGUITY → createContiguityFix, no induction → empty', () => {
         const p = new AirfieldCodeActionProvider();
         const result = p.getCodeActions(NULL_CST_DOC, {
             textDocument: { uri: NULL_CST_DOC.textDocument.uri },
             range: DIAG_RANGE.range,
-            context: { diagnostics: [{ ...DIAG_RANGE, message: 'SFR13_CONTIGUITY', data: { ruleId: 'SFR13_CONTIGUITY' } }] },
+            context: { diagnostics: [{ ...DIAG_RANGE, message: 'SFR16_CONTIGUITY', data: { ruleId: 'SFR16_CONTIGUITY' } }] },
         } as any);
         expect(!result || (Array.isArray(result) && result.length === 0)).toBe(true);
     });
@@ -240,43 +240,43 @@ describe('getCodeActions dispatch (null-CST document)', () => {
         expect(!result || (Array.isArray(result) && result.length === 0)).toBe(true);
     });
 
-    test('ruleId SFR25_BAY_COUNT with evidence, null CST → empty', () => {
+    test('ruleId SFR14_BAY_COUNT with evidence, null CST → empty', () => {
         const p = new AirfieldCodeActionProvider();
         const evidence = { effectiveMin: 3, assignedCount: 1 };
         const result = p.getCodeActions(NULL_CST_DOC, {
             textDocument: { uri: NULL_CST_DOC.textDocument.uri },
             range: DIAG_RANGE.range,
-            context: { diagnostics: [{ ...DIAG_RANGE, message: 'SFR25_BAY_COUNT', data: { ruleId: 'SFR25_BAY_COUNT', evidence } }] },
+            context: { diagnostics: [{ ...DIAG_RANGE, message: 'SFR14_BAY_COUNT', data: { ruleId: 'SFR14_BAY_COUNT', evidence } }] },
         } as any);
         expect(!result || (Array.isArray(result) && result.length === 0)).toBe(true);
     });
 
-    test('legacy message SFR13_CONTIGUITY (no ruleId), null CST → empty', () => {
+    test('legacy message SFR16_CONTIGUITY (no ruleId), null CST → empty', () => {
         const p = new AirfieldCodeActionProvider();
         const result = p.getCodeActions(NULL_CST_DOC, {
             textDocument: { uri: NULL_CST_DOC.textDocument.uri },
             range: DIAG_RANGE.range,
-            context: { diagnostics: [{ ...DIAG_RANGE, message: 'SFR13_CONTIGUITY: bays not connected', data: undefined }] },
+            context: { diagnostics: [{ ...DIAG_RANGE, message: 'SFR16_CONTIGUITY: bays not connected', data: undefined }] },
         } as any);
         expect(!result || (Array.isArray(result) && result.length === 0)).toBe(true);
     });
 
-    test('legacy message SFR25_BAY_COUNT (no ruleId, no count match), null CST → empty', () => {
+    test('legacy message SFR14_BAY_COUNT (no ruleId, no count match), null CST → empty', () => {
         const p = new AirfieldCodeActionProvider();
         const result = p.getCodeActions(NULL_CST_DOC, {
             textDocument: { uri: NULL_CST_DOC.textDocument.uri },
             range: DIAG_RANGE.range,
-            context: { diagnostics: [{ ...DIAG_RANGE, message: 'SFR25_BAY_COUNT: bad', data: undefined }] },
+            context: { diagnostics: [{ ...DIAG_RANGE, message: 'SFR14_BAY_COUNT: bad', data: undefined }] },
         } as any);
         expect(!result || (Array.isArray(result) && result.length === 0)).toBe(true);
     });
 
-    test('legacy SFR25_BAY_COUNT with count match in message, null CST → empty', () => {
+    test('legacy SFR14_BAY_COUNT with count match in message, null CST → empty', () => {
         const p = new AirfieldCodeActionProvider();
         const result = p.getCodeActions(NULL_CST_DOC, {
             textDocument: { uri: NULL_CST_DOC.textDocument.uri },
             range: DIAG_RANGE.range,
-            context: { diagnostics: [{ ...DIAG_RANGE, message: 'SFR25_BAY_COUNT requires at least 3 bays but only 1', data: undefined }] },
+            context: { diagnostics: [{ ...DIAG_RANGE, message: 'SFR14_BAY_COUNT requires at least 3 bays but only 1', data: undefined }] },
         } as any);
         expect(!result || (Array.isArray(result) && result.length === 0)).toBe(true);
     });
@@ -322,7 +322,7 @@ describe('fix builder: createContiguityFix', () => {
         const hangar = mkHangarStub([mkBayStub('B1')]);
         const induction = mkInductionStub(hangar, [mkBayStub('B1')]);
         vi.spyOn(p as any, 'findInductionAtDiagnostic').mockReturnValue(induction);
-        const diag = { ...DIAG_RANGE, message: 'SFR13_CONTIGUITY', data: { ruleId: 'SFR13_CONTIGUITY' } };
+        const diag = { ...DIAG_RANGE, message: 'SFR16_CONTIGUITY', data: { ruleId: 'SFR16_CONTIGUITY' } };
         const result = (p as any).createContiguityFix(diag, NULL_CST_DOC);
         expect(result).toEqual([]);
     });
@@ -338,7 +338,7 @@ describe('fix builder: createContiguityFix', () => {
         const hangar = mkHangarStub([bayA, bridge, bayB]);
         const induction = mkInductionStub(hangar, [bayA, bayB]);
         vi.spyOn(p as any, 'findInductionAtDiagnostic').mockReturnValue(induction);
-        const diag = { ...DIAG_RANGE, message: 'SFR13_CONTIGUITY', data: { ruleId: 'SFR13_CONTIGUITY' } };
+        const diag = { ...DIAG_RANGE, message: 'SFR16_CONTIGUITY', data: { ruleId: 'SFR16_CONTIGUITY' } };
         const actions = (p as any).createContiguityFix(diag, NULL_CST_DOC);
         expect(actions).toHaveLength(1);
         expect(actions[0].kind).toBe('quickfix');
@@ -356,7 +356,7 @@ describe('fix builder: createContiguityFix', () => {
             ],
         };
         vi.spyOn(p as any, 'findInductionAtDiagnostic').mockReturnValue(induction);
-        const diag = { ...DIAG_RANGE, message: 'SFR13_CONTIGUITY', data: { ruleId: 'SFR13_CONTIGUITY' } };
+        const diag = { ...DIAG_RANGE, message: 'SFR16_CONTIGUITY', data: { ruleId: 'SFR16_CONTIGUITY' } };
         const result = (p as any).createContiguityFix(diag, NULL_CST_DOC);
         expect(result).toEqual([]);
     });
@@ -372,7 +372,7 @@ describe('fix builder: createContiguityFix', () => {
         const hangar = mkHangarStub([bayA, bridge, bayB]);
         const induction = mkInductionNoRefNode(hangar, [bayA, bayB]);
         vi.spyOn(p as any, 'findInductionAtDiagnostic').mockReturnValue(induction);
-        const diag = { ...DIAG_RANGE, message: 'SFR13_CONTIGUITY', data: { ruleId: 'SFR13_CONTIGUITY' } };
+        const diag = { ...DIAG_RANGE, message: 'SFR16_CONTIGUITY', data: { ruleId: 'SFR16_CONTIGUITY' } };
         const result = (p as any).createContiguityFix(diag, NULL_CST_DOC);
         expect(result).toEqual([]);
     });
@@ -385,7 +385,7 @@ describe('fix builder: createContiguityFix', () => {
         const hangar = mkHangarStub([bayA, bayB]);
         const induction = mkInductionStub(hangar, [bayA, bayB]);
         vi.spyOn(p as any, 'findInductionAtDiagnostic').mockReturnValue(induction);
-        const diag = { ...DIAG_RANGE, message: 'SFR13_CONTIGUITY', data: { ruleId: 'SFR13_CONTIGUITY' } };
+        const diag = { ...DIAG_RANGE, message: 'SFR16_CONTIGUITY', data: { ruleId: 'SFR16_CONTIGUITY' } };
         const result = (p as any).createContiguityFix(diag, NULL_CST_DOC);
         expect(result).toEqual([]);
     });
@@ -450,7 +450,7 @@ describe('fix builder: createBayCountFix', () => {
         const induction = mkInductionStub(hangar, [bayA]);
         vi.spyOn(p as any, 'findInductionAtDiagnostic').mockReturnValue(induction);
         const evidence = { effectiveMin: 3, assignedCount: 1 };
-        const diag = { ...DIAG_RANGE, message: 'SFR25_BAY_COUNT', data: { ruleId: 'SFR25_BAY_COUNT', evidence } };
+        const diag = { ...DIAG_RANGE, message: 'SFR14_BAY_COUNT', data: { ruleId: 'SFR14_BAY_COUNT', evidence } };
         const actions = (p as any).createBayCountFix(diag, NULL_CST_DOC, evidence);
         expect(actions).toHaveLength(1);
         expect(actions[0].kind).toBe('quickfix');
@@ -465,7 +465,7 @@ describe('fix builder: createBayCountFix', () => {
         const hangar = mkHangarStub([bayA, bayB]);
         const induction = mkInductionStub(hangar, [bayA]);
         vi.spyOn(p as any, 'findInductionAtDiagnostic').mockReturnValue(induction);
-        const diag = { ...DIAG_RANGE, message: 'SFR25_BAY_COUNT requires at least 2 bays but only 1', data: undefined };
+        const diag = { ...DIAG_RANGE, message: 'SFR14_BAY_COUNT requires at least 2 bays but only 1', data: undefined };
         const actions = (p as any).createBayCountFix(diag, NULL_CST_DOC, undefined);
         expect(actions).toHaveLength(1);
     });
@@ -475,7 +475,7 @@ describe('fix builder: createBayCountFix', () => {
         const induction = mkInductionStub(mkHangarStub([]), []);
         vi.spyOn(p as any, 'findInductionAtDiagnostic').mockReturnValue(induction);
         const evidence = { effectiveMin: 2, assignedCount: 3 }; // already more than enough
-        const diag = { ...DIAG_RANGE, message: 'SFR25_BAY_COUNT', data: { ruleId: 'SFR25_BAY_COUNT', evidence } };
+        const diag = { ...DIAG_RANGE, message: 'SFR14_BAY_COUNT', data: { ruleId: 'SFR14_BAY_COUNT', evidence } };
         const result = (p as any).createBayCountFix(diag, NULL_CST_DOC, evidence);
         expect(result).toEqual([]);
     });

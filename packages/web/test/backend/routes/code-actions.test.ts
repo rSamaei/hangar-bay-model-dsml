@@ -6,7 +6,7 @@
  * Covers:
  *   - Missing dslCode or non-array diagnostics → { actions: [] }
  *   - Valid DSL with no diagnostics → { actions: [] }
- *   - Valid DSL + SFR13_CONTIGUITY diagnostic at the right position → actions returned
+ *   - Valid DSL + SFR16_CONTIGUITY diagnostic at the right position → actions returned
  *   - DSL with no errors + dummy diagnostic → { actions: [] }
  */
 import { describe, expect, test } from 'vitest';
@@ -27,7 +27,7 @@ const agent = supertest(app);
 /**
  * Three-bay hangar; Bay1+Bay3 non-contiguous (only adjacent to Bay2).
  * The induction `induct Cessna into AlphaHangar bays Bay1 Bay3` triggers
- * SFR13_CONTIGUITY. We compute the 1-based line of "bays Bay1 Bay3" below.
+ * SFR16_CONTIGUITY. We compute the 1-based line of "bays Bay1 Bay3" below.
  */
 const NON_CONTIGUOUS_DSL = `airfield ViolField {
     aircraft Cessna {
@@ -115,15 +115,15 @@ describe('POST /api/code-actions — clean DSL', () => {
 
 describe('POST /api/code-actions — SFR13 contiguity fix', () => {
   /**
-   * Send an SFR13_CONTIGUITY diagnostic at line 20 (the `induct` line).
+   * Send an SFR16_CONTIGUITY diagnostic at line 20 (the `induct` line).
    * The code action provider should return an edit that adds Bay2.
    */
-  test('returns at least one action for SFR13_CONTIGUITY diagnostic', async () => {
+  test('returns at least one action for SFR16_CONTIGUITY diagnostic', async () => {
     // Line 20 in NON_CONTIGUOUS_DSL is the "induct Cessna into AlphaHangar bays Bay1 Bay3" line
     const res = await agent.post('/api/code-actions').send({
       dslCode: NON_CONTIGUOUS_DSL,
       diagnostics: [{
-        message: 'SFR13_CONTIGUITY: Bay1 and Bay3 are not contiguous',
+        message: 'SFR16_CONTIGUITY: Bay1 and Bay3 are not contiguous',
         startLine: 20,
         startColumn: 4
       }]

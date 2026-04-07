@@ -61,7 +61,7 @@ describe('checkBayCountSufficiency — longitudinal span', () => {
             requires: undefined,
         } as unknown as Induction;
         checkBayCountSufficiency(induction, accept);
-        expect(calledWithCode(accept, 'SFR25_BAY_COUNT')).toBe(true);
+        expect(calledWithCode(accept, 'SFR14_BAY_COUNT')).toBe(true);
     });
 
     test('sufficient bays for length — no warning (longitudinal)', () => {
@@ -79,7 +79,7 @@ describe('checkBayCountSufficiency — longitudinal span', () => {
             requires: undefined,
         } as unknown as Induction;
         checkBayCountSufficiency(induction, accept);
-        expect(calledWithCode(accept, 'SFR25_BAY_COUNT')).toBe(false);
+        expect(calledWithCode(accept, 'SFR14_BAY_COUNT')).toBe(false);
     });
 });
 
@@ -88,7 +88,7 @@ describe('checkBayCountSufficiency — longitudinal span', () => {
 // ---------------------------------------------------------------------------
 
 describe('checkBayCountSufficiency — requires override', () => {
-    test('requires override equal to geometric minimum — no SFR_BAY_COUNT_OVERRIDE warning', () => {
+    test('requires override equal to geometric minimum — no SFR15_BAY_COUNT_OVERRIDE warning', () => {
         const accept = mockAccept();
         const aircraft = { name: 'Wide', wingspan: 25, length: 8, height: 3 };
         const bay1 = mkBay('Bay1', 12);
@@ -106,8 +106,8 @@ describe('checkBayCountSufficiency — requires override', () => {
             requires: 3,
         } as unknown as Induction;
         checkBayCountSufficiency(induction, accept);
-        expect(calledWithCode(accept, 'SFR_BAY_COUNT_OVERRIDE')).toBe(false);
-        expect(calledWithCode(accept, 'SFR25_BAY_COUNT')).toBe(false);
+        expect(calledWithCode(accept, 'SFR15_BAY_COUNT_OVERRIDE')).toBe(false);
+        expect(calledWithCode(accept, 'SFR14_BAY_COUNT')).toBe(false);
     });
 
     test('requires override above geometric minimum — no warnings', () => {
@@ -147,7 +147,7 @@ describe('checkBayCountSufficiency — requires override', () => {
             requires: 2,
         } as unknown as Induction;
         checkBayCountSufficiency(induction, accept);
-        expect(calledWithCode(accept, 'SFR25_BAY_COUNT')).toBe(true);
+        expect(calledWithCode(accept, 'SFR14_BAY_COUNT')).toBe(true);
     });
 });
 
@@ -167,7 +167,7 @@ describe('checkDuplicateAutoInductionId', () => {
         } as unknown as Model;
         (ai2 as any).$container = model;
         checkDuplicateAutoInductionId(ai2, accept);
-        expect(calledWithCode(accept, 'SFR22_DUPLICATE_ID')).toBe(true);
+        expect(calledWithCode(accept, 'SFR27_DUPLICATE_ID')).toBe(true);
     });
 
     test('unique auto-induction ID — no error', () => {
@@ -196,7 +196,7 @@ describe('checkDuplicateAutoInductionId', () => {
         } as unknown as Model;
         (autoInd as any).$container = model;
         checkDuplicateAutoInductionId(autoInd, accept);
-        expect(calledWithCode(accept, 'SFR22_DUPLICATE_ID')).toBe(true);
+        expect(calledWithCode(accept, 'SFR27_DUPLICATE_ID')).toBe(true);
     });
 
     test('no ID on auto-induction — skipped silently', () => {

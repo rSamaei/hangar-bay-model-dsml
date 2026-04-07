@@ -2,12 +2,12 @@
  * Tests for well-formedness checks (WF_* and SFR7_* rules).
  *
  * Rules covered:
- *   WF_DUPLICATE_AIRCRAFT  — no two aircraft types share a name
- *   WF_DUPLICATE_BAY       — no two bays within a hangar share a name
- *   WF_DUPLICATE_HANGAR    — no two hangars share a name
+ *   SFR27_DUPLICATE_AIRCRAFT  — no two aircraft types share a name
+ *   SFR27_DUPLICATE_BAY       — no two bays within a hangar share a name
+ *   SFR27_DUPLICATE_HANGAR    — no two hangars share a name
  *   WF_DUPLICATE_CLEARANCE — no two clearance envelopes share a name
- *   SFR7_SELF_ADJACENCY    — bay must not declare itself adjacent
- *   SFR7_SELF_LOOP         — access link must not connect a node to itself
+ *   SFR28_SELF_ADJACENCY    — bay must not declare itself adjacent
+ *   SFR28_SELF_LOOP         — access link must not connect a node to itself
  *   WF_NO_HANGARS          — model must declare at least one hangar
  */
 import { beforeAll, describe, expect, test } from 'vitest';
@@ -37,12 +37,12 @@ function hasDiag(diags: Array<{ message: unknown }>, code: string): boolean {
 }
 
 // ===========================================================================
-// WF_DUPLICATE_AIRCRAFT
+// SFR27_DUPLICATE_AIRCRAFT
 // ===========================================================================
 
-describe('WF_DUPLICATE_AIRCRAFT — no duplicate aircraft type names', () => {
+describe('SFR27_DUPLICATE_AIRCRAFT — no duplicate aircraft type names', () => {
 
-    test('two aircraft with the same name triggers WF_DUPLICATE_AIRCRAFT', async () => {
+    test('two aircraft with the same name triggers SFR27_DUPLICATE_AIRCRAFT', async () => {
         const doc = await parse(`
             airfield T {
                 aircraft Hawk { wingspan 9.4 m  length 11.2 m  height 3.9 m }
@@ -55,10 +55,10 @@ describe('WF_DUPLICATE_AIRCRAFT — no duplicate aircraft type names', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'WF_DUPLICATE_AIRCRAFT')).toBe(true);
+        expect(hasDiag(diags, 'SFR27_DUPLICATE_AIRCRAFT')).toBe(true);
     });
 
-    test('two aircraft with distinct names produce no WF_DUPLICATE_AIRCRAFT', async () => {
+    test('two aircraft with distinct names produce no SFR27_DUPLICATE_AIRCRAFT', async () => {
         const doc = await parse(`
             airfield T {
                 aircraft Hawk  { wingspan 9.4 m  length 11.2 m  height 3.9 m }
@@ -71,17 +71,17 @@ describe('WF_DUPLICATE_AIRCRAFT — no duplicate aircraft type names', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'WF_DUPLICATE_AIRCRAFT')).toBe(false);
+        expect(hasDiag(diags, 'SFR27_DUPLICATE_AIRCRAFT')).toBe(false);
     });
 });
 
 // ===========================================================================
-// WF_DUPLICATE_BAY
+// SFR27_DUPLICATE_BAY
 // ===========================================================================
 
-describe('WF_DUPLICATE_BAY — no duplicate bay names within a hangar', () => {
+describe('SFR27_DUPLICATE_BAY — no duplicate bay names within a hangar', () => {
 
-    test('two bays with the same name in one hangar triggers WF_DUPLICATE_BAY', async () => {
+    test('two bays with the same name in one hangar triggers SFR27_DUPLICATE_BAY', async () => {
         const doc = await parse(`
             airfield T {
                 hangar Alpha {
@@ -95,10 +95,10 @@ describe('WF_DUPLICATE_BAY — no duplicate bay names within a hangar', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'WF_DUPLICATE_BAY')).toBe(true);
+        expect(hasDiag(diags, 'SFR27_DUPLICATE_BAY')).toBe(true);
     });
 
-    test('bays with distinct names produce no WF_DUPLICATE_BAY', async () => {
+    test('bays with distinct names produce no SFR27_DUPLICATE_BAY', async () => {
         const doc = await parse(`
             airfield T {
                 hangar Alpha {
@@ -112,17 +112,17 @@ describe('WF_DUPLICATE_BAY — no duplicate bay names within a hangar', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'WF_DUPLICATE_BAY')).toBe(false);
+        expect(hasDiag(diags, 'SFR27_DUPLICATE_BAY')).toBe(false);
     });
 });
 
 // ===========================================================================
-// WF_DUPLICATE_HANGAR
+// SFR27_DUPLICATE_HANGAR
 // ===========================================================================
 
-describe('WF_DUPLICATE_HANGAR — no duplicate hangar names', () => {
+describe('SFR27_DUPLICATE_HANGAR — no duplicate hangar names', () => {
 
-    test('two hangars with the same name triggers WF_DUPLICATE_HANGAR', async () => {
+    test('two hangars with the same name triggers SFR27_DUPLICATE_HANGAR', async () => {
         const doc = await parse(`
             airfield T {
                 hangar Alpha {
@@ -137,10 +137,10 @@ describe('WF_DUPLICATE_HANGAR — no duplicate hangar names', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'WF_DUPLICATE_HANGAR')).toBe(true);
+        expect(hasDiag(diags, 'SFR27_DUPLICATE_HANGAR')).toBe(true);
     });
 
-    test('two hangars with distinct names produce no WF_DUPLICATE_HANGAR', async () => {
+    test('two hangars with distinct names produce no SFR27_DUPLICATE_HANGAR', async () => {
         const doc = await parse(`
             airfield T {
                 hangar Alpha {
@@ -155,7 +155,7 @@ describe('WF_DUPLICATE_HANGAR — no duplicate hangar names', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'WF_DUPLICATE_HANGAR')).toBe(false);
+        expect(hasDiag(diags, 'SFR27_DUPLICATE_HANGAR')).toBe(false);
     });
 });
 
@@ -199,12 +199,12 @@ describe('WF_DUPLICATE_CLEARANCE — no duplicate clearance envelope names', () 
 });
 
 // ===========================================================================
-// SFR7_SELF_ADJACENCY
+// SFR28_SELF_ADJACENCY
 // ===========================================================================
 
-describe('SFR7_SELF_ADJACENCY — bay must not declare itself adjacent', () => {
+describe('SFR28_SELF_ADJACENCY — bay must not declare itself adjacent', () => {
 
-    test('bay listing itself in adjacent triggers SFR7_SELF_ADJACENCY', async () => {
+    test('bay listing itself in adjacent triggers SFR28_SELF_ADJACENCY', async () => {
         const doc = await parse(`
             airfield T {
                 hangar Alpha {
@@ -218,10 +218,10 @@ describe('SFR7_SELF_ADJACENCY — bay must not declare itself adjacent', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR7_SELF_ADJACENCY')).toBe(true);
+        expect(hasDiag(diags, 'SFR28_SELF_ADJACENCY')).toBe(true);
     });
 
-    test('bay listing only other bays as adjacent produces no SFR7_SELF_ADJACENCY', async () => {
+    test('bay listing only other bays as adjacent produces no SFR28_SELF_ADJACENCY', async () => {
         const doc = await parse(`
             airfield T {
                 hangar Alpha {
@@ -235,17 +235,17 @@ describe('SFR7_SELF_ADJACENCY — bay must not declare itself adjacent', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR7_SELF_ADJACENCY')).toBe(false);
+        expect(hasDiag(diags, 'SFR28_SELF_ADJACENCY')).toBe(false);
     });
 });
 
 // ===========================================================================
-// SFR7_SELF_LOOP
+// SFR28_SELF_LOOP
 // ===========================================================================
 
-describe('SFR7_SELF_LOOP — access link must not connect a node to itself', () => {
+describe('SFR28_SELF_LOOP — access link must not connect a node to itself', () => {
 
-    test('access link from a node to itself triggers SFR7_SELF_LOOP', async () => {
+    test('access link from a node to itself triggers SFR28_SELF_LOOP', async () => {
         const doc = await parse(`
             airfield T {
                 hangar Alpha {
@@ -260,10 +260,10 @@ describe('SFR7_SELF_LOOP — access link must not connect a node to itself', () 
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR7_SELF_LOOP')).toBe(true);
+        expect(hasDiag(diags, 'SFR28_SELF_LOOP')).toBe(true);
     });
 
-    test('access link between distinct nodes produces no SFR7_SELF_LOOP', async () => {
+    test('access link between distinct nodes produces no SFR28_SELF_LOOP', async () => {
         const doc = await parse(`
             airfield T {
                 hangar Alpha {
@@ -278,7 +278,7 @@ describe('SFR7_SELF_LOOP — access link must not connect a node to itself', () 
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR7_SELF_LOOP')).toBe(false);
+        expect(hasDiag(diags, 'SFR28_SELF_LOOP')).toBe(false);
     });
 });
 

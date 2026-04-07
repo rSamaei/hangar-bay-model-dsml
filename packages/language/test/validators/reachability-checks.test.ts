@@ -5,7 +5,7 @@ import { isModel } from 'airfield-language';
 
 setupServices();
 
-describe('SFR_DYNAMIC_REACHABILITY — bay blocking by concurrent inductions', () => {
+describe('SFR21_DYNAMIC_REACHABILITY — bay blocking by concurrent inductions', () => {
 
     test('check no validation errors for valid airfield', async () => {
         const document = await parse(`
@@ -88,7 +88,7 @@ describe('SFR_DYNAMIC_REACHABILITY — bay blocking by concurrent inductions', (
 
         const diagnostics = await validate(document);
         const reachabilityErrors = diagnostics.filter(
-            d => typeof d.message === 'string' && d.message.includes('SFR_DYNAMIC_REACHABILITY')
+            d => typeof d.message === 'string' && d.message.includes('SFR21_DYNAMIC_REACHABILITY')
         );
         expect(reachabilityErrors.length).toBeGreaterThanOrEqual(1);
 
@@ -157,7 +157,7 @@ describe('SFR_DYNAMIC_REACHABILITY — bay blocking by concurrent inductions', (
 
         const diagnostics = await validate(document);
         const reachabilityErrors = diagnostics.filter(
-            d => typeof d.message === 'string' && d.message.includes('SFR_DYNAMIC_REACHABILITY')
+            d => typeof d.message === 'string' && d.message.includes('SFR21_DYNAMIC_REACHABILITY')
         );
         expect(reachabilityErrors).toHaveLength(0);
     });
@@ -195,7 +195,7 @@ describe('SFR_DYNAMIC_REACHABILITY — bay blocking by concurrent inductions', (
 
         const diagnostics = await validate(document);
         const reachabilityErrors = diagnostics.filter(
-            d => typeof d.message === 'string' && d.message.includes('SFR_DYNAMIC_REACHABILITY')
+            d => typeof d.message === 'string' && d.message.includes('SFR21_DYNAMIC_REACHABILITY')
         );
         expect(reachabilityErrors).toHaveLength(0);
     });

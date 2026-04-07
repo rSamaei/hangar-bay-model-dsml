@@ -62,7 +62,7 @@ export function checkInductionFeasibility(induction: Induction, accept: Validati
                     { node: induction, property: 'bays' }
                 );
             } else {
-                const diagData = (result.ruleId === 'SFR12_BAY_FIT' || result.ruleId === 'SFR13_CONTIGUITY')
+                const diagData = (result.ruleId === 'SFR12_BAY_FIT' || result.ruleId === 'SFR16_CONTIGUITY')
                     ? { ruleId: result.ruleId, evidence: result.evidence }
                     : undefined;
                 accept('error',
@@ -87,7 +87,7 @@ export function checkInductionTimeWindow(induction: Induction, accept: Validatio
     const end = new Date(induction.end);
     if (start >= end) {
         accept('error',
-            `[SFR21_TIME_WINDOW] Induction time window is invalid: start time (${induction.start}) is not before end time (${induction.end})`,
+            `[SFR26_TIME_WINDOW] Induction time window is invalid: start time (${induction.start}) is not before end time (${induction.end})`,
             { node: induction, property: 'end' }
         );
     }
@@ -111,7 +111,7 @@ export function checkBayHangarMembership(induction: Induction, accept: Validatio
         if (bayRef.ref) {
             if (!hangarBaySet.has(bayRef.ref)) {
                 accept('error',
-                    `[SFR14_BAY_OWNERSHIP] Bay '${bayRef.ref.name}' does not belong to hangar '${hangar.name}'`,
+                    `[SFR17_BAY_OWNERSHIP] Bay '${bayRef.ref.name}' does not belong to hangar '${hangar.name}'`,
                     { node: induction, property: 'bays' }
                 );
             }
@@ -119,7 +119,7 @@ export function checkBayHangarMembership(induction: Induction, accept: Validatio
             const bayName = bayRef.$refText;
             if (otherHangarBayNames.has(bayName)) {
                 accept('error',
-                    `[SFR14_BAY_OWNERSHIP] Bay '${bayName}' does not belong to hangar '${hangar.name}'`,
+                    `[SFR17_BAY_OWNERSHIP] Bay '${bayName}' does not belong to hangar '${hangar.name}'`,
                     { node: induction, property: 'bays' }
                 );
             }
@@ -145,7 +145,7 @@ export function checkDoorFitPrecheck(induction: Induction, accept: ValidationAcc
 
     const widestDoor = hangar.doors.reduce((best, d) => d.width > best.width ? d : best, hangar.doors[0]);
     accept('warning',
-        `[SFR24_DOOR_FIT_PRECHECK] Aircraft '${aircraft.name}' (effective wingspan ${effectiveWingspan.toFixed(2)}m, effective height ${effectiveHeight.toFixed(2)}m) cannot fit through any door of hangar '${hangar.name}' (widest door: ${widestDoor.width}m wide × ${widestDoor.height}m tall)`,
+        `[SFR13_DOOR_FIT_PRECHECK] Aircraft '${aircraft.name}' (effective wingspan ${effectiveWingspan.toFixed(2)}m, effective height ${effectiveHeight.toFixed(2)}m) cannot fit through any door of hangar '${hangar.name}' (widest door: ${widestDoor.width}m wide × ${widestDoor.height}m tall)`,
         { node: induction, property: 'hangar' }
     );
 }
@@ -181,7 +181,7 @@ export function checkBayCountSufficiency(induction: Induction, accept: Validatio
 
     if (induction.requires !== undefined && induction.requires < baysRequired) {
         accept('warning',
-            `[SFR_BAY_COUNT_OVERRIDE] Aircraft '${aircraft.name}' requires at least ${baysRequired} bays` +
+            `[SFR15_BAY_COUNT_OVERRIDE] Aircraft '${aircraft.name}' requires at least ${baysRequired} bays` +
             ` by geometry (${dimLabel} [${dimsStr}]m cover effective ${dimUnit} ${effectiveDim.toFixed(2)}m)` +
             ` but 'requires ${induction.requires} bays' declares less. The geometric minimum will take precedence.`,
             { node: induction, property: 'requires' }
@@ -193,10 +193,10 @@ export function checkBayCountSufficiency(induction: Induction, accept: Validatio
         const axisClause = axisLabel ? ` (${axisLabel})` : '';
         const evidenceKey = isLongitudinal ? 'bayDepthsUsed' : 'bayWidthsUsed';
         accept('warning',
-            `[SFR25_BAY_COUNT] Aircraft '${aircraft.name}' requires at least ${effectiveMin} bays${axisClause}` +
+            `[SFR14_BAY_COUNT] Aircraft '${aircraft.name}' requires at least ${effectiveMin} bays${axisClause}` +
             ` (${dimLabel} [${dimsStr}]m cover effective ${dimUnit} ${effectiveDim.toFixed(2)}m)` +
             ` but only ${bays.length} ${bays.length === 1 ? 'is' : 'are'} assigned`,
-            { node: induction, property: 'bays', data: { ruleId: 'SFR25_BAY_COUNT', evidence: { effectiveMin, baysRequired, assignedCount: induction.bays.length, [evidenceKey]: dimsUsed } } }
+            { node: induction, property: 'bays', data: { ruleId: 'SFR14_BAY_COUNT', evidence: { effectiveMin, baysRequired, assignedCount: induction.bays.length, [evidenceKey]: dimsUsed } } }
         );
     }
 }
@@ -235,7 +235,7 @@ function reportIfDuplicateId(
     if (allWithSameId[0] !== thisNode) {
         const firstLine = (allWithSameId[0].$cstNode?.range.start.line ?? 0) + 1;
         accept('error',
-            `[SFR22_DUPLICATE_ID] Duplicate induction ID '${id}' — first defined at line ${firstLine}`,
+            `[SFR27_DUPLICATE_ID] Duplicate induction ID '${id}' — first defined at line ${firstLine}`,
             { node: thisNode, property: 'id' }
         );
     }

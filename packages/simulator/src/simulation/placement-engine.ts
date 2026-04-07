@@ -309,7 +309,7 @@ export class PlacementEngine {
         // Time-overlap check
         if (this.anyBayOccupied(bayNames, hangar.name, now, endTime, state)) {
             rejections.push({
-                attemptTime: now, ruleId: 'SFR16_TIME_OVERLAP',
+                attemptTime: now, ruleId: 'SFR23_TIME_OVERLAP',
                 message: `Bay set [${bayNames.join(', ')}] has time conflict in hangar ${hangar.name}`,
                 hangar: hangar.name,
                 evidence: { bayNames },
@@ -336,7 +336,7 @@ export class PlacementEngine {
         const unreachable = bayNodeIds.filter(id => !reachable.has(id));
         if (unreachable.length > 0) {
             rejections.push({
-                attemptTime: now, ruleId: 'SFR_DYNAMIC_REACHABILITY',
+                attemptTime: now, ruleId: 'SFR21_DYNAMIC_REACHABILITY',
                 message: `Bays unreachable via access path in hangar ${hangar.name}`,
                 hangar: hangar.name,
                 evidence: { bayNames, unreachableNodeIds: unreachable },
@@ -350,7 +350,7 @@ export class PlacementEngine {
         );
         if (corridorBlocked.length > 0) {
             rejections.push({
-                attemptTime: now, ruleId: 'SFR_CORRIDOR_FIT',
+                attemptTime: now, ruleId: 'SFR22_CORRIDOR_FIT',
                 message: `Aircraft too wide for corridor in hangar ${hangar.name}`,
                 hangar: hangar.name,
                 evidence: { bayNames, corridorViolations: corridorBlocked },

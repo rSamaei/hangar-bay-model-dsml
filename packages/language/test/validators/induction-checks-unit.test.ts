@@ -77,7 +77,7 @@ describe('checkInductionTimeWindow', () => {
             end: '2024-06-01T08:00',
         } as unknown as Induction;
         checkInductionTimeWindow(induction, accept);
-        expect(calledWithCode(accept, 'SFR21_TIME_WINDOW')).toBe(true);
+        expect(calledWithCode(accept, 'SFR26_TIME_WINDOW')).toBe(true);
     });
 
     test('start === end — SFR21 error', () => {
@@ -87,7 +87,7 @@ describe('checkInductionTimeWindow', () => {
             end: '2024-06-01T08:00',
         } as unknown as Induction;
         checkInductionTimeWindow(induction, accept);
-        expect(calledWithCode(accept, 'SFR21_TIME_WINDOW')).toBe(true);
+        expect(calledWithCode(accept, 'SFR26_TIME_WINDOW')).toBe(true);
     });
 
     test('start < end — no error', () => {
@@ -210,7 +210,7 @@ describe('checkInductionFeasibility', () => {
             clearance: undefined,
         } as unknown as Induction;
         checkInductionFeasibility(induction, accept);
-        expect(calledWithCode(accept, 'SFR13_CONTIGUITY')).toBe(true);
+        expect(calledWithCode(accept, 'SFR16_CONTIGUITY')).toBe(true);
     });
 });
 
@@ -235,7 +235,7 @@ describe('checkBayHangarMembership', () => {
             },
         } as unknown as Induction;
         checkBayHangarMembership(induction, accept);
-        expect(calledWithCode(accept, 'SFR14_BAY_OWNERSHIP')).toBe(true);
+        expect(calledWithCode(accept, 'SFR17_BAY_OWNERSHIP')).toBe(true);
     });
 
     test('bay belongs to the correct hangar — no error', () => {
@@ -276,7 +276,7 @@ describe('checkDoorFitPrecheck', () => {
             clearance: undefined,
         } as unknown as Induction;
         checkDoorFitPrecheck(induction, accept);
-        expect(calledWithCode(accept, 'SFR24_DOOR_FIT_PRECHECK')).toBe(true);
+        expect(calledWithCode(accept, 'SFR13_DOOR_FIT_PRECHECK')).toBe(true);
     });
 
     test('aircraft fits at least one door — no warning', () => {
@@ -298,7 +298,7 @@ describe('checkDoorFitPrecheck', () => {
 });
 
 // ---------------------------------------------------------------------------
-// checkBayCountSufficiency — SFR25 + SFR_BAY_COUNT_OVERRIDE
+// checkBayCountSufficiency — SFR25 + SFR15_BAY_COUNT_OVERRIDE
 // ---------------------------------------------------------------------------
 
 describe('checkBayCountSufficiency', () => {
@@ -319,10 +319,10 @@ describe('checkBayCountSufficiency', () => {
             requires: undefined,
         } as unknown as Induction;
         checkBayCountSufficiency(induction, accept);
-        expect(calledWithCode(accept, 'SFR25_BAY_COUNT')).toBe(true);
+        expect(calledWithCode(accept, 'SFR14_BAY_COUNT')).toBe(true);
     });
 
-    test('requires override below geometric minimum — SFR_BAY_COUNT_OVERRIDE warning', () => {
+    test('requires override below geometric minimum — SFR15_BAY_COUNT_OVERRIDE warning', () => {
         const accept = mockAccept();
         const aircraft = { name: 'Wide', wingspan: 25, length: 8, height: 3 };
         const bay1 = mkBay('Bay1', 12);
@@ -339,7 +339,7 @@ describe('checkBayCountSufficiency', () => {
             requires: 2,
         } as unknown as Induction;
         checkBayCountSufficiency(induction, accept);
-        expect(calledWithCode(accept, 'SFR_BAY_COUNT_OVERRIDE')).toBe(true);
+        expect(calledWithCode(accept, 'SFR15_BAY_COUNT_OVERRIDE')).toBe(true);
     });
 });
 
@@ -359,7 +359,7 @@ describe('checkDuplicateInductionId', () => {
         } as unknown as Model;
         (ind2 as any).$container = model;
         checkDuplicateInductionId(ind2, accept);
-        expect(calledWithCode(accept, 'SFR22_DUPLICATE_ID')).toBe(true);
+        expect(calledWithCode(accept, 'SFR27_DUPLICATE_ID')).toBe(true);
     });
 
     test('unique induction ID — no error', () => {

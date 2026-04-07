@@ -5,10 +5,10 @@ import { CESSNA, ALPHA_HANGAR } from '../helpers/fixtures.js';
 setupServices();
 
 // ===========================================================================
-// SFR21_TIME_WINDOW — Induction time windows
+// SFR26_TIME_WINDOW — Induction time windows
 // ===========================================================================
 
-describe('SFR21_TIME_WINDOW — induction time windows must be well-formed', () => {
+describe('SFR26_TIME_WINDOW — induction time windows must be well-formed', () => {
 
     test('induction start after end triggers SFR21 error', async () => {
         const doc = await parse(`
@@ -22,7 +22,7 @@ describe('SFR21_TIME_WINDOW — induction time windows must be well-formed', () 
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR21_TIME_WINDOW')).toBe(true);
+        expect(hasDiag(diags, 'SFR26_TIME_WINDOW')).toBe(true);
     });
 
     test('induction start equal to end triggers SFR21 error', async () => {
@@ -37,7 +37,7 @@ describe('SFR21_TIME_WINDOW — induction time windows must be well-formed', () 
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR21_TIME_WINDOW')).toBe(true);
+        expect(hasDiag(diags, 'SFR26_TIME_WINDOW')).toBe(true);
     });
 
     test('valid induction time window produces no SFR21 error', async () => {
@@ -52,15 +52,15 @@ describe('SFR21_TIME_WINDOW — induction time windows must be well-formed', () 
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR21_TIME_WINDOW')).toBe(false);
+        expect(hasDiag(diags, 'SFR26_TIME_WINDOW')).toBe(false);
     });
 });
 
 // ===========================================================================
-// SFR22_DUPLICATE_ID — unique induction IDs
+// SFR27_DUPLICATE_ID — unique induction IDs
 // ===========================================================================
 
-describe('SFR22_DUPLICATE_ID — induction IDs must be unique within an airfield', () => {
+describe('SFR27_DUPLICATE_ID — induction IDs must be unique within an airfield', () => {
 
     test('two inductions sharing the same ID trigger SFR22 error', async () => {
         const doc = await parse(`
@@ -75,7 +75,7 @@ describe('SFR22_DUPLICATE_ID — induction IDs must be unique within an airfield
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR22_DUPLICATE_ID')).toBe(true);
+        expect(hasDiag(diags, 'SFR27_DUPLICATE_ID')).toBe(true);
     });
 
     test('inductions with distinct IDs produce no SFR22 error', async () => {
@@ -91,15 +91,15 @@ describe('SFR22_DUPLICATE_ID — induction IDs must be unique within an airfield
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR22_DUPLICATE_ID')).toBe(false);
+        expect(hasDiag(diags, 'SFR27_DUPLICATE_ID')).toBe(false);
     });
 });
 
 // ===========================================================================
-// SFR24_DOOR_FIT_PRECHECK — aircraft fits at least one hangar door
+// SFR13_DOOR_FIT_PRECHECK — aircraft fits at least one hangar door
 // ===========================================================================
 
-describe('SFR24_DOOR_FIT_PRECHECK — aircraft must fit through at least one hangar door', () => {
+describe('SFR13_DOOR_FIT_PRECHECK — aircraft must fit through at least one hangar door', () => {
 
     test('aircraft wider than all doors triggers SFR24 warning', async () => {
         const doc = await parse(`
@@ -122,7 +122,7 @@ describe('SFR24_DOOR_FIT_PRECHECK — aircraft must fit through at least one han
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR24_DOOR_FIT_PRECHECK')).toBe(true);
+        expect(hasDiag(diags, 'SFR13_DOOR_FIT_PRECHECK')).toBe(true);
     });
 
     test('aircraft fitting through at least one door produces no SFR24 warning', async () => {
@@ -146,15 +146,15 @@ describe('SFR24_DOOR_FIT_PRECHECK — aircraft must fit through at least one han
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR24_DOOR_FIT_PRECHECK')).toBe(false);
+        expect(hasDiag(diags, 'SFR13_DOOR_FIT_PRECHECK')).toBe(false);
     });
 });
 
 // ===========================================================================
-// SFR25_BAY_COUNT — enough bays for the aircraft's wingspan
+// SFR14_BAY_COUNT — enough bays for the aircraft's wingspan
 // ===========================================================================
 
-describe('SFR25_BAY_COUNT — assigned bay count must satisfy aircraft wingspan', () => {
+describe('SFR14_BAY_COUNT — assigned bay count must satisfy aircraft wingspan', () => {
 
     test('one assigned bay when two are needed triggers SFR25 warning', async () => {
         const doc = await parse(`
@@ -178,7 +178,7 @@ describe('SFR25_BAY_COUNT — assigned bay count must satisfy aircraft wingspan'
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR25_BAY_COUNT')).toBe(true);
+        expect(hasDiag(diags, 'SFR14_BAY_COUNT')).toBe(true);
     });
 
     test('one bay sufficient for narrow aircraft produces no SFR25 warning', async () => {
@@ -202,7 +202,7 @@ describe('SFR25_BAY_COUNT — assigned bay count must satisfy aircraft wingspan'
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR25_BAY_COUNT')).toBe(false);
+        expect(hasDiag(diags, 'SFR14_BAY_COUNT')).toBe(false);
     });
 });
 
@@ -439,10 +439,10 @@ describe('SFR12_COMBINED — combined bay-set fit for multi-bay inductions', () 
 });
 
 // ===========================================================================
-// SFR13_CONTIGUITY — all assigned bays must form a connected set
+// SFR16_CONTIGUITY — all assigned bays must form a connected set
 // ===========================================================================
 
-describe('SFR13_CONTIGUITY — assigned bays must be adjacently connected', () => {
+describe('SFR16_CONTIGUITY — assigned bays must be adjacently connected', () => {
 
     test('skipping the middle bay in a chain triggers SFR13 error', async () => {
         const doc = await parse(`
@@ -476,7 +476,7 @@ describe('SFR13_CONTIGUITY — assigned bays must be adjacently connected', () =
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR13_CONTIGUITY')).toBe(true);
+        expect(hasDiag(diags, 'SFR16_CONTIGUITY')).toBe(true);
     });
 
     test('directly adjacent bays produce no SFR13 error', async () => {
@@ -507,15 +507,15 @@ describe('SFR13_CONTIGUITY — assigned bays must be adjacently connected', () =
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR13_CONTIGUITY')).toBe(false);
+        expect(hasDiag(diags, 'SFR16_CONTIGUITY')).toBe(false);
     });
 });
 
 // ===========================================================================
-// SFR14_BAY_OWNERSHIP — referenced bay must belong to the target hangar
+// SFR17_BAY_OWNERSHIP — referenced bay must belong to the target hangar
 // ===========================================================================
 
-describe('SFR14_BAY_OWNERSHIP — bay must belong to the target hangar', () => {
+describe('SFR17_BAY_OWNERSHIP — bay must belong to the target hangar', () => {
 
     test('bay from a different hangar triggers SFR14 error', async () => {
         const doc = await parse(`
@@ -544,7 +544,7 @@ describe('SFR14_BAY_OWNERSHIP — bay must belong to the target hangar', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR14_BAY_OWNERSHIP')).toBe(true);
+        expect(hasDiag(diags, 'SFR17_BAY_OWNERSHIP')).toBe(true);
     });
 
     test('bay from the correct hangar produces no SFR14 error', async () => {
@@ -568,7 +568,7 @@ describe('SFR14_BAY_OWNERSHIP — bay must belong to the target hangar', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR14_BAY_OWNERSHIP')).toBe(false);
+        expect(hasDiag(diags, 'SFR17_BAY_OWNERSHIP')).toBe(false);
     });
 });
 
@@ -607,7 +607,7 @@ describe('Span direction — SFR25 uses the correct axis for each span', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR25_BAY_COUNT')).toBe(true);
+        expect(hasDiag(diags, 'SFR14_BAY_COUNT')).toBe(true);
     });
 
     test('span lateral (default) does not trigger SFR25 when wingspan fits one bay', async () => {
@@ -639,17 +639,17 @@ describe('Span direction — SFR25 uses the correct axis for each span', () => {
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR25_BAY_COUNT')).toBe(false);
+        expect(hasDiag(diags, 'SFR14_BAY_COUNT')).toBe(false);
     });
 });
 
 // ===========================================================================
-// Required bay count override (SFR_BAY_COUNT_OVERRIDE / SFR25)
+// Required bay count override (SFR15_BAY_COUNT_OVERRIDE / SFR25)
 // ===========================================================================
 
-describe('Requires clause — SFR_BAY_COUNT_OVERRIDE and effective minimum', () => {
+describe('Requires clause — SFR15_BAY_COUNT_OVERRIDE and effective minimum', () => {
 
-    test('requires below geometric minimum triggers SFR_BAY_COUNT_OVERRIDE', async () => {
+    test('requires below geometric minimum triggers SFR15_BAY_COUNT_OVERRIDE', async () => {
         const doc = await parse(`
             airfield T {
                 aircraft WideBody {
@@ -678,7 +678,7 @@ describe('Requires clause — SFR_BAY_COUNT_OVERRIDE and effective minimum', () 
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR_BAY_COUNT_OVERRIDE')).toBe(true);
+        expect(hasDiag(diags, 'SFR15_BAY_COUNT_OVERRIDE')).toBe(true);
     });
 
     test('requires above geometric minimum raises effective minimum for SFR25', async () => {
@@ -694,7 +694,7 @@ describe('Requires clause — SFR_BAY_COUNT_OVERRIDE and effective minimum', () 
         `);
         expect(doc.parseResult.parserErrors).toHaveLength(0);
         const diags = await validate(doc);
-        expect(hasDiag(diags, 'SFR_BAY_COUNT_OVERRIDE')).toBe(false);
-        expect(hasDiag(diags, 'SFR25_BAY_COUNT')).toBe(true);
+        expect(hasDiag(diags, 'SFR15_BAY_COUNT_OVERRIDE')).toBe(false);
+        expect(hasDiag(diags, 'SFR14_BAY_COUNT')).toBe(true);
     });
 });

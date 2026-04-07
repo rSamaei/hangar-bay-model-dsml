@@ -9,10 +9,10 @@
  *     bayNodeIds is empty because bay names don't map to graph nodes
  *     → returns { clear: true }
  *
- * Note: lines 352-359 (SFR_CORRIDOR_FIT in tryBaySet) are defensive code that is
+ * Note: lines 352-359 (SFR22_CORRIDOR_FIT in tryBaySet) are defensive code that is
  * logically unreachable in the current flow: the wingspan-aware reachability check
  * at lines 333-344 fires first for any narrow-corridor scenario, producing
- * SFR_DYNAMIC_REACHABILITY before we reach the corridor fit check.
+ * SFR21_DYNAMIC_REACHABILITY before we reach the corridor fit check.
  */
 import { describe, expect, test } from 'vitest';
 import { PlacementEngine } from '../../src/simulation/placement-engine.js';
@@ -71,12 +71,12 @@ describe('PlacementEngine.checkDeparturePath — graph present but doorNodeIds e
 });
 
 // ---------------------------------------------------------------------------
-// Documenting actual narrow-corridor behavior: SFR_DYNAMIC_REACHABILITY
-// (not SFR_CORRIDOR_FIT — see module comment above)
+// Documenting actual narrow-corridor behavior: SFR21_DYNAMIC_REACHABILITY
+// (not SFR22_CORRIDOR_FIT — see module comment above)
 // ---------------------------------------------------------------------------
 
 describe('PlacementEngine.attemptPlacement — narrow corridor blocks placement', () => {
-    test('aircraft too wide for access corridor → SFR_DYNAMIC_REACHABILITY rejection', () => {
+    test('aircraft too wide for access corridor → SFR21_DYNAMIC_REACHABILITY rejection', () => {
         const doorNode = mkAccessNode('DoorNode');
         const corridorNode = mkAccessNode('Corridor', 8); // 8 m width
         const bayNode = mkAccessNode('BayNode');
@@ -105,7 +105,7 @@ describe('PlacementEngine.attemptPlacement — narrow corridor blocks placement'
         expect(result.placed).toBe(false);
         if (!result.placed) {
             // Reachability check fires before corridor-fit check
-            const dynRej = result.rejections.find(r => r.ruleId === 'SFR_DYNAMIC_REACHABILITY');
+            const dynRej = result.rejections.find(r => r.ruleId === 'SFR21_DYNAMIC_REACHABILITY');
             expect(dynRej).toBeDefined();
         }
     });

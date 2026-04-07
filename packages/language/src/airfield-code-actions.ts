@@ -60,8 +60,8 @@ function createBayExpansionFix(params: BayExpansionParams): CodeAction[] {
 /**
  * Provides quick-fix code actions for two rules:
  *
- *  SFR13_CONTIGUITY  — bay set not connected: offer to insert bridging bay(s)
- *  SFR25_BAY_COUNT   — too few bays for wingspan: offer to insert adjacent bay(s)
+ *  SFR16_CONTIGUITY  — bay set not connected: offer to insert bridging bay(s)
+ *  SFR14_BAY_COUNT   — too few bays for wingspan: offer to insert adjacent bay(s)
  */
 export class AirfieldCodeActionProvider implements CodeActionProvider {
 
@@ -85,13 +85,13 @@ export class AirfieldCodeActionProvider implements CodeActionProvider {
         const ruleId = data?.ruleId;
 
         if (ruleId === 'SFR12_BAY_FIT') return this.createBayFitWidthFix(diagnostic, document, data?.evidence);
-        if (ruleId === 'SFR13_CONTIGUITY') return this.createContiguityFix(diagnostic, document, data?.evidence);
-        if (ruleId === 'SFR25_BAY_COUNT') return this.createBayCountFix(diagnostic, document, data?.evidence);
+        if (ruleId === 'SFR16_CONTIGUITY') return this.createContiguityFix(diagnostic, document, data?.evidence);
+        if (ruleId === 'SFR14_BAY_COUNT') return this.createBayCountFix(diagnostic, document, data?.evidence);
 
         // Legacy fallback: substring match on message (backward compatibility)
         const msg = diagnostic.message;
-        if (msg.includes('SFR13_CONTIGUITY')) return this.createContiguityFix(diagnostic, document);
-        if (msg.includes('SFR25_BAY_COUNT')) return this.createBayCountFix(diagnostic, document);
+        if (msg.includes('SFR16_CONTIGUITY')) return this.createContiguityFix(diagnostic, document);
+        if (msg.includes('SFR14_BAY_COUNT')) return this.createBayCountFix(diagnostic, document);
         if (msg.includes('SFR12_BAY_FIT')) return this.createBayFitWidthFix(diagnostic, document);
         return [];
     }

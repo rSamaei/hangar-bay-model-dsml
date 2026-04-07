@@ -1,7 +1,7 @@
 /**
  * Unit tests for well-formedness-checks.ts
- * (WF_DUPLICATE_AIRCRAFT, WF_DUPLICATE_BAY, WF_DUPLICATE_HANGAR,
- *  WF_DUPLICATE_CLEARANCE, SFR7_SELF_ADJACENCY, SFR7_SELF_LOOP, WF_NO_HANGARS).
+ * (SFR27_DUPLICATE_AIRCRAFT, SFR27_DUPLICATE_BAY, SFR27_DUPLICATE_HANGAR,
+ *  WF_DUPLICATE_CLEARANCE, SFR28_SELF_ADJACENCY, SFR28_SELF_LOOP, WF_NO_HANGARS).
  *
  * Imports directly from the TypeScript source for v8 coverage.
  * Uses structural mocks — no Langium runtime.
@@ -71,11 +71,11 @@ describe('checkDuplicateAircraftNames', () => {
         expect(wasCalled(accept)).toBe(false);
     });
 
-    test('duplicate aircraft name — WF_DUPLICATE_AIRCRAFT error on second', () => {
+    test('duplicate aircraft name — SFR27_DUPLICATE_AIRCRAFT error on second', () => {
         const accept = mockAccept();
         const model = mkModel({ aircraftTypes: [{ name: 'Hawk' }, { name: 'Hawk' }] });
         checkDuplicateAircraftNames(model, accept);
-        expect(calledWithCode(accept, 'WF_DUPLICATE_AIRCRAFT')).toBe(true);
+        expect(calledWithCode(accept, 'SFR27_DUPLICATE_AIRCRAFT')).toBe(true);
     });
 
     test('three aircraft, two share a name — one error only', () => {
@@ -99,11 +99,11 @@ describe('checkDuplicateBayNames', () => {
         expect(wasCalled(accept)).toBe(false);
     });
 
-    test('duplicate bay name — WF_DUPLICATE_BAY error', () => {
+    test('duplicate bay name — SFR27_DUPLICATE_BAY error', () => {
         const accept = mockAccept();
         const hangar = mkHangar('H', [{ name: 'Bay1' }, { name: 'Bay1' }]);
         checkDuplicateBayNames(hangar, accept);
-        expect(calledWithCode(accept, 'WF_DUPLICATE_BAY')).toBe(true);
+        expect(calledWithCode(accept, 'SFR27_DUPLICATE_BAY')).toBe(true);
     });
 
     test('three bays, two share a name — error message contains hangar name', () => {
@@ -127,11 +127,11 @@ describe('checkDuplicateHangarNames', () => {
         expect(wasCalled(accept)).toBe(false);
     });
 
-    test('duplicate hangar name — WF_DUPLICATE_HANGAR error', () => {
+    test('duplicate hangar name — SFR27_DUPLICATE_HANGAR error', () => {
         const accept = mockAccept();
         const model = mkModel({ hangars: [{ name: 'Alpha' }, { name: 'Alpha' }] });
         checkDuplicateHangarNames(model, accept);
-        expect(calledWithCode(accept, 'WF_DUPLICATE_HANGAR')).toBe(true);
+        expect(calledWithCode(accept, 'SFR27_DUPLICATE_HANGAR')).toBe(true);
     });
 });
 
@@ -156,7 +156,7 @@ describe('checkDuplicateClearanceNames', () => {
 });
 
 // ===========================================================================
-// checkSelfAdjacency — SFR7_SELF_ADJACENCY
+// checkSelfAdjacency — SFR28_SELF_ADJACENCY
 // ===========================================================================
 
 describe('checkSelfAdjacency', () => {
@@ -175,12 +175,12 @@ describe('checkSelfAdjacency', () => {
         expect(wasCalled(accept)).toBe(false);
     });
 
-    test('bay lists itself as adjacent — SFR7_SELF_ADJACENCY warning', () => {
+    test('bay lists itself as adjacent — SFR28_SELF_ADJACENCY warning', () => {
         const accept = mockAccept();
         const bay = { name: 'B1' } as unknown as HangarBay;
         (bay as any).adjacent = [{ ref: bay }];
         checkSelfAdjacency(bay, accept);
-        expect(calledWithCode(accept, 'SFR7_SELF_ADJACENCY')).toBe(true);
+        expect(calledWithCode(accept, 'SFR28_SELF_ADJACENCY')).toBe(true);
     });
 
     test('bay lists self plus another — one warning (for self entry)', () => {
@@ -191,12 +191,12 @@ describe('checkSelfAdjacency', () => {
         checkSelfAdjacency(bay1, accept);
         const calls = (accept as ReturnType<typeof vi.fn>).mock.calls as unknown[][];
         expect(calls.length).toBe(1);
-        expect(calledWithCode(accept, 'SFR7_SELF_ADJACENCY')).toBe(true);
+        expect(calledWithCode(accept, 'SFR28_SELF_ADJACENCY')).toBe(true);
     });
 });
 
 // ===========================================================================
-// checkSelfLoopAccessLink — SFR7_SELF_LOOP
+// checkSelfLoopAccessLink — SFR28_SELF_LOOP
 // ===========================================================================
 
 describe('checkSelfLoopAccessLink', () => {
@@ -209,12 +209,12 @@ describe('checkSelfLoopAccessLink', () => {
         expect(wasCalled(accept)).toBe(false);
     });
 
-    test('link from a node to itself — SFR7_SELF_LOOP warning', () => {
+    test('link from a node to itself — SFR28_SELF_LOOP warning', () => {
         const accept = mockAccept();
         const nodeA = { name: 'A' };
         const link = { from: { ref: nodeA }, to: { ref: nodeA } } as unknown as AccessLink;
         checkSelfLoopAccessLink(link, accept);
-        expect(calledWithCode(accept, 'SFR7_SELF_LOOP')).toBe(true);
+        expect(calledWithCode(accept, 'SFR28_SELF_LOOP')).toBe(true);
     });
 
     test('from ref undefined — no warning', () => {

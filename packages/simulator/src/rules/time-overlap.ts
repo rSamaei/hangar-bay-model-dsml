@@ -54,7 +54,7 @@ export function detectConflicts(inductions: InductionInfo[]): ConflictInfo[] {
             if (!overlaps) continue;
 
             conflicts.push({
-                ruleId: 'SFR16_TIME_OVERLAP',
+                ruleId: 'SFR23_TIME_OVERLAP',
                 induction1: { id: ind1.id, aircraft: ind1.aircraft },
                 induction2: { id: ind2.id, aircraft: ind2.aircraft },
                 hangar: ind1.hangar,

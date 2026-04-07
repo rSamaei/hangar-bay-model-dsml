@@ -41,35 +41,35 @@ describe('checkAircraftDimensions', () => {
         const accept = mockAccept();
         const aircraft = { wingspan: 0, length: 8.3, height: 2.7 } as unknown as AircraftType;
         checkAircraftDimensions(aircraft, accept);
-        expect(calledWithCode(accept, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(calledWithCode(accept, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('zero length — SFR20 error', () => {
         const accept = mockAccept();
         const aircraft = { wingspan: 11, length: 0, height: 2.7 } as unknown as AircraftType;
         checkAircraftDimensions(aircraft, accept);
-        expect(calledWithCode(accept, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(calledWithCode(accept, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('zero height — SFR20 error', () => {
         const accept = mockAccept();
         const aircraft = { wingspan: 11, length: 8.3, height: 0 } as unknown as AircraftType;
         checkAircraftDimensions(aircraft, accept);
-        expect(calledWithCode(accept, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(calledWithCode(accept, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('negative wingspan — SFR20 error', () => {
         const accept = mockAccept();
         const aircraft = { wingspan: -1, length: 8.3, height: 2.7 } as unknown as AircraftType;
         checkAircraftDimensions(aircraft, accept);
-        expect(calledWithCode(accept, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(calledWithCode(accept, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('zero tailHeight — SFR20 error', () => {
         const accept = mockAccept();
         const aircraft = { wingspan: 11, length: 8.3, height: 2.7, tailHeight: 0 } as unknown as AircraftType;
         checkAircraftDimensions(aircraft, accept);
-        expect(calledWithCode(accept, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(calledWithCode(accept, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('tailHeight undefined — no tailHeight error', () => {
@@ -103,21 +103,21 @@ describe('checkBayDimensions', () => {
         const accept = mockAccept();
         const bay = { width: 0, depth: 15, height: 5 } as unknown as HangarBay;
         checkBayDimensions(bay, accept);
-        expect(calledWithCode(accept, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(calledWithCode(accept, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('zero depth — SFR20 error', () => {
         const accept = mockAccept();
         const bay = { width: 12, depth: 0, height: 5 } as unknown as HangarBay;
         checkBayDimensions(bay, accept);
-        expect(calledWithCode(accept, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(calledWithCode(accept, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('zero height — SFR20 error', () => {
         const accept = mockAccept();
         const bay = { width: 12, depth: 15, height: 0 } as unknown as HangarBay;
         checkBayDimensions(bay, accept);
-        expect(calledWithCode(accept, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(calledWithCode(accept, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('all valid dimensions — no error', () => {
@@ -137,14 +137,14 @@ describe('checkDoorDimensions', () => {
         const accept = mockAccept();
         const door = { width: 0, height: 5 } as unknown as HangarDoor;
         checkDoorDimensions(door, accept);
-        expect(calledWithCode(accept, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(calledWithCode(accept, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('zero height — SFR20 error', () => {
         const accept = mockAccept();
         const door = { width: 15, height: 0 } as unknown as HangarDoor;
         checkDoorDimensions(door, accept);
-        expect(calledWithCode(accept, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(calledWithCode(accept, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('positive dimensions — no error', () => {
@@ -164,21 +164,21 @@ describe('checkClearanceDimensions', () => {
         const accept = mockAccept();
         const cl = { lateralMargin: -0.5, longitudinalMargin: 0, verticalMargin: 0 } as unknown as ClearanceEnvelope;
         checkClearanceDimensions(cl, accept);
-        expect(calledWithCode(accept, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(calledWithCode(accept, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('negative longitudinalMargin — SFR20 error', () => {
         const accept = mockAccept();
         const cl = { lateralMargin: 0, longitudinalMargin: -0.5, verticalMargin: 0 } as unknown as ClearanceEnvelope;
         checkClearanceDimensions(cl, accept);
-        expect(calledWithCode(accept, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(calledWithCode(accept, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('negative verticalMargin — SFR20 error', () => {
         const accept = mockAccept();
         const cl = { lateralMargin: 0, longitudinalMargin: 0, verticalMargin: -0.5 } as unknown as ClearanceEnvelope;
         checkClearanceDimensions(cl, accept);
-        expect(calledWithCode(accept, 'SFR20_DIMENSIONS')).toBe(true);
+        expect(calledWithCode(accept, 'SFR25_DIMENSIONS')).toBe(true);
     });
 
     test('all margins zero — no error', () => {
@@ -224,7 +224,7 @@ describe('checkUnreferencedClearanceEnvelope', () => {
         };
         (cl as any).$container = model;
         checkUnreferencedClearanceEnvelope(cl, accept);
-        expect(calledWithCode(accept, 'SFR26_UNREFERENCED_CLEARANCE')).toBe(true);
+        expect(calledWithCode(accept, 'SFR30_UNREFERENCED_CLEARANCE')).toBe(true);
     });
 
     test('clearance referenced by aircraft — no warning', () => {

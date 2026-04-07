@@ -28,14 +28,14 @@ export function checkBayReachability(induction: Induction, accept: ValidationAcc
 
         if (!reachable.has(bayNodeRef.name)) {
             accept('error',
-                `[SFR17_REACHABILITY] Bay '${bay.name}' is not reachable from door '${door.name}'`,
+                `[SFR19_REACHABILITY] Bay '${bay.name}' is not reachable from door '${door.name}'`,
                 { node: induction, property: 'bays' }
             );
         }
     }
 }
 
-/** SFR_DYNAMIC_REACHABILITY: Check bays remain reachable when concurrent inductions block paths. */
+/** SFR21_DYNAMIC_REACHABILITY: Check bays remain reachable when concurrent inductions block paths. */
 export function checkDynamicBayBlockingReachability(induction: Induction, accept: ValidationAcceptor): void {
     const hangar = induction.hangar?.ref;
     if (!hangar) return;
@@ -55,7 +55,7 @@ export function checkDynamicBayBlockingReachability(induction: Induction, accept
     }
 }
 
-/** SFR_CORRIDOR_FIT: Warn when aircraft wingspan exceeds a corridor node's width on route to a bay. */
+/** SFR22_CORRIDOR_FIT: Warn when aircraft wingspan exceeds a corridor node's width on route to a bay. */
 export function checkCorridorFitReachability(induction: Induction, accept: ValidationAcceptor): void {
     const hangar = induction.hangar?.ref;
     const aircraft = induction.aircraft?.ref;
@@ -72,7 +72,7 @@ export function checkCorridorFitReachability(induction: Induction, accept: Valid
 
     for (const v of result.violations) {
         accept('warning',
-            `[SFR_CORRIDOR_FIT] Aircraft '${aircraft.name}' (effective wingspan ${v.wingspanEff.toFixed(2)}m) cannot traverse corridor '${v.nodeName}' (width ${v.nodeWidth.toFixed(2)}m) on route to bay '${v.bayName}'.`,
+            `[SFR22_CORRIDOR_FIT] Aircraft '${aircraft.name}' (effective wingspan ${v.wingspanEff.toFixed(2)}m) cannot traverse corridor '${v.nodeName}' (width ${v.nodeWidth.toFixed(2)}m) on route to bay '${v.bayName}'.`,
             { node: induction, property: 'bays' }
         );
     }

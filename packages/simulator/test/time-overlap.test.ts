@@ -88,7 +88,7 @@ describe('detectConflicts', () => {
         ];
         const conflicts = detectConflicts(inductions);
         expect(conflicts).toHaveLength(1);
-        expect(conflicts[0].ruleId).toBe('SFR16_TIME_OVERLAP');
+        expect(conflicts[0].ruleId).toBe('SFR23_TIME_OVERLAP');
         expect(conflicts[0].intersectingBays).toContain('Bay1');
     });
 

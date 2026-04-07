@@ -219,7 +219,7 @@ airfield RAF_Valley {
     //
     // WRONG: only 2 bays assigned — combined width 30 m < 43.41 m effectiveWingspan.
     //   SFR12_COMBINED error fires.
-    //   SFR25_BAY_COUNT warning fires (2 assigned < 3 required).
+    //   SFR14_BAY_COUNT warning fires (2 assigned < 3 required).
     // -------------------------------------------------------------------------
     induct id "C130_LATERAL"
         C130 into TransportHangar bays T1 T2 via WideDoor
@@ -249,13 +249,13 @@ airfield RAF_Valley {
     // -------------------------------------------------------------------------
     // C130_REQUIRES — declares `requires 2 bays` but geometric minimum is 3.
     //
-    // WRONG: `requires 2 bays` < geometric min 3 → SFR_BAY_COUNT_OVERRIDE warning.
+    // WRONG: `requires 2 bays` < geometric min 3 → SFR15_BAY_COUNT_OVERRIDE warning.
     // CORRECT: `requires 3 bays` matches geometry — no warning.
     // -------------------------------------------------------------------------
     induct id "C130_REQUIRES"
         C130 into TransportHangar bays T1 T2 T3 via WideDoor
         span lateral
-        requires 2 bays                  // ← WRONG: 2 < geometric minimum 3 → SFR_BAY_COUNT_OVERRIDE
+        requires 2 bays                  // ← WRONG: 2 < geometric minimum 3 → SFR15_BAY_COUNT_OVERRIDE
         // requires 3 bays              // ← CORRECT
         from 2025-09-05T08:00
         to   2025-09-05T20:00;
@@ -267,7 +267,7 @@ airfield RAF_Valley {
     //   Under 8-connected mode, diagonal Bay4 (row 1, col 0) IS adjacent to
     //   Bay1 but Bay3 is still 2 columns away (Chebyshev distance 2).
     //
-    // WRONG: Bay1 + Bay3 are not contiguous → SFR13_CONTIGUITY error.
+    // WRONG: Bay1 + Bay3 are not contiguous → SFR16_CONTIGUITY error.
     // CORRECT: assign Bay1 + Bay2, or Bay1 + Bay4 (diagonal — adjacent in 8-mode).
     // -------------------------------------------------------------------------
     induct id "NONCONT"
@@ -290,10 +290,10 @@ airfield RAF_Valley {
     //   Overlap window with TYP_BLOCKED (10:00–18:00): 10:00–18:00.
     //
     //   Because Bay3 is `traversable`, BFS passes through it even when occupied.
-    //   → SFR_DYNAMIC_REACHABILITY does NOT fire.
+    //   → SFR21_DYNAMIC_REACHABILITY does NOT fire.
     //
     //   If Bay3 were NOT traversable:
-    //   → SFR_DYNAMIC_REACHABILITY would fire: Bay4 unreachable because Bay3 occupied.
+    //   → SFR21_DYNAMIC_REACHABILITY would fire: Bay4 unreachable because Bay3 occupied.
     // -------------------------------------------------------------------------
     induct id "TYP_BLOCKED"
         Typhoon into HQHangar bays Bay4 via MainDoor
@@ -303,7 +303,7 @@ airfield RAF_Valley {
     // -------------------------------------------------------------------------
     // BAD_TIMES — reversed time window.
     //
-    // WRONG: start is after end → SFR21_TIME_WINDOW error.
+    // WRONG: start is after end → SFR26_TIME_WINDOW error.
     // CORRECT: swap start and end.
     // -------------------------------------------------------------------------
     induct id "BAD_TIMES"
@@ -330,7 +330,7 @@ airfield RAF_Valley {
     // AUTO_C130 — C130 with `requires 3 bays` matching the geometric minimum.
     //
     // WRONG: `requires 1 bays` — far below the geometric minimum of 3.
-    //   → SFR_BAY_COUNT_OVERRIDE warning (scheduler will still use 3, but mismatch flagged).
+    //   → SFR15_BAY_COUNT_OVERRIDE warning (scheduler will still use 3, but mismatch flagged).
     // CORRECT: `requires 3 bays`.
     // -------------------------------------------------------------------------
     auto-induct id "AUTO_C130"
@@ -352,7 +352,7 @@ airfield RAF_Valley {
     // AUTO_SEQ_B — must run after AUTO_SEQ_A, within an afternoon window.
     //
     // WRONG: notBefore is later than notAfter — reversed scheduling window.
-    //   → SFR21_TIME_WINDOW error.
+    //   → SFR26_TIME_WINDOW error.
     // CORRECT: swap the two timestamps.
     // -------------------------------------------------------------------------
     auto-induct id "AUTO_SEQ_B"
@@ -360,7 +360,7 @@ airfield RAF_Valley {
         duration 90 minutes
         prefer HQHangar
         after AUTO_SEQ_A
-        notBefore 2025-09-10T20:00      // ← WRONG: notBefore after notAfter → SFR21_TIME_WINDOW
+        notBefore 2025-09-10T20:00      // ← WRONG: notBefore after notAfter → SFR26_TIME_WINDOW
         notAfter  2025-09-10T14:00;     // ← WRONG: should be the later bound
         // notBefore 2025-09-10T14:00  // ← CORRECT: afternoon start
         // notAfter  2025-09-10T20:00; // ← CORRECT: end-of-day deadline

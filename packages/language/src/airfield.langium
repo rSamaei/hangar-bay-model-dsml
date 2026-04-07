@@ -81,7 +81,7 @@ AccessPath:
 
 AccessNode:
     'node' name=ID
-        ('width' width=FVAL 'm')?          // optional dimension constraints
+        ('width' width=FVAL 'm')?                  // optional dimension constraints
         ('clearanceHeight' height=FVAL 'm')?
     ;
 
@@ -114,14 +114,14 @@ Induction:
         (metadata=InductionMetadata)?
     ';';
 
-// 2.1: Span direction for multi-bay inductions
+// Span direction for multi-bay inductions
 SpanDirection returns string:
     'lateral' | 'longitudinal';
 
 // Metadata block for validation reporting and export
 InductionMetadata:
     'meta' '{'
-        (tags+=Tag)*                         // extensible key-value pairs
+        (tags+=Tag)*     // extensible key-value pairs
     '}';
 
 Tag:
@@ -136,8 +136,8 @@ AutoInduction:
         ('clearance' clearance=[ClearanceEnvelope:ID])?
         ('requires' requires=INT 'bays')?   // optional declared minimum bay count
 
-        ('after' precedingInductions+=[Induction:ID]+)?    // simple precedence
-        ('notBefore' notBefore=DATETIME)?                  // time window constraint
+        ('after' precedingInductions+=[Induction:ID]+)?
+        ('notBefore' notBefore=DATETIME)?
         ('notAfter' notAfter=DATETIME)?
 
         (metadata=InductionMetadata)?
@@ -147,7 +147,7 @@ AutoInduction:
 // Data type rules
 // ---------------------------------------------------------------------------
 
-// Physical dimension value: accepts both integer (e.g. 11) and decimal (e.g. 11.5) literals.
+// Physical dimension value: accepts both integer (e.g. 11) and decimal (e.g. 11.5) literals
 FVAL returns number: FLOAT | INT;
 
 // ---------------------------------------------------------------------------

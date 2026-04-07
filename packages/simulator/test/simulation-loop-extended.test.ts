@@ -7,7 +7,7 @@
  *   - DEPENDENCY_NEVER_PLACED — dependency fails, dependent never arrives (lines 1131–1146)
  *   - Active auto at sim end included in scheduledInductions (lines 1044–1067)
  *   - buildResult eventLog timestamps → simulatedDuration > 0 (lines 1149–1154)
- *   - buildWaitReason SFR16_TIME_OVERLAP branch (lines 967–970) via contention scenario
+ *   - buildWaitReason SFR23_TIME_OVERLAP branch (lines 967–970) via contention scenario
  */
 import { describe, expect, test } from 'vitest';
 import { DiscreteEventSimulator } from '../src/simulation/simulation-loop.js';
@@ -274,12 +274,12 @@ describe('DiscreteEventSimulator — DEPENDENCY_NEVER_PLACED with notAfter', () 
 });
 
 // ---------------------------------------------------------------------------
-// buildWaitReason SFR16_TIME_OVERLAP branch (lines 967–970)
-// Two autos competing for 1 bay → second is queued with SFR16_TIME_OVERLAP
+// buildWaitReason SFR23_TIME_OVERLAP branch (lines 967–970)
+// Two autos competing for 1 bay → second is queued with SFR23_TIME_OVERLAP
 // rejection → buildWaitReason produces bay-set conflict message
 // ---------------------------------------------------------------------------
 
-describe('DiscreteEventSimulator — buildWaitReason SFR16_TIME_OVERLAP', () => {
+describe('DiscreteEventSimulator — buildWaitReason SFR23_TIME_OVERLAP', () => {
     test('queued aircraft has a waitReason mentioning the bay conflict', () => {
         const autoA = mkAutoInduction('A', CESSNA, HANGAR, 120);
         const autoB = mkAutoInduction('B', CESSNA, HANGAR, 120);

@@ -1,6 +1,6 @@
 /**
  * Unit tests for hangar-checks.ts
- * (SFR_REACHABILITY_SKIPPED, SFR7_ASYMMETRIC_ADJACENCY, SFR_NONGRID_ADJACENCY, SFR_GRID_OVERRIDE).
+ * (SFR31_REACHABILITY_SKIPPED, SFR28_ASYMMETRIC_ADJACENCY, SFR29_NONGRID_ADJACENCY, SFR29_GRID_OVERRIDE).
  *
  * Imports directly from the TypeScript source for v8 coverage.
  * Mocks access-graph so buildAccessGraph is controllable.
@@ -112,14 +112,14 @@ describe('checkReachabilitySkipped', () => {
         expect(wasCalled(accept)).toBe(false);
     });
 
-    test('hangar has induction and no access graph — SFR_REACHABILITY_SKIPPED hint', () => {
+    test('hangar has induction and no access graph — SFR31_REACHABILITY_SKIPPED hint', () => {
         const accept = mockAccept();
         const hangar = mkHangar('H', []);
         const ind = { hangar: { ref: hangar } };
         attachModel(hangar, [ind]);
         mockBuildAccessGraph.mockReturnValue(null);
         checkReachabilitySkipped(hangar, accept);
-        expect(calledWithCode(accept, 'SFR_REACHABILITY_SKIPPED')).toBe(true);
+        expect(calledWithCode(accept, 'SFR31_REACHABILITY_SKIPPED')).toBe(true);
     });
 
     test('induction targets a different hangar — no hint', () => {
@@ -164,7 +164,7 @@ describe('checkAsymmetricAdjacency', () => {
         expect(wasCalled(accept)).toBe(false);
     });
 
-    test('non-grid hangar: A declares B adjacent but B does not declare A — SFR7_ASYMMETRIC_ADJACENCY', () => {
+    test('non-grid hangar: A declares B adjacent but B does not declare A — SFR28_ASYMMETRIC_ADJACENCY', () => {
         const accept = mockAccept();
         const bayA = mkBay('A');
         const bayB = mkBay('B');
@@ -173,7 +173,7 @@ describe('checkAsymmetricAdjacency', () => {
         const hangar = mkHangar('H', [bayA, bayB]);
         attachModel(hangar);
         checkAsymmetricAdjacency(hangar, accept);
-        expect(calledWithCode(accept, 'SFR7_ASYMMETRIC_ADJACENCY')).toBe(true);
+        expect(calledWithCode(accept, 'SFR28_ASYMMETRIC_ADJACENCY')).toBe(true);
     });
 
     test('adjacent ref is undefined — skipped gracefully', () => {
@@ -235,7 +235,7 @@ describe('checkAdjacencyConsistency', () => {
         expect(wasCalled(accept)).toBe(false);
     });
 
-    test('4-connected: diagonal declared adjacent — SFR_NONGRID_ADJACENCY', () => {
+    test('4-connected: diagonal declared adjacent — SFR29_NONGRID_ADJACENCY', () => {
         const accept = mockAccept();
         const bayA = mkBay('A', { row: 0, col: 0 });
         const bayB = mkBay('B', { row: 1, col: 1 }); // diagonal
@@ -244,10 +244,10 @@ describe('checkAdjacencyConsistency', () => {
         const hangar = mkHangar('H', [bayA, bayB], { rows: 2, cols: 2 });
         attachModel(hangar);
         checkAdjacencyConsistency(hangar, accept);
-        expect(calledWithCode(accept, 'SFR_NONGRID_ADJACENCY')).toBe(true);
+        expect(calledWithCode(accept, 'SFR29_NONGRID_ADJACENCY')).toBe(true);
     });
 
-    test('8-connected: diagonal declared adjacent — no SFR_NONGRID_ADJACENCY', () => {
+    test('8-connected: diagonal declared adjacent — no SFR29_NONGRID_ADJACENCY', () => {
         const accept = mockAccept();
         const bayA = mkBay('A', { row: 0, col: 0 });
         const bayB = mkBay('B', { row: 1, col: 1 }); // diagonal — valid for 8-connected
@@ -260,10 +260,10 @@ describe('checkAdjacencyConsistency', () => {
         const hangar = mkHangar('H', [bayA, bayB, bayC, bayD], { rows: 2, cols: 2, adjacency: 8 });
         attachModel(hangar);
         checkAdjacencyConsistency(hangar, accept);
-        expect(calledWithCode(accept, 'SFR_NONGRID_ADJACENCY')).toBe(false);
+        expect(calledWithCode(accept, 'SFR29_NONGRID_ADJACENCY')).toBe(false);
     });
 
-    test('explicit adjacency excludes a grid neighbour — SFR_GRID_OVERRIDE', () => {
+    test('explicit adjacency excludes a grid neighbour — SFR29_GRID_OVERRIDE', () => {
         // Row B1-B2-B3; B2 has explicit { B1 } only, omitting grid-neighbour B3
         const accept = mockAccept();
         const bayA = mkBay('B1', { row: 0, col: 0 });
@@ -275,11 +275,11 @@ describe('checkAdjacencyConsistency', () => {
         const hangar = mkHangar('H', [bayA, bayB, bayC], { rows: 1, cols: 3 });
         attachModel(hangar);
         checkAdjacencyConsistency(hangar, accept);
-        expect(calledWithCode(accept, 'SFR_GRID_OVERRIDE')).toBe(true);
+        expect(calledWithCode(accept, 'SFR29_GRID_OVERRIDE')).toBe(true);
     });
 
-    test('bay with no grid coords but explicit adjacent — SFR_NONGRID_ADJACENCY skipped', () => {
-        // Bay without row/col: we can't check distance, so SFR_NONGRID_ADJACENCY does not fire
+    test('bay with no grid coords but explicit adjacent — SFR29_NONGRID_ADJACENCY skipped', () => {
+        // Bay without row/col: we can't check distance, so SFR29_NONGRID_ADJACENCY does not fire
         const accept = mockAccept();
         const bayA = mkBay('A'); // no row/col
         const bayB = mkBay('B', { row: 0, col: 0 });
@@ -289,8 +289,8 @@ describe('checkAdjacencyConsistency', () => {
         attachModel(hangar);
         checkAdjacencyConsistency(hangar, accept);
         // bayHasCoords is false for A → nongrid check skipped
-        // SFR_GRID_OVERRIDE also skipped because gridNeighborNames is empty (bayA has no coords)
-        expect(calledWithCode(accept, 'SFR_NONGRID_ADJACENCY')).toBe(false);
+        // SFR29_GRID_OVERRIDE also skipped because gridNeighborNames is empty (bayA has no coords)
+        expect(calledWithCode(accept, 'SFR29_NONGRID_ADJACENCY')).toBe(false);
     });
 
     test('adjacent ref is undefined — skipped gracefully', () => {
@@ -303,7 +303,7 @@ describe('checkAdjacencyConsistency', () => {
         expect(wasCalled(accept)).toBe(false);
     });
 
-    test('8-connected: explicit adjacency covers all grid neighbours — no SFR_GRID_OVERRIDE', () => {
+    test('8-connected: explicit adjacency covers all grid neighbours — no SFR29_GRID_OVERRIDE', () => {
         // 2×2 grid, B1 at (0,0) explicitly lists all 3 grid neighbours (B2, B3, B4)
         const accept = mockAccept();
         const b1 = mkBay('B1', { row: 0, col: 0 });
@@ -317,6 +317,6 @@ describe('checkAdjacencyConsistency', () => {
         const hangar = mkHangar('H', [b1, b2, b3, b4], { rows: 2, cols: 2, adjacency: 8 });
         attachModel(hangar);
         checkAdjacencyConsistency(hangar, accept);
-        expect(calledWithCode(accept, 'SFR_GRID_OVERRIDE')).toBe(false);
+        expect(calledWithCode(accept, 'SFR29_GRID_OVERRIDE')).toBe(false);
     });
 });

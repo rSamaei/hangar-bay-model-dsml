@@ -1,7 +1,7 @@
 // =============================================================================
 // Access Paths and Bay Reachability
 //
-// Demonstrates: access graph modelling, SFR_DYNAMIC_REACHABILITY, SFR_CORRIDOR_FIT,
+// Demonstrates: access graph modelling, SFR21_DYNAMIC_REACHABILITY, SFR22_CORRIDOR_FIT,
 // traversable bays, and how corridor width interacts with aircraft wingspan.
 //
 // Scenario
@@ -131,7 +131,7 @@ airfield NarrowHangarDemo {
 
     // =========================================================================
     // SCOUT_OK — Scout helicopter (effective wingspan 6.0 m) fits the 6 m
-    // corridor exactly.  No SFR_CORRIDOR_FIT.
+    // corridor exactly.  No SFR22_CORRIDOR_FIT.
     // =========================================================================
     induct id "SCOUT_OK"
         Scout into NarrowHangar bays Bay3 via HangarDoor
@@ -141,7 +141,7 @@ airfield NarrowHangarDemo {
     // =========================================================================
     // HAWK_STATIC — Hawk effective wingspan 10.9 m > Corridor width 6.0 m.
     //
-    // SFR_CORRIDOR_FIT (warning, shown in VS Code): Hawk cannot physically pass
+    // SFR22_CORRIDOR_FIT (warning, shown in VS Code): Hawk cannot physically pass
     // through Corridor (6 m) to reach Bay2 — too wide even before any scheduling.
     //
     // WRONG: assigning Hawk to Bay2 — corridor blocks it structurally.
@@ -165,11 +165,11 @@ airfield NarrowHangarDemo {
     // BAY3_REACH — Scout wants Bay3 while BAY1_OCC occupies Bay1 (10:00–18:00 overlap).
     //
     // Bay1 is `traversable` → BFS passes through it even while occupied.
-    // Bay2Node and Bay3Node are both reachable → no SFR_DYNAMIC_REACHABILITY.
+    // Bay2Node and Bay3Node are both reachable → no SFR21_DYNAMIC_REACHABILITY.
     //
     // If `traversable` were removed from Bay1 (WRONG), then:
     //   BAY1_OCC would block Bay1Node → Bay2 and Bay3 become unreachable.
-    //   SFR_DYNAMIC_REACHABILITY would fire for BAY3_REACH.
+    //   SFR21_DYNAMIC_REACHABILITY would fire for BAY3_REACH.
     // =========================================================================
     induct id "BAY3_REACH"
         Scout into NarrowHangar bays Bay3 via HangarDoor
@@ -179,7 +179,7 @@ airfield NarrowHangarDemo {
     // =========================================================================
     // GAZELLE_BLOCKED — Gazelle effective wingspan 13.47 m > Corridor 6 m.
     //
-    // SFR_CORRIDOR_FIT fires (static — visible in VS Code as warning).
+    // SFR22_CORRIDOR_FIT fires (static — visible in VS Code as warning).
     // Even Bay1 (directly after Corridor) is unreachable for Gazelle because
     // the BFS width check blocks Corridor before reaching Bay1Node.
     //
@@ -237,7 +237,7 @@ airfield NarrowHangarDemo {
     // AUTO_SEQUENCE — two maintenance steps, B must follow A.
     //
     // WRONG: notBefore set in the past relative to notAfter — window reversed.
-    //   SFR21_TIME_WINDOW fires.
+    //   SFR26_TIME_WINDOW fires.
     // CORRECT: notBefore < notAfter.
     // -------------------------------------------------------------------------
     auto-induct id "AUTO_STEP_A"

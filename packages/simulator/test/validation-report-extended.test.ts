@@ -3,8 +3,8 @@
  * exercised by the existing test suite:
  *
  *   - Lines 244–270: checkTimeOverlaps + inductionSide — two overlapping manual
- *                    inductions produce SFR16_TIME_OVERLAP violations
- *   - Lines 289–291: schedFailedViolation — SFR16_TIME_OVERLAP as primary reason
+ *                    inductions produce SFR23_TIME_OVERLAP violations
+ *   - Lines 289–291: schedFailedViolation — SFR23_TIME_OVERLAP as primary reason
  *                    → message includes "time slot conflict"
  *   - Lines 296–297: schedFailedViolation — unknown ruleId fallback
  *                    → message uses primary.message directly
@@ -26,14 +26,14 @@ const BAY2 = mkBay('Bay2', 12, 10, 3, 0, 1);
 const ALPHA_HANGAR = mkHangar('Alpha', [MAIN_DOOR], [BAY1, BAY2], 1, 2);
 
 // ---------------------------------------------------------------------------
-// Lines 244–270: SFR16_TIME_OVERLAP from checkTimeOverlaps + inductionSide
+// Lines 244–270: SFR23_TIME_OVERLAP from checkTimeOverlaps + inductionSide
 //
 // Two manual inductions in the same hangar / bay with overlapping windows
-// trigger detectConflicts() → SFR16_TIME_OVERLAP violation with full evidence.
+// trigger detectConflicts() → SFR23_TIME_OVERLAP violation with full evidence.
 // ---------------------------------------------------------------------------
 
-describe('buildValidationReport — SFR16_TIME_OVERLAP from overlapping manual inductions', () => {
-    test('two overlapping inductions produce an SFR16_TIME_OVERLAP violation', () => {
+describe('buildValidationReport — SFR23_TIME_OVERLAP from overlapping manual inductions', () => {
+    test('two overlapping inductions produce an SFR23_TIME_OVERLAP violation', () => {
         const indA = mkManualInduction(
             'IND-A', CESSNA, ALPHA_HANGAR, [BAY1], MAIN_DOOR,
             '2024-06-01T08:00', '2024-06-01T10:00'
@@ -46,11 +46,11 @@ describe('buildValidationReport — SFR16_TIME_OVERLAP from overlapping manual i
         const model = mkModel([ALPHA_HANGAR], [indA, indB], []);
         const { violations } = buildValidationReport(model);
 
-        const overlap = violations.filter(v => v.ruleId === 'SFR16_TIME_OVERLAP');
+        const overlap = violations.filter(v => v.ruleId === 'SFR23_TIME_OVERLAP');
         expect(overlap).toHaveLength(1);
     });
 
-    test('SFR16_TIME_OVERLAP violation has correct evidence shape', () => {
+    test('SFR23_TIME_OVERLAP violation has correct evidence shape', () => {
         const indA = mkManualInduction(
             'IND-A', CESSNA, ALPHA_HANGAR, [BAY1], MAIN_DOOR,
             '2024-06-01T08:00', '2024-06-01T10:00'
@@ -63,7 +63,7 @@ describe('buildValidationReport — SFR16_TIME_OVERLAP from overlapping manual i
         const model = mkModel([ALPHA_HANGAR], [indA, indB], []);
         const { violations } = buildValidationReport(model);
 
-        const v = violations.find(v => v.ruleId === 'SFR16_TIME_OVERLAP')!;
+        const v = violations.find(v => v.ruleId === 'SFR23_TIME_OVERLAP')!;
         const ev = v.evidence as any;
 
         expect(ev).toHaveProperty('induction1');
@@ -83,11 +83,11 @@ describe('buildValidationReport — SFR16_TIME_OVERLAP from overlapping manual i
 });
 
 // ---------------------------------------------------------------------------
-// Lines 289–291: schedFailedViolation — SFR16_TIME_OVERLAP primary reason
+// Lines 289–291: schedFailedViolation — SFR23_TIME_OVERLAP primary reason
 // ---------------------------------------------------------------------------
 
-describe('buildValidationReport — schedFailedViolation SFR16_TIME_OVERLAP branch', () => {
-    test('primary reason SFR16_TIME_OVERLAP → message contains "time slot conflict"', () => {
+describe('buildValidationReport — schedFailedViolation SFR23_TIME_OVERLAP branch', () => {
+    test('primary reason SFR23_TIME_OVERLAP → message contains "time slot conflict"', () => {
         const auto = mkAutoInduction('BLOCKED', CESSNA, ALPHA_HANGAR, 60);
 
         const scheduleResult = {
@@ -95,7 +95,7 @@ describe('buildValidationReport — schedFailedViolation SFR16_TIME_OVERLAP bran
             unscheduled: [auto as any],
             rejectionReasons: new Map([
                 ['BLOCKED', [{
-                    ruleId: 'SFR16_TIME_OVERLAP',
+                    ruleId: 'SFR23_TIME_OVERLAP',
                     message: 'Time slot conflict',
                     evidence: { conflictingInductions: ['IND-EXISTING'], hangar: 'Alpha' }
                 }]]
@@ -111,7 +111,7 @@ describe('buildValidationReport — schedFailedViolation SFR16_TIME_OVERLAP bran
         expect(failed.message).toContain('IND-EXISTING');
     });
 
-    test('SFR16_TIME_OVERLAP with empty conflictingInductions falls back to "other inductions"', () => {
+    test('SFR23_TIME_OVERLAP with empty conflictingInductions falls back to "other inductions"', () => {
         const auto = mkAutoInduction('BLOCKED2', CESSNA, ALPHA_HANGAR, 60);
 
         const scheduleResult = {
@@ -119,7 +119,7 @@ describe('buildValidationReport — schedFailedViolation SFR16_TIME_OVERLAP bran
             unscheduled: [auto as any],
             rejectionReasons: new Map([
                 ['BLOCKED2', [{
-                    ruleId: 'SFR16_TIME_OVERLAP',
+                    ruleId: 'SFR23_TIME_OVERLAP',
                     message: 'Time slot conflict',
                     evidence: { conflictingInductions: [], hangar: 'Alpha' }
                 }]]
@@ -236,13 +236,13 @@ describe('buildValidationReport — schedFailedViolation null-id and null-aircra
 });
 
 // ---------------------------------------------------------------------------
-// Line 290: schedFailedViolation — SFR16_TIME_OVERLAP with no conflictingInductions key
+// Line 290: schedFailedViolation — SFR23_TIME_OVERLAP with no conflictingInductions key
 //
 // primary.evidence?.conflictingInductions ?? [] fires when the key is absent.
 // ---------------------------------------------------------------------------
 
 describe('buildValidationReport — schedFailedViolation SFR16 with missing conflictingInductions', () => {
-    test('SFR16_TIME_OVERLAP without conflictingInductions in evidence uses ?? [] fallback', () => {
+    test('SFR23_TIME_OVERLAP without conflictingInductions in evidence uses ?? [] fallback', () => {
         const auto = mkAutoInduction('SFR16-NO-LIST', CESSNA, ALPHA_HANGAR, 60);
 
         const scheduleResult = {
@@ -250,7 +250,7 @@ describe('buildValidationReport — schedFailedViolation SFR16 with missing conf
             unscheduled: [auto as any],
             rejectionReasons: new Map([
                 ['SFR16-NO-LIST', [{
-                    ruleId: 'SFR16_TIME_OVERLAP',
+                    ruleId: 'SFR23_TIME_OVERLAP',
                     message: 'Conflict',
                     evidence: {}, // no conflictingInductions key
                 }]],

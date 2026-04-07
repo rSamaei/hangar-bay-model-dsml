@@ -170,10 +170,10 @@ describe('Code action: SFR12_BAY_FIT bay fit width fix', () => {
 });
 
 // ---------------------------------------------------------------------------
-// SFR25_BAY_COUNT quick-fix: add adjacent bay to meet wingspan requirement
+// SFR14_BAY_COUNT quick-fix: add adjacent bay to meet wingspan requirement
 // ---------------------------------------------------------------------------
 
-describe('Code action: SFR25_BAY_COUNT bay count fix', () => {
+describe('Code action: SFR14_BAY_COUNT bay count fix', () => {
 
     /**
      * Grid layout (2×2):
@@ -236,7 +236,7 @@ describe('Code action: SFR25_BAY_COUNT bay count fix', () => {
         expect(document.parseResult.parserErrors).toHaveLength(0);
 
         const diagnostics = await validateDoc(document);
-        const bayCountDiag = diagnostics.find(d => d.message.includes('SFR25_BAY_COUNT'));
+        const bayCountDiag = diagnostics.find(d => d.message.includes('SFR14_BAY_COUNT'));
         expect(bayCountDiag).toBeDefined();
 
         const actions = getCodeActions(document, bayCountDiag!);
@@ -298,16 +298,16 @@ describe('Code action: SFR25_BAY_COUNT bay count fix', () => {
         expect(document.parseResult.parserErrors).toHaveLength(0);
 
         const diagnostics = await validateDoc(document);
-        const bayCountDiag = diagnostics.find(d => d.message.includes('SFR25_BAY_COUNT'));
+        const bayCountDiag = diagnostics.find(d => d.message.includes('SFR14_BAY_COUNT'));
         expect(bayCountDiag).toBeUndefined();
     });
 });
 
 // ---------------------------------------------------------------------------
-// SFR13_CONTIGUITY quick-fix: insert bridging bay
+// SFR16_CONTIGUITY quick-fix: insert bridging bay
 // ---------------------------------------------------------------------------
 
-describe('Code action: SFR13_CONTIGUITY contiguity fix', () => {
+describe('Code action: SFR16_CONTIGUITY contiguity fix', () => {
 
     /**
      * Linear adjacency via explicit `adjacent` declarations:
@@ -361,7 +361,7 @@ describe('Code action: SFR13_CONTIGUITY contiguity fix', () => {
         expect(document.parseResult.parserErrors).toHaveLength(0);
 
         const diagnostics = await validateDoc(document);
-        const contiguityDiag = diagnostics.find(d => d.message.includes('SFR13_CONTIGUITY'));
+        const contiguityDiag = diagnostics.find(d => d.message.includes('SFR16_CONTIGUITY'));
         expect(contiguityDiag).toBeDefined();
 
         const actions = getCodeActions(document, contiguityDiag!);
@@ -418,7 +418,7 @@ describe('Code action: SFR13_CONTIGUITY contiguity fix', () => {
         expect(document.parseResult.parserErrors).toHaveLength(0);
 
         const diagnostics = await validateDoc(document);
-        const contiguityDiag = diagnostics.find(d => d.message.includes('SFR13_CONTIGUITY'));
+        const contiguityDiag = diagnostics.find(d => d.message.includes('SFR16_CONTIGUITY'));
         // Adjacent bays → no contiguity violation → no code action needed
         expect(contiguityDiag).toBeUndefined();
     });

@@ -69,7 +69,7 @@ export interface BaySetFitViolation extends ValidationViolation {
 
 /** SFR13: Assigned bay set is not contiguous (contains disconnected islands). */
 export interface ContiguityViolation extends ValidationViolation {
-    ruleId: 'SFR13_CONTIGUITY';
+    ruleId: 'SFR16_CONTIGUITY';
     evidence: {
         bayNames: string[];
         bayCount: number;
@@ -88,7 +88,7 @@ export interface ContiguityViolation extends ValidationViolation {
 
 /** SFR16: Two inductions share a bay at overlapping times. */
 export interface TimeOverlapViolation extends ValidationViolation {
-    ruleId: 'SFR16_TIME_OVERLAP';
+    ruleId: 'SFR23_TIME_OVERLAP';
     evidence: {
         induction1: {
             id?: string; aircraft: string; hangar: string; bays: string[];
@@ -121,9 +121,9 @@ export interface SchedulingFailedViolation extends ValidationViolation {
     };
 }
 
-/** SFR_DYNAMIC_REACHABILITY: A bay is blocked by a concurrent induction occupying the access path. */
+/** SFR21_DYNAMIC_REACHABILITY: A bay is blocked by a concurrent induction occupying the access path. */
 export interface DynamicReachabilityViolation extends ValidationViolation {
-    ruleId: 'SFR_DYNAMIC_REACHABILITY';
+    ruleId: 'SFR21_DYNAMIC_REACHABILITY';
     evidence: {
         inductionId?: string;
         hangarName: string;
@@ -139,9 +139,9 @@ export interface DynamicReachabilityViolation extends ValidationViolation {
     };
 }
 
-/** SFR_CORRIDOR_FIT: Aircraft's effective wingspan exceeds a corridor node's width on the path to an assigned bay. */
+/** SFR22_CORRIDOR_FIT: Aircraft's effective wingspan exceeds a corridor node's width on the path to an assigned bay. */
 export interface CorridorFitViolation extends ValidationViolation {
-    ruleId: 'SFR_CORRIDOR_FIT';
+    ruleId: 'SFR22_CORRIDOR_FIT';
     evidence: {
         aircraftName: string;
         effectiveWingspan: number;

@@ -176,7 +176,7 @@ describe('PlacementEngine.attemptPlacement — all bays occupied', () => {
 
         expect(result.placed).toBe(false);
         if (!result.placed) {
-            expect(result.rejections.some(r => r.ruleId === 'SFR16_TIME_OVERLAP')).toBe(true);
+            expect(result.rejections.some(r => r.ruleId === 'SFR23_TIME_OVERLAP')).toBe(true);
         }
     });
 });
@@ -245,14 +245,14 @@ describe('PlacementEngine.attemptPlacement — access path reachability', () => 
 
         // Bay1 has time conflict. Bay2 is structurally reachable from door but
         // the access path goes Door→Corridor→NodeB1→NodeB2, and NodeB1 is blocked.
-        // The bay-set [Bay2] should be rejected due to SFR_DYNAMIC_REACHABILITY.
-        // The bay-set [Bay1] should be rejected due to SFR16_TIME_OVERLAP.
+        // The bay-set [Bay2] should be rejected due to SFR21_DYNAMIC_REACHABILITY.
+        // The bay-set [Bay1] should be rejected due to SFR23_TIME_OVERLAP.
         // Overall: placement fails.
         expect(result.placed).toBe(false);
         if (!result.placed) {
             const ruleIds = result.rejections.map(r => r.ruleId);
-            expect(ruleIds).toContain('SFR16_TIME_OVERLAP');
-            expect(ruleIds).toContain('SFR_DYNAMIC_REACHABILITY');
+            expect(ruleIds).toContain('SFR23_TIME_OVERLAP');
+            expect(ruleIds).toContain('SFR21_DYNAMIC_REACHABILITY');
         }
     });
 

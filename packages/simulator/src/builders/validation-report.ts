@@ -81,7 +81,7 @@ function checkInduction(
     const reachResult = checkDynamicBayReachability(hangar, induction, model.inductions, model.accessPaths);
     if (!reachResult.ok && !reachResult.skipped) {
         violations.push({
-            ruleId: 'SFR_DYNAMIC_REACHABILITY',
+            ruleId: 'SFR21_DYNAMIC_REACHABILITY',
             severity: 'error',
             message: reachResult.message,
             subject,
@@ -104,9 +104,9 @@ function checkInduction(
             }
             for (const [nodeName, { nodeWidth, bays }] of byNode) {
                 violations.push({
-                    ruleId: 'SFR_CORRIDOR_FIT',
+                    ruleId: 'SFR22_CORRIDOR_FIT',
                     severity: 'warning',
-                    message: `[SFR_CORRIDOR_FIT] Aircraft '${aircraft.name}' (effective wingspan ${effectiveDims.wingspan} m) cannot pass through corridor '${nodeName}' (width ${nodeWidth} m) to reach bay(s) [${bays.join(', ')}]`,
+                    message: `[SFR22_CORRIDOR_FIT] Aircraft '${aircraft.name}' (effective wingspan ${effectiveDims.wingspan} m) cannot pass through corridor '${nodeName}' (width ${nodeWidth} m) to reach bay(s) [${bays.join(', ')}]`,
                     subject,
                     evidence: {
                         aircraftName: aircraft.name,
@@ -206,7 +206,7 @@ function checkBayContiguity(
     const result = checkContiguity(bays.map(b => b.name), adjacency, metadata);
     if (result.ok) return null;
     return {
-        ruleId: 'SFR13_CONTIGUITY',
+        ruleId: 'SFR16_CONTIGUITY',
         severity: 'error',
         message: result.message,
         subject,
@@ -241,7 +241,7 @@ function checkTimeOverlaps(model: Model): TimeOverlapViolation[] {
     }));
 
     return detectConflicts(inductionInfos).map(conflict => ({
-        ruleId: 'SFR16_TIME_OVERLAP' as const,
+        ruleId: 'SFR23_TIME_OVERLAP' as const,
         severity: 'error' as const,
         message: conflict.message,
         subject: { type: 'Induction' as const, name: conflict.induction1.aircraft, id: conflict.induction1.id },
@@ -286,7 +286,7 @@ function schedFailedViolation(auto: Parameters<typeof checkUnscheduledAutos>[0] 
 
     let message = `Auto-induction '${autoId}' for ${aircraftName} could not be scheduled`;
     if (primary) {
-        if (primary.ruleId === 'SFR16_TIME_OVERLAP') {
+        if (primary.ruleId === 'SFR23_TIME_OVERLAP') {
             const conflicting: string[] = primary.evidence?.conflictingInductions ?? [];
             message += `: time slot conflict with ${conflicting.join(', ') || 'other inductions'}`;
         } else if (primary.ruleId === 'SFR11_DOOR_FIT') {

@@ -1,5 +1,5 @@
 /**
- * Tests for SFR_CORRIDOR_FIT violations in buildValidationReport.
+ * Tests for SFR22_CORRIDOR_FIT violations in buildValidationReport.
  *
  * Layout used in all tests:
  *   Door(MainDoor) → N_door → N_corridor(width=8m) → N_bay → Bay1
@@ -101,7 +101,7 @@ const accessPath = mkPath('P1',
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('buildValidationReport — SFR_CORRIDOR_FIT', () => {
+describe('buildValidationReport — SFR22_CORRIDOR_FIT', () => {
     test('no violation when aircraft wingspan fits through corridor', () => {
         // wingspan=6 < corridorWidth=8 → fits
         const aircraft  = mkAircraft('SmallAC', 6, 10, 3);
@@ -109,7 +109,7 @@ describe('buildValidationReport — SFR_CORRIDOR_FIT', () => {
         const model     = mkModel([hangar], [induction], [accessPath]);
 
         const report = buildValidationReport(model as any);
-        const corridorViolations = report.violations.filter(v => v.ruleId === 'SFR_CORRIDOR_FIT');
+        const corridorViolations = report.violations.filter(v => v.ruleId === 'SFR22_CORRIDOR_FIT');
         expect(corridorViolations).toHaveLength(0);
     });
 
@@ -120,7 +120,7 @@ describe('buildValidationReport — SFR_CORRIDOR_FIT', () => {
         const model     = mkModel([hangar], [induction], [accessPath]);
 
         const report = buildValidationReport(model as any);
-        const corridorViolations = report.violations.filter(v => v.ruleId === 'SFR_CORRIDOR_FIT');
+        const corridorViolations = report.violations.filter(v => v.ruleId === 'SFR22_CORRIDOR_FIT');
         expect(corridorViolations).toHaveLength(1);
     });
 
@@ -130,7 +130,7 @@ describe('buildValidationReport — SFR_CORRIDOR_FIT', () => {
         const model     = mkModel([hangar], [induction], [accessPath]);
 
         const report = buildValidationReport(model as any);
-        const v = report.violations.find(v => v.ruleId === 'SFR_CORRIDOR_FIT')!;
+        const v = report.violations.find(v => v.ruleId === 'SFR22_CORRIDOR_FIT')!;
         expect(v.severity).toBe('warning');
     });
 
@@ -140,7 +140,7 @@ describe('buildValidationReport — SFR_CORRIDOR_FIT', () => {
         const model     = mkModel([hangar], [induction], [accessPath]);
 
         const report = buildValidationReport(model as any);
-        const v = report.violations.find(v => v.ruleId === 'SFR_CORRIDOR_FIT') as CorridorFitViolation;
+        const v = report.violations.find(v => v.ruleId === 'SFR22_CORRIDOR_FIT') as CorridorFitViolation;
         expect(v.evidence.aircraftName).toBe('WideAC');
         expect(v.evidence.effectiveWingspan).toBe(12);
         expect(v.evidence.corridorNodeName).toBe('N_corridor');
@@ -156,7 +156,7 @@ describe('buildValidationReport — SFR_CORRIDOR_FIT', () => {
         const model       = mkModel([bareHangar], [ind], []);
 
         const report = buildValidationReport(model as any);
-        expect(report.violations.filter(v => v.ruleId === 'SFR_CORRIDOR_FIT')).toHaveLength(0);
+        expect(report.violations.filter(v => v.ruleId === 'SFR22_CORRIDOR_FIT')).toHaveLength(0);
     });
 
     test('one violation per unique narrow corridor node, collecting all blocked bays', () => {
@@ -179,7 +179,7 @@ describe('buildValidationReport — SFR_CORRIDOR_FIT', () => {
         const model = mkModel([hangarB], [ind], [pathB]);
 
         const report = buildValidationReport(model as any);
-        const corridorVs = report.violations.filter(v => v.ruleId === 'SFR_CORRIDOR_FIT') as CorridorFitViolation[];
+        const corridorVs = report.violations.filter(v => v.ruleId === 'SFR22_CORRIDOR_FIT') as CorridorFitViolation[];
         // Exactly one violation (one corridor node)
         expect(corridorVs).toHaveLength(1);
         // Both bays listed as unreachable

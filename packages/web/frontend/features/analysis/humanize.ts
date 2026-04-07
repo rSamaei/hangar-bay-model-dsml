@@ -29,7 +29,7 @@ export function humanizeReason(rawReason: string | null | undefined): string {
       return `Too wide for ${match[1]} doors`;
     }
 
-    // "SFR_CORRIDOR_FIT" or corridor-related
+    // "SFR22_CORRIDOR_FIT" or corridor-related
     if (part.includes('corridor') || part.includes('CORRIDOR')) {
       return 'Too wide for the corridor leading to available bays';
     }
@@ -71,7 +71,7 @@ export function humanizeFailure(
   const ruleId = failed.reasonRuleId;
 
   // ── Door fit ──
-  if (ruleId === 'SFR11_DOOR_FIT' || ruleId === 'SFR24_DOOR_FIT_PRECHECK'
+  if (ruleId === 'SFR11_DOOR_FIT' || ruleId === 'SFR13_DOOR_FIT_PRECHECK'
       || ruleId === 'STRUCTURALLY_INFEASIBLE') {
     const wingspan = evidence?.wingspanEff ?? evidence?.wingspan;
     const doorWidth = evidence?.doorWidth ?? evidence?.maxDoorWidth;
@@ -83,7 +83,7 @@ export function humanizeFailure(
   }
 
   // ── Time overlap / all bays occupied ──
-  if (ruleId === 'SFR16_TIME_OVERLAP' || ruleId === 'NO_SUITABLE_BAY_SET') {
+  if (ruleId === 'SFR23_TIME_OVERLAP' || ruleId === 'NO_SUITABLE_BAY_SET') {
     const notBefore = evidence?.notBefore || evidence?.requestedWindow?.start;
     const notAfter = evidence?.notAfter || evidence?.requestedWindow?.end;
     if (notBefore && notAfter) {
@@ -106,12 +106,12 @@ export function humanizeFailure(
   }
 
   // ── Dynamic reachability ──
-  if (ruleId === 'SFR_DYNAMIC_REACHABILITY') {
+  if (ruleId === 'SFR21_DYNAMIC_REACHABILITY') {
     return `Bays were available but unreachable — other aircraft blocked the access path to the ${aircraft}'s assigned bays.`;
   }
 
   // ── Corridor fit ──
-  if (ruleId === 'SFR_CORRIDOR_FIT') {
+  if (ruleId === 'SFR22_CORRIDOR_FIT') {
     const wingspan = evidence?.wingspanEff;
     const corridorWidth = evidence?.corridorWidth;
     if (wingspan && corridorWidth) {

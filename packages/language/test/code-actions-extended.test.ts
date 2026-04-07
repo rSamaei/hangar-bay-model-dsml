@@ -2,7 +2,7 @@
  * Extended tests for AirfieldCodeActionProvider.
  *
  * Covers branches not reached by code-actions.test.ts:
- *   - SFR25_BAY_COUNT quick-fix (add adjacent bays to meet wingspan requirement)
+ *   - SFR14_BAY_COUNT quick-fix (add adjacent bays to meet wingspan requirement)
  *   - Legacy fallback: substring-match dispatch on message (no ruleId in data)
  *   - No-op cases: unknown diagnostic rule, induction with no bays
  */
@@ -43,10 +43,10 @@ function getCodeActions(document: LangiumDocument, diagnostic: Diagnostic): Code
 }
 
 // ---------------------------------------------------------------------------
-// SFR25_BAY_COUNT fix
+// SFR14_BAY_COUNT fix
 // ---------------------------------------------------------------------------
 
-describe('Code action: SFR25_BAY_COUNT bay count fix', () => {
+describe('Code action: SFR14_BAY_COUNT bay count fix', () => {
     test('offers to add adjacent bay when too few bays assigned for wingspan', async () => {
         const document = await parse(`
             airfield BayCountTest {
@@ -89,7 +89,7 @@ describe('Code action: SFR25_BAY_COUNT bay count fix', () => {
         expect(document.parseResult.parserErrors).toHaveLength(0);
 
         const diagnostics = await validateDoc(document);
-        const bayCountDiag = diagnostics.find(d => d.message.includes('SFR25_BAY_COUNT'));
+        const bayCountDiag = diagnostics.find(d => d.message.includes('SFR14_BAY_COUNT'));
         expect(bayCountDiag).toBeDefined();
 
         const actions = getCodeActions(document, bayCountDiag!);
@@ -111,7 +111,7 @@ describe('Code action: SFR25_BAY_COUNT bay count fix', () => {
 // ---------------------------------------------------------------------------
 
 describe('Code action: legacy message-based dispatch', () => {
-    test('SFR13_CONTIGUITY in message (no ruleId) still triggers contiguity fix', async () => {
+    test('SFR16_CONTIGUITY in message (no ruleId) still triggers contiguity fix', async () => {
         const document = await parse(`
             airfield ContiguityTest {
                 aircraft Cessna {
@@ -138,7 +138,7 @@ describe('Code action: legacy message-based dispatch', () => {
         expect(document.parseResult.parserErrors).toHaveLength(0);
 
         const diagnostics = await validateDoc(document);
-        const contiguityDiag = diagnostics.find(d => d.message.includes('SFR13_CONTIGUITY'));
+        const contiguityDiag = diagnostics.find(d => d.message.includes('SFR16_CONTIGUITY'));
         expect(contiguityDiag).toBeDefined();
 
         // Strip the data to force fallback to message-based dispatch

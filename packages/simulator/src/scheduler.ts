@@ -59,7 +59,7 @@ function makeConflictRejection(
     conflicting: string[]
 ): RejectionReason {
     return {
-        ruleId: 'SFR16_TIME_OVERLAP',
+        ruleId: 'SFR23_TIME_OVERLAP',
         message: `Time slot conflict in hangar ${hangarName}`,
         evidence: {
             hangar: hangarName,
