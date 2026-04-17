@@ -101,7 +101,7 @@ export function ProblemsPanel({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          {panelAnalyzing ? 'Analyzing…' : 'Analyze'}
+          {panelAnalyzing ? 'Analysing…' : 'Analyse'}
         </button>
       </div>
 
@@ -145,7 +145,7 @@ export function ProblemsPanel({
             <ScheduleTab result={scheduleResult} />
           ) : (
             <div className="flex items-center justify-center h-full text-slate-500 text-xs p-4 text-center">
-              Click <strong className="text-slate-400 mx-1">Analyze</strong> in the panel above to see schedule results.
+              Click <strong className="text-slate-400 mx-1">Analyse</strong> in the panel above to see schedule results.
             </div>
           )
         )}

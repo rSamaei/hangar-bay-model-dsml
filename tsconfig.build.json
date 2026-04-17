@@ -2,7 +2,7 @@
     "files": [],
     "references": [
         {
-            "path": "packages/language"
+            "path": "packages/language/tsconfig.src.json"
         },
         {
             "path": "packages/simulator"
