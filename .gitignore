@@ -10,5 +10,11 @@ syntaxes/
 *.tsbuildinfo
 *.vsix
 *.db
+*.db-shm
+*.db-wal
+*.js.map
 coverage/
 **/coverage/
+DEBUG_ANALYSIS_RESULT.json
+**/examples/generated/
+temp.*
